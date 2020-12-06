@@ -19,12 +19,21 @@ public:
   HelloWorld();
   virtual ~HelloWorld();
 
-protected:
+private:
   //Signal handlers:
   void on_button_clicked();
 
+  //Signal handlers:
+  void on_action_file_quit();
+  void on_action_help_about();
+
   //Member widgets:
-  Gtk::Button m_button;
+  Gtk::Box m_box;
+  Gtk::ScrolledWindow m_scrolledWindow; // Main window contents
+  Gtk::TextView m_textView;
+  Gtk::Statusbar m_statusbar;
+  Glib::RefPtr<Gtk::Builder> m_refBuilder;
+  Glib::RefPtr<Gio::SimpleActionGroup> m_refActionGroup;
 };
 
 #endif /* HELLO-WORLD */
