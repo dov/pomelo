@@ -1,6 +1,6 @@
 # Intro
 
-This repo descripes a gtkmm skeleton together with a build environment for windows and for the creation of a nsi installer for windows.
+A skeleton library based on meson-glibmm-cross that contains an outline application with a glib viewer.
 
 # Author
 

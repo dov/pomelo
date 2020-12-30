@@ -1,22 +1,29 @@
 project('gtkmm_example','cpp','c')
 
-sources = ['hello-world-main.cc',
-           'hello-world.cc',
+sources = ['pomelo-main.cc',
+           'pomelo.cc',
+           'mesh-viewer.cc',
+           'trackball.cc',
+           'main-input.cc',
+           'mesh.cc'
           ]
 
 gtkmmdep = dependency('gtkmm-3.0')
-deps = [gtkmmdep]
+epoxydep = dependency('epoxy')
+fmtdep = dependency('fmt')
+glmdep = dependency('glm')
+deps = [gtkmmdep, epoxydep, fmtdep, glmdep]
 
 gnome = import('gnome')
 
 resources = gnome.compile_resources(
   'resources',
-  'example-resource.xml',
+  'resources.xml',
   c_name :'resources'
 )
 
-name='hello-gtkmm'
-name_cap = 'HelloGtkMM'
+name='pomelo'
+name_cap = 'Pomelo'
 version = '0.1.0'
 
 exe = executable(name_cap,
@@ -57,8 +64,8 @@ if host_machine.system() == 'windows'
   ]
 
   nsis = custom_target('nsis',
-                       output: 'install-hello-world.exe',
-                       input: files('hello-world.nsi'),
+                       output: 'install-pomelo.exe',
+                       input: files('pomelo.nsi'),
                        build_always_stale: true,
                        command: nsis_cmd,
                        depends: [exe]

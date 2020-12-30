@@ -2,4 +2,8 @@
 <gresources>
   <gresource prefix="/toolbar">
   </gresource>
+  <gresource prefix="/shaders">
+    <file>fragment.glsl</file>
+    <file>vertex.glsl</file>
+  </gresource>
 </gresources>

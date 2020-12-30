@@ -2,28 +2,34 @@
 #include <gtkmm.h>
 #include <gtkmm/button.h>
 #include <gtkmm/window.h>
-#include "hello-world.h"
+#include "mesh-viewer.h"
+#include "pomelo.h"
+#include <iostream>
+#include "dov-mm-macros.h"
 
 using namespace std;
 
-HelloWorld::HelloWorld()
-  : m_box(Gtk::ORIENTATION_VERTICAL)
-{
-  set_title("hello world example");
-  set_default_size(400, 400);
 
-  add(m_box); 
+
+Pomelo::Pomelo()
+{
+  set_title("Pomelo");
+  set_default_size(800, 1000);
+
+  auto w_vbox = mmVBox;
+
+  this->add(*w_vbox); 
 
   //Define the actions:
   m_refActionGroup = Gio::SimpleActionGroup::create();
 
   m_refActionGroup->add_action("quit",
-    sigc::mem_fun(*this, &HelloWorld::on_action_file_quit) );
+    sigc::mem_fun(*this, &Pomelo::on_action_file_quit) );
 
   m_refActionGroup->add_action("about",
-    sigc::mem_fun(*this, &HelloWorld::on_action_help_about) );
+    sigc::mem_fun(*this, &Pomelo::on_action_help_about) );
 
-  insert_action_group("helloworld", m_refActionGroup);
+  insert_action_group("pomelo", m_refActionGroup);
   
   //Layout the actions in a menubar and toolbar:
   const char* ui_info =
@@ -34,7 +40,7 @@ HelloWorld::HelloWorld()
     "      <section>"
     "        <item>"
     "          <attribute name='label' translatable='yes'>_Quit</attribute>"
-    "          <attribute name='action'>helloworld.quit</attribute>"
+    "          <attribute name='action'>pomelo.quit</attribute>"
     "          <attribute name='accel'>&lt;Primary&gt;q</attribute>"
     "        </item>"
     "      </section>"
@@ -43,7 +49,7 @@ HelloWorld::HelloWorld()
     "      <attribute name='label' translatable='yes'>_Help</attribute>"
     "      <item>"
     "        <attribute name='label' translatable='yes'>_About</attribute>"
-    "        <attribute name='action'>helloworld.about</attribute>"
+    "        <attribute name='action'>pomelo.about</attribute>"
     "      </item>"
     "    </submenu>"
     "  </menu>"
@@ -62,41 +68,60 @@ HelloWorld::HelloWorld()
     auto pMenuBar = Gtk::make_managed<Gtk::MenuBar>(gmenu);
 
     //Add the MenuBar to the window:
-    m_box.pack_start(*pMenuBar, Gtk::PACK_SHRINK);
+    w_vbox->pack_start(*pMenuBar, Gtk::PACK_SHRINK);
   }
 
-  m_scrolledWindow.add(m_textView);
-  m_box.pack_start(m_scrolledWindow, true, true);
+  w_vbox->pack_start(m_mainInput, false, true);
 
-  m_box.pack_start(m_statusbar, false, false);
+
+  // A box for button widgets. Not worth putting this into a widget
+  auto w_hbox = mmHBox;
+  auto w_button = mm<Gtk::Button>("Build");
+  w_button->signal_clicked().connect( sigc::mem_fun(*this,
+     &Pomelo::on_button_clicked) );
+
+  w_hbox->pack_start(*w_button, false, false);
+  w_vbox->pack_start(*w_hbox, false, true);
+  
+  
+
+  w_vbox->pack_start(m_meshViewer, true, true);
+  w_vbox->pack_start(m_statusbar, false, false);
   m_statusbar.push("Welcome to Hello World");
 
   show_all_children();
 }
 
-HelloWorld::~HelloWorld()
+Pomelo::~Pomelo()
 {
-}
-
-void HelloWorld::on_button_clicked()
-{
-  std::cout << "Hello world\n";
 }
 
 //Signal handlers:
-void HelloWorld::on_action_file_quit()
+void Pomelo::on_action_file_quit()
 {
   hide(); // Close the main window to stop app->run().
 }
 
-void HelloWorld::on_action_help_about()
+void Pomelo::on_action_help_about()
 {
   Gtk::AboutDialog Dialog;
   Dialog.set_version("0.0.1");
-  Dialog.set_copyright("Joe Doe");
-  Dialog.set_program_name("HelloWorld");
+  Dialog.set_copyright("Dov Grobgeld");
+  Dialog.set_program_name("Pomelo");
   Dialog.set_transient_for(*this);
 
   Dialog.run();
 }
 
+void Pomelo::on_button_clicked()
+{
+  m_statusbar.push("That felt good!");
+
+  Glib::signal_timeout()
+    .connect_once([this]() { m_statusbar.remove_all_messages(); }, 1000);
+}
+
+void Pomelo::set_mesh(const std::string& mesh_filename)
+{
+  m_meshViewer.set_mesh_file(mesh_filename);
+}

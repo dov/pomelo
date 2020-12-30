@@ -1,0 +1,106 @@
+//======================================================================
+//  mesh-viewer.h - A viewer for a mesh
+//
+//  Dov Grobgeld <dov.grobgeld@gmail.com>
+//  Wed Dec 16 23:14:11 2020
+//----------------------------------------------------------------------
+#ifndef MESH_VIEWER_H
+#define MESH_VIEWER_H
+
+#include <gtkmm.h>
+#include <glm/mat4x4.hpp>
+#include <epoxy/gl.h>
+#include <mesh.h>
+
+class MeshViewer : public Gtk::GLArea
+{
+  public:
+  struct VertexInfo {
+    glm::vec3 position;
+    glm::vec3 color;
+    glm::vec3 normal;
+    glm::vec3 bary;
+  };
+
+
+  // Constructor
+  MeshViewer();
+
+  // Create a mesh 
+  void set_mesh(std::shared_ptr<Mesh> mesh);
+  void set_mesh_file(const std::string& mesh_filename);
+
+  private:
+
+  // signals
+  void on_realize() override;
+  void on_unrealize() override;
+  bool on_render (const Glib::RefPtr< Gdk::GLContext >& context) override;
+  bool on_button_press_event (GdkEventButton* button_event) override;
+  bool on_motion_notify_event (GdkEventMotion* motion_event) override;
+  bool on_scroll_event (GdkEventScroll* scroll_event) override;
+
+  // Used during init
+  void init_shaders();
+  void init_buffers(guint *vao_out);
+
+  // Request a redraw
+  void redraw();
+  void draw_mesh();
+
+  // Setup the world view
+  void setup_world(double scale,
+                   float *view_quat,
+                   const glm::vec3& pivot);
+  // Build the projection matrix. This uses the current window size.
+  void build_projection_matrix();
+
+  // OpenGl structures
+  guint m_vao {0};
+  guint m_buffer {0};
+  guint m_program {0};
+
+  // Describe the vertex attribute layout
+  guint m_position_index {0};
+  guint m_color_index {1};
+  guint m_normal_index {2};
+  guint m_bary_index {3};
+
+  // Uniform locations in the shaders
+  guint m_proj_loc {0};
+  guint m_mv_loc {1};
+  guint m_normal_matrix_loc {1};
+
+  // Material definition
+  guint m_shininess;
+  guint m_specular;
+  guint m_diffuse;
+  guint m_ambient;
+
+  // world description
+  glm::mat4 m_proj_matrix;
+  glm::mat4 m_world;
+  glm::vec3 m_pivot {0,0,0};
+  glm::vec3 m_camera {0,0,-10};
+
+  // Viewing direction quaternion used via the trackball class
+  float m_view_quat[4] = { 0.0, 0.0, 0.0, 1.0 };
+
+  // User scale
+  double m_view_scale = 1.0;
+  double m_size_scale = 1.0;
+  
+  // State for the trackball
+  int m_begin_x;
+  int m_begin_y;
+
+  // TBD - change this to vertices and indices.
+  struct HWMesh {
+    std::array<float,6> bbox;
+    std::vector<VertexInfo> vertices;
+  };
+
+  HWMesh m_hw_mesh;
+};
+
+#endif /* MESH-VIEWER */

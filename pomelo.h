@@ -1,5 +1,5 @@
 //======================================================================
-//  hello-world.h - 
+//  pomelo.h - 
 //
 //  Dov Grobgeld <dov.grobgeld@gmail.com>
 //  Sun Dec  6 22:36:33 2020
@@ -8,16 +8,17 @@
 #define HELLO_WORLD_H
 
 #include <gtkmm.h>
-#include <gtkmm/button.h>
-#include <gtkmm/window.h>
-#include <iostream>
+#include "main-input.h"
+#include "mesh-viewer.h"
 
-class HelloWorld : public Gtk::Window
+class Pomelo : public Gtk::Window
 {
 
 public:
-  HelloWorld();
-  virtual ~HelloWorld();
+  Pomelo();
+  virtual ~Pomelo();
+
+  void set_mesh(const std::string& mesh_filename);
 
 private:
   //Signal handlers:
@@ -28,9 +29,8 @@ private:
   void on_action_help_about();
 
   //Member widgets:
-  Gtk::Box m_box;
-  Gtk::ScrolledWindow m_scrolledWindow; // Main window contents
-  Gtk::TextView m_textView;
+  MainInput m_mainInput;
+  MeshViewer m_meshViewer;
   Gtk::Statusbar m_statusbar;
   Glib::RefPtr<Gtk::Builder> m_refBuilder;
   Glib::RefPtr<Gio::SimpleActionGroup> m_refActionGroup;
