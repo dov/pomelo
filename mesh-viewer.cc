@@ -19,7 +19,7 @@ using namespace glm;
 #define VIEW_INIT_AXIS_Y 0.0
 #define VIEW_INIT_AXIS_Z 0.0
 #define VIEW_INIT_ANGLE  20.0
-#define VIEW_SCALE_MAX 10.0
+#define VIEW_SCALE_MAX 100.0
 #define VIEW_SCALE_MIN 0.001
 
 #define DIG_2_RAD (G_PI / 180.0)
@@ -176,18 +176,19 @@ void MeshViewer::init_shaders ()
 
 void MeshViewer::init_buffers (guint *vao_out)
 {
-  guint vao, buffer;
+  guint vao;
 
   /* we need to create a VAO to store the other buffers */
   glGenVertexArrays (1, &vao);
   glBindVertexArray (vao);
 
   /* this is the VBO that holds the vertex data */
-  glGenBuffers (1, &buffer);
-  glBindBuffer (GL_ARRAY_BUFFER, buffer);
+  glGenBuffers (1, &m_buffer_id);
+  glBindBuffer (GL_ARRAY_BUFFER, m_buffer_id);
+  print("glBufferData()\n");
   glBufferData (GL_ARRAY_BUFFER,
                 m_hw_mesh.vertices.size() * sizeof(MeshViewer::VertexInfo),
-                &m_hw_mesh.vertices[0].position[0], GL_STATIC_DRAW);
+                &m_hw_mesh.vertices[0].position[0], GL_DYNAMIC_DRAW);
 
   // enable and set the attributes
   glEnableVertexAttribArray (m_position_index);
@@ -216,16 +217,26 @@ void MeshViewer::init_buffers (guint *vao_out)
   glBindVertexArray (0);
 
   /* the VBO is referenced by the VAO */
-  glDeleteBuffers (1, &buffer);
+  //  glDeleteBuffers (1, &m_buffer_id); /* Do I need this?
 
   if (vao_out != NULL)
     *vao_out = vao;
 
 }
 
+void MeshViewer::update_geometry()
+{
+  glBindBuffer (GL_ARRAY_BUFFER, m_buffer_id);
+  print("glBufferData()\n");
+  glBufferData (GL_ARRAY_BUFFER,
+                m_hw_mesh.vertices.size() * sizeof(MeshViewer::VertexInfo),
+                &m_hw_mesh.vertices[0].position[0], GL_DYNAMIC_DRAW);
+  glBindBuffer (GL_ARRAY_BUFFER, 0);
+}
 
 void MeshViewer::on_realize()
 {
+  m_realized = true;
   printf("On realize...\n");
   Gtk::GLArea::on_realize();
 
@@ -345,10 +356,6 @@ void MeshViewer::draw_mesh()
   //  m_world[2][1] = 0;
   //  m_world[3] = glm::vec4 {0,0,0,1};
   auto model_view_matrix = glm::translate(glm::mat4(1.0), m_camera) * m_world;
-#if 0
-  print("vm=\n");
-  print_mat(&model_view_matrix[0][0]);
-#endif
 
   // Build the projection matrix. Is there a better place?
   build_projection_matrix();
@@ -389,13 +396,10 @@ void MeshViewer::draw_mesh()
 
 bool MeshViewer::on_button_press_event (GdkEventButton* button_event)
 {
-  if (button_event->button == 1) {
-    m_begin_x = button_event->x;
-    m_begin_y = button_event->y;
-    return true;
-  }
+  m_begin_x = button_event->x;
+  m_begin_y = button_event->y;
     
-  return false;
+  return true;
 }
 
 bool MeshViewer::on_motion_notify_event (GdkEventMotion* motion_event)
@@ -417,7 +421,34 @@ bool MeshViewer::on_motion_notify_event (GdkEventMotion* motion_event)
                );
     add_quats (d_quat, m_view_quat, m_view_quat);
   }
-    
+  else if (motion_event->state & GDK_BUTTON2_MASK)
+  {
+    // Panning
+    // Calculate the world distance for a window line from
+    // (beginX,beginY,Z) to (x,y,Z) where Z is the z-pos
+    // of the current pivot.
+
+    double src_x = 2.0*m_begin_x/w-1.0;
+    double src_y = 1.0-2.0*m_begin_y/h;
+    double dst_x = 2.0*x/w-1.0;
+    double dst_y = 1.0-2.0*y/h;
+    glm::vec3 worldSrc, worldDst;
+
+    view_port_to_world(glm::vec3(src_x,src_y,0), // z=0.5*(near+far)
+                       // output
+                       worldSrc);
+    view_port_to_world(glm::vec3(dst_x,dst_y,0),
+                       // output
+                       worldDst);
+
+    glm::vec3 dxyz = worldDst-worldSrc;
+    dxyz.x*=10;
+    dxyz.y*=10;
+    dxyz.z*=10;
+
+    m_pivot -= dxyz;
+  }
+
   m_begin_x = x;
   m_begin_y = y;
 
@@ -513,6 +544,18 @@ void MeshViewer::set_mesh(shared_ptr<Mesh> mesh)
     0.5*(bbox[0]+bbox[3]),
     0.5*(bbox[1]+bbox[4]),
     0.5*(bbox[2]+bbox[5])};
+
+  print("bbox = {} {} {} {} {} {}\n",
+        bbox[0],
+        bbox[1],
+        bbox[2],
+        bbox[3],
+        bbox[4],
+        bbox[5]);
+
+  //  redraw();
+  if (m_vao)
+    update_geometry();
 }
 
 void MeshViewer::set_mesh_file(const std::string& mesh_filename)
@@ -539,4 +582,21 @@ void MeshViewer::setup_world(double scale,
                                  -view_quat[2]));
 #endif
   m_world = glm::translate(m_world*m_view, -pivot);
+}
+
+void MeshViewer::view_port_to_world(glm::vec3 view_port_coord,
+                                    // output
+                                    glm::vec3& world_coord)
+{
+  auto t_camera = glm::translate(glm::mat4(1.0), m_camera);
+
+  auto Mmv = t_camera * m_world;
+  auto Mpmv = m_proj_matrix * Mmv;
+  auto M = glm::inverse(Mpmv);
+  glm::vec4 v = M * glm::vec4(view_port_coord.x,
+                              view_port_coord.y,
+                              view_port_coord.z,
+                              1.0);
+                  
+  world_coord = glm::vec3(v.x/v.w,v.y/v.w,v.z/v.w);
 }

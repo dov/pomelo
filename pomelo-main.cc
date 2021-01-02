@@ -1,5 +1,6 @@
 #include "pomelo.h"
 #include "fmt/core.h"
+#include "pangocairo-to-contour.h"
 
 using namespace std;
 using namespace fmt;

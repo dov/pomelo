@@ -6,4 +6,8 @@
     <file>fragment.glsl</file>
     <file>vertex.glsl</file>
   </gresource>
+  <gresource prefix="/about">
+    <file>pomelo_logo.png</file>
+    <file>COPYING</file>
+  </gresource>
 </gresources>

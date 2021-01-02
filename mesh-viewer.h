@@ -29,6 +29,7 @@ class MeshViewer : public Gtk::GLArea
   // Create a mesh 
   void set_mesh(std::shared_ptr<Mesh> mesh);
   void set_mesh_file(const std::string& mesh_filename);
+  void redraw();
 
   private:
 
@@ -43,9 +44,9 @@ class MeshViewer : public Gtk::GLArea
   // Used during init
   void init_shaders();
   void init_buffers(guint *vao_out);
+  void update_geometry();
 
   // Request a redraw
-  void redraw();
   void draw_mesh();
 
   // Setup the world view
@@ -54,6 +55,12 @@ class MeshViewer : public Gtk::GLArea
                    const glm::vec3& pivot);
   // Build the projection matrix. This uses the current window size.
   void build_projection_matrix();
+
+  void view_port_to_world(glm::vec3 view_port_coord,
+                          // output
+                          glm::vec3& world_coordinate);
+
+  bool m_realized = false;
 
   // OpenGl structures
   guint m_vao {0};
@@ -70,6 +77,8 @@ class MeshViewer : public Gtk::GLArea
   guint m_proj_loc {0};
   guint m_mv_loc {1};
   guint m_normal_matrix_loc {1};
+
+  guint m_buffer_id;
 
   // Material definition
   guint m_shininess;

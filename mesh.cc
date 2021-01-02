@@ -100,3 +100,33 @@ std::shared_ptr<Mesh> read_stl(const std::string& filename)
   return mesh;
 }
 
+// 3D Mesh routines
+void save_stl(std::shared_ptr<Mesh> mesh, const std::string& filename)
+{
+  // Write header
+  const int header_size = 80;
+  char header[header_size];
+  std::fill_n(header, header_size, 0);
+  ofstream fh(filename,ofstream::binary|ofstream::out);
+  
+  fh.write(header, header_size);
+
+  const  auto& vertices = mesh->vertices; // shortcut
+  size_t size = (size_t)vertices.size()/3;
+  cout << fmt::format("mesh.size={}\n", size);
+  fh.write((const char*)&size, 4);
+
+  uint16_t color=0;
+  for(size_t tr_idx=0; tr_idx<size; tr_idx++)
+    {
+      float fzero {0};
+      for (int i=0; i<3; i++)
+        fh.write((const char*)&fzero,4);
+
+      for (int i=0; i<3; i++)
+        fh.write((char*)(&vertices[tr_idx*3+i][0]), 3*4);
+      fh.write((char*)&color, 2);
+    }
+  fh.close();
+}
+
