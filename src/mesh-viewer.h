@@ -10,7 +10,7 @@
 #include <gtkmm.h>
 #include <glm/mat4x4.hpp>
 #include <epoxy/gl.h>
-#include <mesh.h>
+#include "mesh.h"
 
 class MeshViewer : public Gtk::GLArea
 {

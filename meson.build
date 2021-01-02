@@ -1,14 +1,14 @@
 project('gtkmm_example','cpp','c')
 
-sources = ['pomelo-main.cc',
-           'pomelo.cc',
-           'mesh-viewer.cc',
-           'trackball.cc',
-           'main-input.cc',
-           'mesh.cc',
-           'pangocairo-to-contour.cc',
-           'worker-skeleton.cc',
-           'progress-dialog.cc'
+sources = ['src/pomelo-main.cc',
+           'src/pomelo.cc',
+           'src/mesh-viewer.cc',
+           'src/trackball.cc',
+           'src/main-input.cc',
+           'src/mesh.cc',
+           'src/pangocairo-to-contour.cc',
+           'src/worker-skeleton.cc',
+           'src/progress-dialog.cc'
           ]
 
 cc = meson.get_compiler('c')
@@ -35,8 +35,9 @@ gnome = import('gnome')
 
 resources = gnome.compile_resources(
   'resources',
-  'resources.xml',
-  c_name :'resources'
+  'src/resources.xml',
+  c_name :'resources',
+  source_dir : 'src'
 )
 
 name='pomelo'

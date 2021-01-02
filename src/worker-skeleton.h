@@ -11,7 +11,7 @@
 #include <thread>
 #include <mutex>
 #include "pangocairo-to-contour.h"
-#include <mesh.h>
+#include "mesh.h"
 
 class Pomelo;
 class WorkerSkeleton;
