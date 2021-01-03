@@ -29,10 +29,11 @@ cpp_args = ['-DCOMMIT_ID="'+sha1+'"',
 
 subdir('src')
 
-fs = import('fs')
-builddir = fs.name(meson.current_build_dir())
-buildroot = fs.name(meson.current_source_dir())
 if host_machine.system() == 'windows'
+  fs = import('fs')
+  builddir = fs.name(meson.current_build_dir())
+  buildroot = fs.name(meson.current_source_dir())
+
   arch = 'x86_64-w64-mingw32'
   host = 'w64'
 

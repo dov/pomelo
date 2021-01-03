@@ -153,16 +153,20 @@ TeXtrusion::cairo_path_to_polygons(Cairo::RefPtr<Cairo::Context>& cr)
           // Optionally pop of a point to ensure the polygon is simple.
           size_t n = poly.size();
           if (CGAL::squared_distance(poly[0], poly[n-1]) < eps2)
-              poly.erase(poly.end()-1);
+              poly.erase(poly.vertices_end()-1);
 
           if (!poly.is_simple()) {
               printf("Oops! The resulting polygon isn't simple!!\n");
 #if 0
               ofstream of("not_simple.giv");
               of << format("$marks fcircle\n");
-              for (const auto &p : poly)
+              for (auto it = poly.vertices_begin(); it != poly.vertices_end(); ++it)
+              {
+                auto& p = *it;
+                //              for (const auto &p : poly)
                   of << format("{:f} {:f}\n",
                                p.x(), p.y());
+              }
               of << "z\n";
 #endif
           }
@@ -187,7 +191,7 @@ TeXtrusion::cairo_path_to_polygons(Cairo::RefPtr<Cairo::Context>& cr)
 
           // My non exact collinearity test
           if (CGAL::squared_distance(poly[i],Line_2(pp,pn)) < eps2) {
-              poly.erase(poly.begin()+i);
+              poly.erase(poly.vertices_begin()+i);
               i-=1;
               n-=1;
           }
@@ -261,8 +265,12 @@ TeXtrusion::polys_to_polys_with_holes(vector<Polygon_2> polys)
                          color[poly.orientation()<0],
                          poly.orientation(),
                          poly_idx++);
-            for (auto&p : poly) 
+
+            for (auto it=poly.vertices_begin(); it!= poly.vertices_end(); ++it) {
+                auto&p = *it;
+            //            for (auto&p : poly) 
                 fh << format("{:.7f} {:.7f}\n", p.x(), p.y());
+            }
             fh << "z\n\n";
         }
     }
@@ -292,11 +300,17 @@ TeXtrusion::polys_to_polys_with_holes(vector<Polygon_2> polys)
             // TBD - check bounding boxes...
 
             PolygonE pA, pB;
-            for (const auto& p : polys_with_holes[polys_with_holes.size()-1].outer_boundary())
-                
+            auto& outer_boundary = polys_with_holes[polys_with_holes.size()-1].outer_boundary();
+            for (auto it = outer_boundary.vertices_begin(); it!=outer_boundary.vertices_end(); ++it) {
+                const auto& p = *it;
+              //            for (const auto& p : outer_boundary)
                 pA.push_back(PointE2(p.x(), p.y()));
-            for (const auto& p : poly)
+            }
+            for (auto it = poly.vertices_begin(); it!= poly.vertices_end(); ++it) {
+                const auto& p = *it;
+            //            for (const auto& p : poly)
                 pB.push_back(PointE2(p.x(), p.y()));
+            }
             if (CGAL::join (pA,pB,
                             // output
                             unionER)) {
@@ -306,21 +320,38 @@ TeXtrusion::polys_to_polys_with_holes(vector<Polygon_2> polys)
 
                 // Convert the result back to inexact...
                 Polygon_2 pp, hh;
-                for (const auto &p : unionER.outer_boundary())
+
+                auto& outer_boundary = unionER.outer_boundary();
+                for (auto it = outer_boundary.vertices_begin(); it!=outer_boundary.vertices_end(); ++it) {
+                    auto &p = *it;
+
+                    //                for (const auto &p : outer_boundary)
                     pp.push_back(Point_2(CGAL::to_double(p.x()),CGAL::to_double(p.y())));
+                }
                 polygon_with_holes = Polygon_with_holes(pp);
                 
-                for (auto &h : unionER.holes()) {
+                for (auto it=unionER.holes_begin(); it!= unionER.holes_end(); ++it) {
+                    auto& h = *it;
+                //                for (auto &h : unionER.holes()) {
                     hh.clear();
-                    for (const auto&p : h) 
+                    for (auto it = h.vertices_begin(); it!= h.vertices_end(); ++it) {
+                        auto& p = *it;
+                    //                    for (const auto&p : h) {
                         hh.push_back(Point_2(CGAL::to_double(p.x()),CGAL::to_double(p.y())));
+                    }
                     polygon_with_holes.add_hole(hh);
                 }
                 
-                for (auto &h : prev.holes())
+                for (auto it = prev.holes_begin(); it!= prev.holes_end(); ++it) {
+                    auto& h = *it;
+                  //                for (auto &h : prev.holes())
                     polygon_with_holes.add_hole(h);
-                for (auto &h : next.holes())
+                }
+                for (auto it = next.holes_begin(); it!= next.holes_end(); ++it) {
+                    auto& h = *it;
+                    //                for (auto &h : next.holes())
                     polygon_with_holes.add_hole(h);
+                }
 
             }
         }
@@ -596,8 +627,9 @@ mark_domains(CDT& ct,
 void
 mark_domains(CDT& cdt)
 {
-  for(CDT::Face_handle f : cdt.all_face_handles()){
-    f->info().nesting_level = -1;
+  for (auto it = cdt.all_faces_begin(); it != cdt.all_faces_end(); ++it) {
+    //  for(CDT::Face_handle f : cdt.all_face_handles()){
+    it->info().nesting_level = -1;
   }
   std::list<CDT::Edge> border;
   mark_domains(cdt, cdt.infinite_face(), 0, border);
@@ -639,7 +671,7 @@ void PHoleInfo::divide_into_regions()
         // Cleanup the polygons
         double eps2 = 1e-10;
         if (CGAL::squared_distance(poly[poly.size()-1], poly[0])<eps2)
-            poly.erase(poly.begin()+poly.size()-1);
+            poly.erase(poly.vertices_begin()+poly.size()-1);
 
         // search for a degenerate sliver angle and remove the vertex
         size_t n = poly.size();
@@ -649,7 +681,7 @@ void PHoleInfo::divide_into_regions()
 
             // My non exact collinearity test
             if (CGAL::squared_distance(poly[i],Line_2(pp,pn)) < eps2) {
-                poly.erase(poly.begin()+i);
+                poly.erase(poly.vertices_begin()+i);
                 i-=1;
                 n-=1;
             }
@@ -664,8 +696,11 @@ void PHoleInfo::divide_into_regions()
             of << format("$marks fcircle\n"
                          "$color red\n"
                          );
-            for (const auto &p : poly) 
-              of << format("{:f} {:f}\n", p.x(), p.y());
+            for (auto it=poly.vertices_begin(); it!= poly.vertices_end(); ++it) {
+                auto& p = *it;
+            //            for (const auto &p : poly) {
+                of << format("{:f} {:f}\n", p.x(), p.y());
+            }
             of << "z\n";
             of.close();
 #endif
@@ -837,7 +872,9 @@ vector<Polygon3D> SkeletonPolygonRegion::get_offset_curve(double d1, double d2) 
 
     for (auto& poly : polys) {
         Polygon3D poly3;
-        for (auto& p : poly) {
+        for (auto it=poly.vertices_begin(); it!= poly.vertices_end(); ++it) {
+            auto& p = *it;
+        //        for (auto& p : poly) {
             double z = sqrt(CGAL::squared_distance(p, boundary_line));
             poly3.emplace_back(p.x(), p.y(), z);
         }
@@ -862,19 +899,17 @@ vector<Polygon3D> SkeletonPolygonRegion::get_offset_curve_and_triangulate(double
     
         CDT cdt;
         cdt.insert_constraint(poly.vertices_begin(), poly.vertices_end(), true);
-
-        // Choose what polygons are inside!
         mark_domains(cdt);
-        
-        for (const Face_handle& f : cdt.finite_face_handles()) {
-            if (!f->info().in_domain())
+        for (auto it = cdt.finite_faces_begin(); it != cdt.finite_faces_end(); ++it) {
+            auto& f = *it;
+            //        for (const Face_handle& f : cdt.finite_face_handles()) {
+            if (!it->info().in_domain())
                 continue;
-
             // For each vertex measure its distance to the boundary
             // line and insert it as z
             Polygon3D tri3;
             for (int i=0; i<3; i++) {
-                const auto &p = f->vertex(i)->point();
+                const auto &p = f.vertex(i)->point();
                 double z = sqrt(CGAL::squared_distance(
                                   p, boundary_line));
                 tri3.emplace_back(p.x(),p.y(),z);
@@ -897,8 +932,11 @@ void poly_to_giv(ustring filename,
     ofstream of(filename, flags);
     of << header;
     of << "m ";
-    for (const auto& p  : poly)
+    for (auto it = poly.vertices_begin(); it!= poly.vertices_end(); ++it) {
+        auto& p = *it;
+    //    for (const auto& p  : poly)
         of << p.x() << " " << p.y() << "\n";
+    }
     of << "z\n\n";
     of.close();
 }

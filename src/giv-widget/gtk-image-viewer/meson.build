@@ -1,5 +1,7 @@
 gob2 = find_program('gob2')
 patch_src = find_program('patch_src.py')
+cc = meson.get_compiler('c')
+m_dep = cc.find_library('m', required : false)
 
 gen_src = custom_target('gen-output',
   output : ['gtk-image-viewer.h','gtk-image-viewer-private.h','gtk-image-viewer.c'],

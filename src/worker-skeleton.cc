@@ -22,6 +22,7 @@
 #include <chrono>
 #include <fmt/core.h>
 #include "smooth-sharp-angles.h"
+#include <CGAL/exceptions.h>
 
 
 using namespace std;

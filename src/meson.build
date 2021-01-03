@@ -27,6 +27,7 @@ endif
 
 cc = meson.get_compiler('c')
 m_dep = cc.find_library('m', required : false)
+cgal_core_dep = cc.find_library('CGAL_Core', required : false)
 pthread_dep = cc.find_library('pthread', required : false)
 gtkmm_dep = dependency('gtkmm-3.0')
 pangoft_dep = dependency('pangoft2')
