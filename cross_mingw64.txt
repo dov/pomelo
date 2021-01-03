@@ -6,7 +6,7 @@ strip = '/usr/bin/x86_64-w64-mingw32-strip'
 pkgconfig = 'pkg-config'
 
 [properties]
-pkg_config_libdir = '/usr/x86_64-w64-mingw32/sys-root/mingw/lib/pkgconfig:/hdroot/usr/local/mingw64/lib/pkgconfig/'
+pkg_config_libdir = '/usr/x86_64-w64-mingw32/sys-root/mingw/lib/pkgconfig:/usr/local/mingw64/lib/pkgconfig/'
 
 [host_machine]
 system = 'windows'
