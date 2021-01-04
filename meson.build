@@ -42,7 +42,7 @@ resources = gnome.compile_resources(
 
 name='pomelo'
 name_cap = 'Pomelo'
-version = '0.1.0'
+version = '0.0.1'
 
 r = run_command('git', 'rev-parse', 'HEAD')
 if r.returncode() != 0

@@ -104,8 +104,12 @@ SetOutPath $INSTDIR\lib\gdk-pixbuf-2.0\2.10.0
 File \usr\${ARCH}\sys-root\mingw\lib\gdk-pixbuf-2.0\2.10.0\loaders.cache
 SetOutPath $INSTDIR\lib\gtk-2.0\2.10.0\engines
 File \usr\${ARCH}\sys-root\mingw\lib\gtk-2.0\2.10.0\engines\*
-SetOutPath $INSTDIR\share\themes 
-File /r \usr\${ARCH}\sys-root\mingw\share\themes\*
+SetOutPath $INSTDIR\share
+File /r \usr\${ARCH}\sys-root\mingw\share\themes
+SetOutPath $INSTDIR\share
+File /r \usr\${ARCH}\sys-root\mingw\share\icons
+SetOutPath $INSTDIR\share\glib-2.0
+File /r \usr\${ARCH}\sys-root\mingw\share\glib-2.0\schemas
 
 
 WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\${NAME_CAP}" "" "$INSTDIR"
