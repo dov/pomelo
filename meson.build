@@ -44,21 +44,39 @@ name='pomelo'
 name_cap = 'Pomelo'
 version = '0.1.0'
 
-exe = executable(name_cap,
-                 sources,
-                 resources,
-                 dependencies: deps,
-                 gui_app : true
-                )
-
 r = run_command('git', 'rev-parse', 'HEAD')
 if r.returncode() != 0
   # it failed
 endif
-
 sha1 = r.stdout().strip()
 # meson version 0.56 will have substr()
 sha1_short = sha1[0]+sha1[1]+sha1[2]+sha1[3]+sha1[4]+sha1[5]
+
+r = run_command('git', 'log', '--pretty=%ci', '-n1')
+if r.returncode() != 0
+  # it failed
+endif
+commit_time=r.stdout().strip()
+
+if host_machine.system() == 'windows'
+  cpp_args = ['-Wa,-mbig-obj']
+  mod_rescomp = import('windows')
+  sources += mod_rescomp.compile_resources('pomelo.rc')
+else
+  cpp_args = []
+endif
+
+cpp_args += ['-DCOMMIT_ID="'+sha1+'"',
+             '-DCOMMIT_TIME="'+commit_time+'"'
+            ]
+
+exe = executable(name_cap,
+                 sources,
+                 resources,
+                 dependencies: deps,
+                 gui_app : true,
+                 cpp_args : cpp_args
+                )
 
 fs = import('fs')
 builddir = fs.name(meson.current_build_dir())
@@ -73,7 +91,7 @@ if host_machine.system() == 'windows'
     '-DCOMMITID_SHORT='+sha1_short,
     '-DNAME='+name,
     '-DNAME_CAP='+name_cap,
-    '-DICON_NAME='+name,
+    '-DICON_NAME='+name + '_logo',
     '-DARCH='+arch,
     '-DHOST='+host,
     '-DVERSION='+version,

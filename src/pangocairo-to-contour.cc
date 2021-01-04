@@ -17,9 +17,13 @@ using namespace fmt;
 // Take a pango markup and turn it into a cairo context that is returned
 Cairo::RefPtr<Cairo::Context> TeXtrusion::markup_to_context()
 {
-  PangoFontMap *fm = pango_ft2_font_map_new();
+  PangoFontMap *fm;
+  fm = pango_ft2_font_map_new();
   RefPtr<Pango::FontMap> fontmap = Glib::wrap(fm);
   RefPtr<Pango::Context> context = fontmap->create_context();
+
+  // TBD: Remove this to see if works on windows
+  //  font_description = Pango::FontDescription("DejaVu Serif Bold 48");
 
   context->set_font_description(font_description);
 

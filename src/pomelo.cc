@@ -159,7 +159,12 @@ void Pomelo::on_action_help_about()
 
   Dialog.set_version("0.0.1");
   Dialog.set_copyright("Dov Grobgeld <dov.grobgeld@gmail.com>");
-  Dialog.set_comments("A program for generating 3D meshes of text");
+  Dialog.set_comments(format(
+                        "A program for generating 3D meshes of text\n\n"
+                        "Commit-Id: {}\n"
+                        "Commit-time: {}\n",
+                        COMMIT_ID,
+                        COMMIT_TIME));
 
   Glib::RefPtr<const Glib::Bytes> copying_bytes = Gio::Resource::lookup_data_global("/about/COPYING");
 
@@ -167,9 +172,10 @@ void Pomelo::on_action_help_about()
   const char* copying_txt = (const char*)copying_bytes->get_data(len);
 
   Dialog.set_license(copying_txt);
-  Dialog.set_program_name("Pomelo");
+  Dialog.set_license_type(Gtk::LICENSE_GPL_3_0);
+  Dialog.set_program_name("Pomelo 3D");
   Dialog.set_website("http://github.com/dov/pomelo");
-  Dialog.set_website_label("pomelo website");
+  Dialog.set_website_label("Pomelo 3D website");
   Dialog.set_transient_for(*this);
 
   std::vector<Glib::ustring> list_authors;

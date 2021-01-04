@@ -1,5 +1,8 @@
 #include "main-input.h"
 #include "dov-mm-macros.h"
+#include <fmt/core.h>
+
+using namespace fmt;
 
 static Gtk::Widget* mmLabelAligned(const gchar *markup, double xAlign)
 {
@@ -54,7 +57,11 @@ MainInput::MainInput()
     &MainInput::on_skeleton_input_changed));
 
   m_font_picker.set_show_size(false);
+#ifdef WIN32
+  m_font_picker.set_font_name("Arial Black Heavy 48");
+#else
   m_font_picker.set_font_name("Sans Bold 48");
+#endif
   m_font_picker.signal_font_set().connect(sigc::mem_fun(*this,
     &MainInput::on_skeleton_input_changed));
 
@@ -101,7 +108,7 @@ MainInput::MainInput()
   w_vbox->pack_start(*w_hbox, Gtk::PACK_SHRINK);
   auto w_button = mm<Gtk::Button>("Build");
   w_hbox->pack_start(*w_button, false,false);
-  m_skeleton_status_label.set_text("Status: ❌");
+  m_skeleton_status_label.set_markup("Status: <span foreground=\"red\">❌</span>");
   w_hbox->pack_end(m_skeleton_status_label, false,false);
 
   w_button->signal_clicked().connect( sigc::mem_fun(*this,
@@ -135,7 +142,8 @@ MainInput::MainInput()
   m_profile_button.signal_clicked().connect( sigc::mem_fun(*this,
      &MainInput::on_button_profile_clicked) );
   w_hbox->pack_start(m_profile_button, false,false);
-  m_profile_status_label.set_label("Status: ❌");
+  m_profile_status_label.set_markup("Status: <span foreground=\"red\">❌</span>");
+
   w_hbox->pack_end(m_profile_status_label, false,false);
 
 }
@@ -145,8 +153,8 @@ void MainInput::on_button_skeleton_clicked()
   auto text = m_text_buffer->get_text();
   double linear_limit = m_linear_limit.get_value();
   auto font_name = m_font_picker.get_font_name();
-  PangoFontDescription *p_font_description = pango_font_description_from_string(font_name.c_str());
-  Pango::FontDescription font_description(p_font_description);
+  print("font_name = {}\n", font_name.c_str());
+  Pango::FontDescription font_description(font_name);
   m_signal_build_skeleton(text,linear_limit,font_description);
 }
 
@@ -161,13 +169,14 @@ void MainInput::set_skeleton_ready_state(bool is_ready)
 {
   if (is_ready)
     {
-      m_skeleton_status_label.set_text("Status: ✅");
+      m_skeleton_status_label.set_markup("Status: <span foreground=\"green\">✅</span>");
       m_profile_button.set_sensitive(true);
     }
   else
     {
-      m_skeleton_status_label.set_text("Status: ❌");
-      m_profile_status_label.set_text("Status: ❌");
+      m_skeleton_status_label.set_markup("Status: <span foreground=\"red\">❌</span>");
+
+      m_profile_status_label.set_markup("Status: <span foreground=\"red\">❌</span>");
       m_profile_button.set_sensitive(false);
     }
 }
@@ -175,9 +184,9 @@ void MainInput::set_skeleton_ready_state(bool is_ready)
 void MainInput::set_profile_ready_state(bool is_ready)
 {
   if (is_ready)
-    m_profile_status_label.set_text("Status: ✅");
+    m_profile_status_label.set_markup("Status: <span foreground=\"green\">✅</span>");
   else
-    m_profile_status_label.set_text("Status: ❌");
+    m_profile_status_label.set_markup("Status: <span foreground=\"red\">❌</span>");
 }
 
 void MainInput::on_skeleton_input_changed()
