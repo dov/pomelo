@@ -1,0 +1,1079 @@
+//======================================================================
+//  giv_widget.gob - 
+//
+//  Dov Grobgeld <dov.grobgeld@gmail.com>
+//  Thu Aug 16 20:12:48 2007
+//----------------------------------------------------------------------
+
+requires 2.0.0
+
+%headertop{
+#include <gtk/gtk.h>
+#include "giv-data.h"
+#include "gtk-image-viewer/gtk-image-viewer.h"
+#include "giv-parser.h"
+
+%}
+
+%header{
+typedef enum {
+    GIV_PSEUDO_COLOR_OFF,
+    GIV_PSEUDO_COLOR_LOW_CONTRAST,
+    GIV_PSEUDO_COLOR_RAINBOW,
+    GIV_PSEUDO_COLOR_RED_TEMP,
+    GIV_PSEUDO_COLOR_BGRY,
+    GIV_PSEUDO_COLOR_BLUE_WHITE,
+    GIV_PSEUDO_COLOR_GRBW,
+    GIV_PSEUDO_COLOR_LASER_SPOT,
+    GIV_PSEUDO_COLOR_INVERT,
+    GIV_PSEUDO_COLOR_EQUALIZE,
+    GIV_PSEUDO_COLOR_NORMALIZE
+} GivPseudoColor;
+
+typedef void (*giv_widget_file_reference_callback_t)(const char *filename,
+                                                     gpointer data);
+%}
+
+%{
+#include <vector>
+#ifndef GIV_USE_CAIRO
+#include "GivPainterAgg.h"
+#endif
+#include "GivPainterCairoPixbuf.h"
+#include "GivRenderer.h"
+#include "colormaps.h"
+#include "giv-data.h"
+#include "math.h"
+
+using namespace std;
+
+static void
+cb_image_annotate(GivWidget *imgv,
+                  GdkPixbuf *pixbuf,
+                  gint shift_x,
+                  gint shift_y,
+                  gdouble scale_x,
+                  gdouble scale_y,
+                  gpointer user_data
+                  );
+static void apply_color_map(GivWidget *self);
+static void emit_bool_signal(GivWidget *self,
+                             gint signal_num,
+                             gboolean value);
+
+static void cb_image_reference(const char *filename,
+                               gpointer self);
+static void cb_set_orientation(giv_parser_orientation_t hflip,
+                               giv_parser_orientation_t vflip,
+                               gpointer self);
+static void cb_set_vlock(gboolean vlock,
+                         gpointer self);
+
+%}
+
+%privateheader{
+%}
+
+class Giv:Widget from Gtk:Image:Viewer
+{
+    private GdkPixbuf *img_org = NULL
+      destroy {
+      if (img_org)
+          g_object_unref(img_org);
+      };
+
+    // possibly pseudo colored image
+    private GdkPixbuf *img_display = NULL
+      destroy {
+      if (img_display)
+          g_object_unref(img_display);
+      };
+    private GtkWidget *w_balloon_window = NULL;
+    private GtkWidget *w_balloon_label = NULL;
+    private GivParser *giv_parser = NULL
+        destroy {
+            if (giv_parser)
+                giv_parser_free(giv_parser);
+        };
+                                  
+    private bool is_dragging = FALSE;
+    private bool do_show_marks = TRUE;
+    private bool do_vertical_locking = FALSE;
+    private bool do_show_cross_hair = FALSE;
+    private bool do_show_balloon = FALSE;
+    private bool do_no_transparency = FALSE;
+    private bool do_show_grid = FALSE;
+    private gint last_cx = 0;
+    private gint last_cy = 0;
+    private gint last_move_x = 0;
+    private gint last_move_y = 0;
+    // This image is a copy of the img display but with label
+    // colors. It is never shown onto the screen.
+    private GdkPixbuf *w_label_image = NULL
+      destroy {
+        if (w_label_image)
+          g_object_unref(w_label_image);
+        w_label_image = NULL;
+      };
+    private GdkPixbuf *cache_pixbuf = NULL
+      destroy {
+        if (cache_pixbuf)
+            g_object_unref(cache_pixbuf);
+        cache_pixbuf = NULL;
+      };
+    private gint cache_shift_x = 0;
+    private gint cache_shift_y = 0;
+    private GivPseudoColor colormap = GIV_PSEUDO_COLOR_OFF;
+    private giv_widget_file_reference_callback_t file_reference_cb;
+    private gpointer file_reference_user_data;
+    private int pixel_grid_min_zoom = 5;
+    private GivColor pixel_grid_color;
+    private gdouble quiver_scale = 1.0;
+   
+    public GtkWidget *
+    new (GdkPixbuf *pixbuf)
+    {
+        GivWidget *self = GET_NEW;
+        if (pixbuf)
+            g_object_ref(pixbuf);
+        selfp->img_org = pixbuf;
+        selfp->giv_parser = giv_parser_new();
+        giv_parser_set_reference_callback(selfp->giv_parser,
+                                          &cb_image_reference, (gpointer)self);
+        giv_parser_set_orientation_callback(selfp->giv_parser,
+                                            &cb_set_orientation, (gpointer)self);
+        giv_parser_set_vlock_callback(selfp->giv_parser,
+                                      &cb_set_vlock,
+                                      (gpointer)self);
+
+        if (pixbuf)
+            gtk_image_viewer_set_image(GTK_IMAGE_VIEWER(self),
+                                       pixbuf);
+
+        // Create the balloon window that is not shown at this point
+        selfp->w_balloon_window = gtk_window_new (GTK_WINDOW_POPUP);
+
+        // Make tooltip color yellow. This should probably be configurable
+        {
+          GdkRGBA color;
+          gdk_rgba_parse(&color,"yellow");
+          gtk_widget_override_background_color(selfp->w_balloon_window,
+                                               GTK_STATE_FLAG_NORMAL,
+                                               &color);
+                                                                  
+        }
+
+        // Default grid color. This should be made configurable
+        selfp->pixel_grid_color.red = 0xffff;
+        selfp->pixel_grid_color.green = 0;
+        selfp->pixel_grid_color.blue = 0;
+        selfp->pixel_grid_color.alpha = 0x8000;
+
+        gtk_widget_set_app_paintable (selfp->w_balloon_window, TRUE);
+        gtk_window_set_resizable (GTK_WINDOW(selfp->w_balloon_window), FALSE);
+        selfp->w_balloon_label = gtk_label_new("Balloon");
+        gtk_label_set_line_wrap (GTK_LABEL (selfp->w_balloon_label), TRUE);
+        gtk_misc_set_alignment (GTK_MISC (selfp->w_balloon_label), 0.5, 0.5);
+        gtk_widget_show (selfp->w_balloon_label);
+        gtk_container_add (GTK_CONTAINER (selfp->w_balloon_window),
+                           selfp->w_balloon_label);
+
+        g_signal_connect(self,
+                         "image-annotate",
+                         G_CALLBACK(cb_image_annotate),
+                         NULL);
+        
+
+        return GTK_WIDGET(self);
+    }
+
+    public int add_giv_from_string(self,
+                                   const char *giv_string)
+    {
+        return giv_parser_parse_string(selfp->giv_parser,
+                                       giv_string);
+    }
+
+    public int add_giv_from_file(self,
+                                 const char *filename)
+    {
+        return giv_parser_parse_file(selfp->giv_parser,
+                                     filename);
+    }
+
+    public void clear_giv(self)
+    {
+        giv_parser_clear(selfp->giv_parser);
+    }
+
+    public GivParser *get_giv_parser(self)
+    {
+        return selfp->giv_parser;
+    }
+
+    public double get_quiver_scale(self)
+    {
+        return selfp->quiver_scale;
+    }
+
+    public void show_balloon(self,
+                             gint cx, gint cy)
+    {
+        if (!selfp->w_label_image) 
+            return;
+        int row_stride = gdk_pixbuf_get_rowstride(selfp->w_label_image);
+        guint8 *buf = gdk_pixbuf_get_pixels(selfp->w_label_image);
+        gint n_channels = gdk_pixbuf_get_n_channels(selfp->w_label_image);
+        guint8 *rgb = buf + cy*row_stride+cx*n_channels;
+
+        // TBD: Move this to the GivPainterAgg class
+        int label = rgb[2]+256*rgb[1]+256*256*rgb[0]-1;
+        GPtrArray *datasets = (GPtrArray*)giv_parser_get_giv_datasets(selfp->giv_parser);
+        if (label>=0 && label < (int)datasets->len) {
+            giv_dataset_t *mark_set = (giv_dataset_t*)g_ptr_array_index(datasets, label);
+            GdkScreen *screen = gtk_widget_get_screen(GTK_WIDGET(self));
+            GdkScreen *pointer_screen;
+            gint px, py;
+            int balloon_x, balloon_y;
+            
+            if (mark_set->balloon_string)
+              {
+                if (mark_set->do_pango_markup)
+                  gtk_label_set_markup(GTK_LABEL(selfp->w_balloon_label),
+                                       mark_set->balloon_string->str);
+                else
+                  gtk_label_set_text(GTK_LABEL(selfp->w_balloon_label),
+                                     mark_set->balloon_string->str);
+              }
+            else if (mark_set->path_name)
+                gtk_label_set_text(GTK_LABEL(selfp->w_balloon_label),
+                              mark_set->path_name);
+            else {
+                GString *balloon_string = g_string_new("");
+                g_string_sprintfa(balloon_string, "label = %d", label);
+                gtk_label_set_text(GTK_LABEL(selfp->w_balloon_label),
+                              balloon_string->str);
+                g_string_free(balloon_string, TRUE);
+            }
+            
+            gdk_display_get_pointer (gdk_screen_get_display (screen),
+                                     &pointer_screen, &px, &py, NULL);
+            
+            // Should this be configurable?
+            balloon_x = px+20;
+            balloon_y=  py-20;
+            
+            gtk_window_move (GTK_WINDOW (selfp->w_balloon_window),
+                             balloon_x, balloon_y);
+            
+            // Popup a balloon
+            GdkColor color = {0,0,0,0};
+            gdk_color_parse("yellow", &color);
+
+            gtk_widget_show_all(selfp->w_balloon_window);
+            gdk_window_set_background( gtk_widget_get_window(selfp->w_balloon_window),
+                                       &color);
+                                            
+
+        }
+        else
+            gtk_widget_hide(selfp->w_balloon_window);
+    }
+
+    public void
+    popdown_balloon(self)
+    {
+        gtk_widget_hide(selfp->w_balloon_window);
+    }
+
+    public void
+    zoom_fill_image_or_giv(self)
+    {
+        double min_x, min_y, max_x, max_y;
+        
+#if 0
+        // Block recursive size-alloc events
+        g_signal_handlers_block_by_func(selfp->w_imgv,
+                                        (gpointer)&cb_image_size_alloc, self);
+#endif
+
+        giv_parser_get_data_bbox(selfp->giv_parser,
+                                 // output
+                                 &min_x, &min_y,
+                                 &max_x, &max_y);
+#if 0
+        printf("min_x min_y max_x max_y = %f %f %f %f\n",
+               min_x, min_y, max_x, max_y);
+#endif
+        double margin = 0;
+        const GdkPixbuf *pb = gtk_image_viewer_get_image(GTK_IMAGE_VIEWER(self));
+        
+        if (pb) {
+            int img_w = gdk_pixbuf_get_width(pb);
+            int img_h = gdk_pixbuf_get_height(pb);
+            // g_object_unref(pb);
+            
+            min_x = min_y = 0;
+            max_x = img_w;
+            max_y = img_h;
+        }
+        else {
+            margin= 10;
+            
+#if 0
+            // The following is a hack around the problem of too thin
+            // data in x or y... It should be solved in the gtk_image_viewer.
+            if (max_x - min_x < max_y-min_y) {
+                double avg_x = 0.5*(max_x+min_x);
+                min_x = avg_x - 0.5*(max_y-min_y);
+                max_x = avg_x + 0.5*(max_y-min_y);
+            }
+            if (max_y - min_y < max_x-min_x) {
+                double avg_y = 0.5*(max_y+min_y);
+                min_y = avg_y - 0.5*(max_x-min_x);
+                max_y = avg_y + 0.5*(max_x-min_x);
+            }
+#endif            
+            gtk_image_viewer_set_scroll_region(GTK_IMAGE_VIEWER(self),
+                                               min_x, min_y,
+                                               max_x, max_y);
+            // Let the user decide!
+            gtk_image_viewer_set_zoom_range(GTK_IMAGE_VIEWER(self),
+                                            -1,-1);
+            
+            //    printf("scale c_world_center = %f %f %f\n", x_scale, c_world_center_x, c_world_center_y);
+        }
+    
+        gtk_image_viewer_zoom_to_box(GTK_IMAGE_VIEWER(self),
+                                     min_x,
+                                     min_y,
+                                     max_x,
+                                     max_y,
+                                     margin,
+                                     TRUE);
+        
+#if 0
+    // Get rid of block
+    g_signal_handlers_unblock_by_func(selfp->w_imgv, (gpointer)&cb_image_size_alloc, self);
+#endif
+    }
+
+    public
+    void set_image(self,
+                   GdkPixbuf *img)
+    {
+        if (selfp->img_org)
+            g_object_unref(selfp->img_org);
+        if (selfp->img_display) {
+            g_object_unref(selfp->img_display);
+            selfp->img_display = NULL;
+        }
+
+        selfp->img_org = img;
+        if (selfp->img_org) {
+            g_object_ref(selfp->img_org);
+            apply_color_map(self);
+        }
+
+        gtk_image_viewer_set_image(GTK_IMAGE_VIEWER(self),
+                                   selfp->img_display);
+    }
+
+    public
+    void set_do_no_transparency(self,
+                                bool do_no_transparency)
+    {
+      selfp->do_no_transparency = do_no_transparency;
+    }
+
+    public
+    void set_show_grid(self,
+                          bool do_show_grid)
+    {
+      selfp->do_show_grid = do_show_grid;
+    }
+
+    public
+    void set_colormap(self,
+                      GivPseudoColor pseudo_color)
+    {
+        selfp->colormap = pseudo_color;
+        apply_color_map(self);
+        gtk_image_viewer_set_image(GTK_IMAGE_VIEWER(self),
+                                   selfp->img_display);
+    }
+
+    public
+    void set_file_reference_callback(self,
+                                     giv_widget_file_reference_callback_t fr,
+                                     gpointer user_data)
+    {
+        selfp->file_reference_cb = fr;
+        selfp->file_reference_user_data = user_data;
+    }
+
+    public GPtrArray *get_giv_data(self)
+    {
+        return giv_parser_get_giv_datasets(selfp->giv_parser);
+    }
+    
+    //===============================
+    // Signals handers
+    //-------------------------------
+    override (Gtk:Widget)
+    gint
+    key_press_event (GtkWidget   *widget,
+                     GdkEventKey *event)
+    {
+        GivWidget *self = GIV_WIDGET(widget);
+        int ret = TRUE;
+        gint k;
+        
+        k = event->keyval;
+
+        if (event->state & GDK_CONTROL_MASK)
+            switch(k) {
+            case 'c':
+                // Copy the balloon text
+                if (selfp->do_show_balloon) {
+                    const char *balloon_text = gtk_label_get_text(GTK_LABEL(selfp->w_balloon_label));
+                    GtkClipboard* clipboard = gtk_clipboard_get(GDK_NONE);
+                    gtk_clipboard_set_text(clipboard,
+                                           balloon_text,
+                                           -1);
+                }
+                        
+                return 1;
+            case 'x':
+                {
+                    double x,y;
+                    gtk_image_viewer_canv_coord_to_img_coord(GTK_IMAGE_VIEWER(self),
+                                                             selfp->last_cx,
+                                                             selfp->last_cy,
+                                                             &x, &y);
+                    GString *text = g_string_new("");
+                    g_string_append_printf(text,"%.3f,%.3f",x,y);
+                    GtkClipboard* clipboard = gtk_clipboard_get(GDK_NONE);
+                    gtk_clipboard_set_text(clipboard,
+                                           text->str,
+                                           -1);
+                    g_string_free(text, TRUE);
+                    
+                }
+                return 1;
+            default:
+                ret = FALSE;
+                break;
+            }
+        else
+          switch (k) {
+          case 'b':
+              giv_widget_set_show_balloon(self, !selfp->do_show_balloon);
+              gtk_image_viewer_redraw(GTK_IMAGE_VIEWER(self), true);
+              return 1;
+          case 'm':
+              giv_widget_set_show_marks(self, !selfp->do_show_marks);
+              gtk_image_viewer_redraw(GTK_IMAGE_VIEWER(self), true);
+              return 1;
+          case 'g':
+              giv_widget_set_show_grid(self, !selfp->do_show_grid);
+              gtk_image_viewer_redraw(GTK_IMAGE_VIEWER(self), true);
+              return 1;
+          case 'x':
+              giv_widget_set_show_cross_hair(self, !selfp->do_show_cross_hair);
+              gtk_image_viewer_redraw(GTK_IMAGE_VIEWER(self), true);
+              return 1;
+          case 'f':
+              giv_widget_zoom_fill_image_or_giv(self);
+              return 1;
+          default:
+              ret = FALSE;
+            break;
+          }
+
+        PARENT_HANDLER(widget, event);
+
+        return ret;
+    }
+
+    override (Gtk:Widget)
+    gint
+    motion_notify_event (GtkWidget      *widget,
+                         GdkEventMotion *event)
+    {
+      GivWidget *self = GIV_WIDGET(widget);
+      GtkImageViewer *image_viewer = GTK_IMAGE_VIEWER(widget);
+      int cx = (int)event->x;
+      int cy = (int)event->y;
+      double x,y;
+    
+      gtk_image_viewer_canv_coord_to_img_coord(GTK_IMAGE_VIEWER(image_viewer),
+                                               cx, cy, &x, &y);
+    
+      if (!selfp->is_dragging
+          && selfp->do_show_balloon)
+        giv_widget_show_balloon(self,cx,cy);
+        
+      selfp->last_move_x = (int)x;
+      selfp->last_move_y = (int)y;
+      selfp->last_cx = cx;
+      selfp->last_cy = cy;
+
+      PARENT_HANDLER(widget, event);
+        
+      return FALSE;
+    }
+
+    override (Gtk:Widget)
+    gint
+    button_press_event (GtkWidget      *widget,
+                        GdkEventButton *event)
+    {
+        GivWidget *self = GIV_WIDGET(widget);
+
+        giv_widget_popdown_balloon(self);
+
+        if (event->button == 2) {
+            selfp->is_dragging = TRUE;
+        }
+
+        PARENT_HANDLER(widget, event);
+
+        return 0;
+    }
+
+    override (Gtk:Widget)
+    gint
+    button_release_event (GtkWidget      *widget,
+                          GdkEventButton *event)
+    {
+      GivWidget *self = GIV_WIDGET(widget);
+
+      if (selfp->is_dragging)
+        {
+          selfp->is_dragging = FALSE;
+          gtk_image_viewer_redraw(GTK_IMAGE_VIEWER(widget), TRUE);
+        }
+      PARENT_HANDLER(widget, event);
+      return 0;
+    }
+
+    override (Gtk:Widget)
+    gint
+    scroll_event (GtkWidget      *widget,
+                  GdkEventScroll *event)
+    {
+      GivWidget *self = GIV_WIDGET(widget);
+
+      // Zoom the quiver arrows. 
+      if (event->state & GDK_MOD1_MASK) {
+        if (event->direction)
+          selfp->quiver_scale *= 0.8;
+        else
+          selfp->quiver_scale *= 1.2;
+        gtk_image_viewer_redraw(GTK_IMAGE_VIEWER(widget), TRUE);
+            
+        return 1;
+      }
+
+      PARENT_HANDLER(widget,event);
+
+      // Prevent propagation of the scroll event signals to the scroll bars.
+      //      g_signal_stop_emission_by_name(widget, "scroll-event");
+      return 1;
+    }
+
+    public void set_show_balloon(self,
+                                 gboolean do_show_balloon)
+    {
+        gboolean need_signal = selfp->do_show_balloon != do_show_balloon;
+        selfp->do_show_balloon = do_show_balloon;
+        if (!selfp->do_show_balloon)
+            giv_widget_popdown_balloon(self);
+
+        if (need_signal)
+            emit_bool_signal(self,
+                             BALLOON_CHANGED_SIGNAL,
+                             do_show_balloon);
+    }
+
+    public bool get_show_balloon(self)
+    {
+        return selfp->do_show_balloon;
+    }
+
+    public void toggle_show_balloon(self)
+    {
+        giv_widget_set_show_balloon(self,!selfp->do_show_balloon);
+    }
+
+    public void set_show_marks(self,
+                               gboolean do_show_marks)
+    {
+        gboolean need_signal = selfp->do_show_marks != do_show_marks;
+        selfp->do_show_marks = do_show_marks;
+        if (need_signal) {
+            giv_widget_show_marks_changed(self,do_show_marks);
+            gtk_image_viewer_redraw(GTK_IMAGE_VIEWER(self),TRUE);
+        }
+    }
+
+    public void set_vertical_locking(self,
+                                     gboolean do_vertical_locking)
+    {
+        selfp->do_vertical_locking = do_vertical_locking;
+    }
+
+    public bool get_show_marks(self)
+    {
+        return selfp->do_show_marks;
+    }
+
+    public void toggle_show_marks(self)
+    {
+        giv_widget_set_show_marks(self,!selfp->do_show_marks);
+    }
+
+    public void set_show_cross_hair(self,
+                                    gboolean do_show_cross_hair)
+    {
+        gboolean need_signal = selfp->do_show_cross_hair != do_show_cross_hair;
+        selfp->do_show_cross_hair = do_show_cross_hair;
+        if (need_signal)
+            giv_widget_cross_hair_changed(self,
+                                          do_show_cross_hair);
+#if 0
+            emit_bool_signal(self,
+                             CROSS_HAIR_CHANGED_SIGNAL,
+                             do_show_cross_hair);
+#endif
+        
+    }
+
+    public bool get_show_cross_hair(self)
+    {
+        return selfp->do_show_cross_hair;
+    }
+
+    public void toggle_show_cross_hair(self)
+    {
+        giv_widget_set_show_cross_hair(self,!selfp->do_show_cross_hair);
+    }
+
+    signal last NONE (INT)
+    void balloon_changed(self,
+                         gboolean show_balloon);
+
+    signal last NONE (INT)
+    void cross_hair_changed(self,
+                            gboolean show_cross_hair);
+
+    signal last NONE (INT)
+    void show_marks_changed(self,
+                            gboolean show_marks);
+
+    signal last NONE (POINTER)
+    void file_reference(self, const gchar *filename);
+
+}
+
+%{
+static void
+cb_image_annotate(GivWidget *self,
+                  GdkPixbuf *pixbuf,
+                  gint shift_x,
+                  gint shift_y,
+                  gdouble scale_x,
+                  gdouble scale_y,
+                  gpointer user_data
+                  )
+{
+    int width = gdk_pixbuf_get_width(pixbuf);
+    int height = gdk_pixbuf_get_height(pixbuf);
+    GPtrArray *datasets = giv_parser_get_giv_datasets(selfp->giv_parser);
+
+#ifndef GIV_USE_CAIRO
+    GivPainterAgg painter(pixbuf, true);
+#else
+    GivPainterCairoPixbuf painter(pixbuf, true);
+#endif
+    GivRenderer renderer(datasets, painter,
+                         scale_x, scale_y,
+                         shift_x, shift_y,
+                         width, height,
+                         selfp->quiver_scale
+                         );
+    renderer.set_do_no_transparency(selfp->do_no_transparency);
+    if (selfp->do_show_marks)
+      {
+        if (!selfp->is_dragging)
+          renderer.paint();
+        else
+          {
+            int offs_x = selfp->cache_shift_x - shift_x;
+            int offs_y = selfp->cache_shift_y - shift_y;
+            int dst_w = width - abs(offs_x);
+            int dst_h = height - abs(offs_y);
+            int dst_x = 0;
+            int dst_y = 0;
+            if (offs_x > 0)
+                dst_x = offs_x;
+            if (offs_y > 0)
+                dst_y = offs_y;
+            
+            gdk_pixbuf_scale(selfp->cache_pixbuf,
+                             pixbuf,
+                             dst_x,dst_y,
+                             dst_w,dst_h,
+                             offs_x, offs_y,
+                             1.0, 1.0,
+                             GDK_INTERP_NEAREST);
+          }
+      }
+
+    gint li_width = gdk_window_get_width(gtk_widget_get_window(GTK_WIDGET(self)));
+    gint li_height = gdk_window_get_height(gtk_widget_get_window(GTK_WIDGET(self)));
+    // Create a cached copy of the image to be used when panning.
+    if (selfp->cache_pixbuf)
+      {
+        g_object_unref(selfp->cache_pixbuf);
+        selfp->cache_pixbuf = NULL;
+      }
+    selfp->cache_pixbuf = gdk_pixbuf_copy(pixbuf);
+    selfp->cache_shift_x = shift_x;
+    selfp->cache_shift_y = shift_y;
+
+    if (selfp->do_show_cross_hair && selfp->img_org) {
+        int w = gdk_pixbuf_get_width(selfp->img_org);
+        int h = gdk_pixbuf_get_height(selfp->img_org);
+
+        // Draw twice, the first time with gray to create a shadow
+        for (int i=0; i<2; i++) {
+            double sx = 0, sy = 0;
+
+            if (i==0) {
+                painter.set_color(1,1,1,0.2);  // Fixed red at the moment
+                painter.set_line_width(3);
+            }
+            else {
+                painter.set_color(1,0,0,0.9);  // Fixed red at the moment
+                painter.set_line_width(1);
+            }
+            double x0 = 0*scale_x-shift_x;
+            double y0 = h/2*scale_y-shift_y+sy;
+            double x1 = w*scale_x-shift_x;
+            double y1 = y0;
+            painter.add_line_segment(x0,y0, x1,y1);
+            x0 = w/2*scale_x-shift_x+sx;
+            y0 = 0*scale_y-shift_y;
+            x1 = x0;
+            y1 = h*scale_y-shift_y;
+            painter.add_line_segment(x0,y0, x1,y1);
+            painter.stroke();
+            painter.fill();
+        }
+    }
+
+    // Draw the grid
+    if (selfp->do_show_grid && scale_x > selfp->pixel_grid_min_zoom) {
+        // img bounding box of image currently shown
+        int x0, x1, y0, y1;
+        // px = ix * scale_x - shift_x
+        // ix = (px+shift_x)/scale_x
+        x0 = (int)floor(1.0*shift_x/scale_x);
+        y0 = (int)floor(1.0*shift_y/scale_y);
+        x1 = (int)ceil((width+shift_x)/scale_x);
+        y1 = (int)ceil((height+shift_y)/scale_y);
+
+        // Draw twice. The first time in black at width 3
+        // and the second time in the pixel grid color.
+        for (int paint_idx=0; paint_idx<2; ++paint_idx) {
+          if (paint_idx==0) {
+              // grid bg color hardcoded black
+              GivColor pixel_grid_color = { 0,0,0,0x8000 };
+              
+              painter.set_giv_color(pixel_grid_color);
+              painter.set_line_width(3);
+          }
+          else {
+              painter.set_giv_color(selfp->pixel_grid_color);
+              painter.set_line_width(1);
+          }
+          for (int i=x0; i<=x1; i++) {
+              double px = i*scale_x - shift_x;
+  
+              painter.add_line_segment(px,0, px,height);
+              painter.stroke();
+          }
+          for (int i=y0; i<=y1; i++) {
+              double py = i*scale_y - shift_y;
+  
+              painter.add_line_segment(0,py, width,py);
+              painter.stroke();
+          }
+          painter.fill();
+        }
+    }
+
+    // Create the label image necessary for the balloon popup. The
+    // balloon image is always the size of the total displayed area.
+    // It would be faster to store and scroll the label image. But
+    // we currently don't have any way of doing that. 
+    if (selfp->do_show_balloon) {
+        gint li_shift_x, li_shift_y;
+        gdouble li_scale_x, li_scale_y;
+        if (selfp->w_label_image)
+            g_object_unref(selfp->w_label_image);
+
+        selfp->w_label_image = gdk_pixbuf_new(GDK_COLORSPACE_RGB,
+                                              TRUE,
+                                              8,
+                                              li_width, li_height);
+
+        // Get scroll and shift for the current image
+        gtk_image_viewer_get_scale_and_shift(GTK_IMAGE_VIEWER(self),
+                                             &li_scale_x, &li_scale_y,
+                                             &li_shift_x, &li_shift_y);
+#ifndef GIV_USE_CAIRO
+        GivPainterAgg painter(selfp->w_label_image, false);
+#else
+        GivPainterCairoPixbuf painter(selfp->w_label_image, false);
+#endif
+        painter.set_do_paint_by_index(true);
+        gdk_pixbuf_fill(selfp->w_label_image,
+                        0x000000ff);
+        
+        GivRenderer renderer(datasets, painter,
+                             li_scale_x, li_scale_y,
+                             li_shift_x, li_shift_y,
+                             li_width, li_height,
+                             selfp->quiver_scale);
+        renderer.set_do_no_transparency(selfp->do_no_transparency);
+        renderer.paint();
+    }
+}
+
+static void
+apply_color_map(GivWidget *self)
+{
+    /* Color maps */
+    struct color_maps_struct {
+      const char *name;
+      const guint8 *lut;
+    } color_maps[] = {
+      {
+          "Low contrast",
+          lut_lowcontrast,
+      },
+      {
+          "Rainbow ",
+          lut_rainbow,
+      },
+      {
+          "Red temperature",
+          lut_red_temperature,
+      },
+      {
+          "Blue Green Red Yellow",
+          lut_blue_green_red_yellow
+      },
+      {
+          "Blue White",
+          lut_blue_white
+      },
+      {
+          "Green Red Blue White",
+          lut_grn_red_blu_wht
+      },
+#if 0
+      {
+          "Laser spot",
+          lut_laser_spot
+      }
+#endif
+    };
+    if (!selfp->img_org)
+        return;
+    if (selfp->img_display)
+        g_object_unref(selfp->img_display);
+
+    if (selfp->colormap == GIV_PSEUDO_COLOR_OFF
+        //        || !selfp->img_is_mono
+        ) {
+        selfp->img_display = selfp->img_org;
+        g_object_ref(selfp->img_display);
+    }
+    else {
+        int width = gdk_pixbuf_get_width(selfp->img_org);
+        int height = gdk_pixbuf_get_height(selfp->img_org);
+        int stride = gdk_pixbuf_get_rowstride(selfp->img_org);
+        int n_channels = gdk_pixbuf_get_n_channels(selfp->img_org);
+        guint8 *buf = gdk_pixbuf_get_pixels(selfp->img_org);
+
+        selfp->img_display = gdk_pixbuf_new(GDK_COLORSPACE_RGB,
+                                            FALSE,
+                                            8,
+                                            width, height);
+        gdk_pixbuf_fill(selfp->img_display,
+                        0x000000ff);
+
+        int dstride = gdk_pixbuf_get_rowstride(selfp->img_display);
+        int dn_channels = gdk_pixbuf_get_n_channels(selfp->img_display);
+        guint8 *dbuf = gdk_pixbuf_get_pixels(selfp->img_display);
+
+        const guint8 *tmap;
+        guint8 dyn_map[256*3];
+        if (selfp->colormap == GIV_PSEUDO_COLOR_INVERT) {
+            for (int i=0; i<256; i++)
+                dyn_map[3*i]=dyn_map[3*i+1]=dyn_map[3*i+2] = 255-i;
+            tmap = dyn_map;
+        }
+        else if (selfp->colormap == GIV_PSEUDO_COLOR_EQUALIZE) {
+            gint hist[3][256];
+            
+            memset(hist, 0, sizeof(hist));
+
+            for (int row_idx=0; row_idx<height; row_idx++) {
+                guint8 *p = buf + stride*row_idx;
+                for (int col_idx=0; col_idx<width; col_idx++) {
+                    for (int rgb_idx=0; rgb_idx<3;rgb_idx++) {
+                        hist[rgb_idx][*p]++;
+                        p++;
+                    }
+                }
+            }
+            
+            for (int col_idx=0; col_idx<3; col_idx++) {
+                int accsum = 0;
+                for (int hist_idx=0; hist_idx<256; hist_idx++) {
+                    dyn_map[hist_idx*3+col_idx] = (accsum * 255) / (width * height);
+                    accsum+= hist[col_idx][hist_idx];
+                }
+            }
+            tmap = dyn_map;
+        }
+        else if (selfp->colormap == GIV_PSEUDO_COLOR_NORMALIZE) {
+            guint8 min[3], max[3];
+            
+            min[0] = min[1]=min[2] = 255;
+            max[0] = max[1] = max[2] = 0;
+
+            for (int row_idx=0; row_idx<height; row_idx++) {
+                guint8 *p = buf + stride*row_idx;
+                for (int col_idx=0; col_idx<width; col_idx++) {
+                    for (int rgb_idx=0; rgb_idx<3; rgb_idx++) {
+                        if (*p < min[rgb_idx]) 
+                            min[rgb_idx] = *p;
+                        if (*p > max[rgb_idx])
+                            max[rgb_idx] = *p;
+                        p++;
+                    }
+                }
+            }
+
+            for (int col_idx=0; col_idx<3; col_idx++) {
+                for (int hist_idx=0; hist_idx<256; hist_idx++) {
+                    int max_min = (max[col_idx] - min[col_idx]);
+                    if (max_min==0)
+                        max_min = 1;
+                    int map_value = 255 * (hist_idx-min[col_idx])
+                        / max_min;
+                    if (map_value > 255)
+                        map_value = 255;
+                    else if (map_value < 0)
+                        map_value = 0;
+                    dyn_map[hist_idx*3+col_idx] = map_value;
+                }
+            }
+            tmap = dyn_map;
+        }
+        else 
+            tmap = color_maps[selfp->colormap-GIV_PSEUDO_COLOR_LOW_CONTRAST].lut;
+        for (int row_idx=0; row_idx<height; row_idx++) {
+            for (int col_idx=0; col_idx<width; col_idx++) {
+                int idx = row_idx * stride + col_idx * n_channels;
+                int didx = row_idx * dstride + col_idx * dn_channels;
+                dbuf[didx+0] = tmap[buf[idx]*3];
+                dbuf[didx+1] = tmap[buf[idx+1]*3+1];
+                dbuf[didx+2] = tmap[buf[idx+2]*3+2];
+            }
+        }
+    }
+#if 0
+    gtk_image_viewer_set_image(GTK_IMAGE_VIEWER(selfp->w_imgv),
+                               selfp->img_display);
+#endif
+}
+
+static void emit_bool_signal(GivWidget *self,
+                             gint signal_num,
+                             gboolean value)
+{
+    GValue ___param_values[2];
+    GValue ___return_val;
+    int i;
+    
+    memset (&___return_val, 0, sizeof (___return_val));
+    memset (&___param_values, 0, sizeof (___param_values));
+    
+    ___param_values[0].g_type = 0;
+    g_value_init (&___param_values[0], G_TYPE_FROM_INSTANCE (self));
+    g_value_set_instance (&___param_values[0], (gpointer) self);
+    
+    ___param_values[1].g_type = 0;
+    g_value_init (&___param_values[1], G_TYPE_INT);
+    g_value_set_int (&___param_values[1], value);
+            
+    g_signal_emitv (___param_values,
+                    object_signals[signal_num],
+                    0 /* detail */,
+                    &___return_val);
+            
+    for (i=0; i<2; i++)
+        g_value_unset (&___param_values[i]);
+}
+
+
+static void cb_image_reference(const char *filename,
+                               gpointer user_data)
+{
+    GivWidget *self = (GivWidget *)user_data;
+
+    // Emit a signal
+    giv_widget_file_reference(self, filename);
+#if 0
+    if (selfp->file_reference_cb)
+        (*(selfp->file_reference_cb))(filename, selfp->file_reference_user_data);
+#endif    
+}
+
+static void cb_set_orientation(giv_parser_orientation_t orientation_hflip,
+                               giv_parser_orientation_t orientation_vflip,
+                               gpointer user_data)
+{
+    GivWidget *self = GIV_WIDGET(user_data);
+    gboolean hflip, vflip;
+
+    gtk_image_viewer_get_flip(GTK_IMAGE_VIEWER(self),
+                              &hflip,
+                              &vflip);
+    if (orientation_hflip != GIV_PARSER_ORIENTATION_UNDEF)
+        hflip = (gboolean)(orientation_hflip - GIV_PARSER_ORIENTATION_UNFLIP);
+    if (orientation_vflip != GIV_PARSER_ORIENTATION_UNDEF)
+        vflip = (gboolean)(orientation_vflip - GIV_PARSER_ORIENTATION_UNFLIP);
+
+    gtk_image_viewer_set_flip(GTK_IMAGE_VIEWER(self),
+                              hflip, vflip);
+}       
+
+static void cb_set_vlock(gboolean vlock,
+                         gpointer user_data)
+{
+    GivWidget *self = GIV_WIDGET(user_data);
+
+    gtk_image_viewer_set_vertical_lock(GTK_IMAGE_VIEWER(self),
+                                       vlock);
+}       
+
+%}
+

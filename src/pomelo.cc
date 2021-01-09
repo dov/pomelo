@@ -22,6 +22,11 @@ Pomelo::Pomelo()
 
   this->add(*w_vbox); 
 
+  m_skeleton_viewer = Glib::RefPtr<SkeletonViewer>(new SkeletonViewer(*this));
+  m_skeleton_viewer->signal_response().connect([=](int response_id) {
+    m_skeleton_viewer->hide();
+  });
+
   //Define the actions:
   m_refActionGroup = Gio::SimpleActionGroup::create();
 
@@ -33,6 +38,9 @@ Pomelo::Pomelo()
 
   m_refActionGroup->add_action("about",
     sigc::mem_fun(*this, &Pomelo::on_action_help_about) );
+
+  m_refActionGroup->add_action("view_skeleton",
+    sigc::mem_fun(*this, &Pomelo::on_action_view_skeleton) );
 
   insert_action_group("pomelo", m_refActionGroup);
   
@@ -54,6 +62,13 @@ Pomelo::Pomelo()
     "          <attribute name='accel'>&lt;Primary&gt;q</attribute>"
     "        </item>"
     "      </section>"
+    "    </submenu>"
+    "    <submenu>"
+    "      <attribute name='label' translatable='yes'>_Tools</attribute>"
+    "      <item>"
+    "        <attribute name='label' translatable='yes'>_View Skeleton</attribute>"
+    "        <attribute name='action'>pomelo.view_skeleton</attribute>"
+    "      </item>"
     "    </submenu>"
     "    <submenu>"
     "      <attribute name='label' translatable='yes'>_Help</attribute>"
@@ -149,7 +164,9 @@ void Pomelo::on_action_file_export_stl()
 //Signal handlers:
 void Pomelo::on_action_file_quit()
 {
-  hide(); // Close the main window to stop app->run().
+  // hide(); // Close the main window to stop app->run(). Does not work!
+
+  exit(0);
 }
 
 void Pomelo::on_action_help_about()
@@ -182,6 +199,11 @@ void Pomelo::on_action_help_about()
   list_authors.push_back("Dov Grobgeld");
   Dialog.set_authors(list_authors);
   Dialog.run();
+}
+
+void Pomelo::on_action_view_skeleton()
+{
+  m_skeleton_viewer->show();
 }
 
 #if 0
@@ -287,6 +309,10 @@ void Pomelo::on_notification_from_skeleton_worker_thread()
               m_mesh_viewer.set_mesh(mesh);
               m_mesh_viewer.redraw();
             }
+
+          // show the 2D skeleton result in the skeleton viewer
+          if (m_skeleton_viewer)
+            m_skeleton_viewer->set_giv_string(m_worker_skeleton.get_giv_string());
         }
       else
         {

@@ -94,12 +94,14 @@ TeXtrusion::cairo_path_to_polygons(Cairo::RefPtr<Cairo::Context>& cr)
 
           if (!poly.is_simple()) {
               printf("Oops! The resulting polygon isn't simple!!\n");
+#if 0
               ofstream of("not_simple.giv");
               of << format("$marks fcircle\n");
               for (const auto &p : poly)
                   of << format("{:f} {:f}\n",
                                p.x(), p.y());
               of << "z\n";
+#endif
           }
                    
           polys.push_back(poly);
@@ -266,8 +268,13 @@ TeXtrusion::polys_to_polys_with_holes(vector<Polygon_2> polys)
 }
 
 // Skeletonize the pholes one by one.
-vector<PHoleInfo> TeXtrusion::skeletonize(const std::vector<Polygon_with_holes>& polys_with_holes)
+vector<PHoleInfo> TeXtrusion::skeletonize(const std::vector<Polygon_with_holes>& polys_with_holes,
+                                          // output
+                                          std::string& giv_string
+                                          )
 {
+    stringstream ss;
+
     vector<PHoleInfo> phole_infos;
 
     for (int ph_idx=0; ph_idx < (int)polys_with_holes.size(); ph_idx++) {
@@ -284,19 +291,60 @@ vector<PHoleInfo> TeXtrusion::skeletonize(const std::vector<Polygon_with_holes>&
     if (updater->info("skeletonize", 1.0))
         throw EAborted("Aborted!");
 
+    // Create a skeleton giv path. This is a replication of the code
+    // below and should be merged
+    for (int ph_idx=0; ph_idx < (int)phole_infos.size(); ph_idx++) {
+        auto& phi = phole_infos[ph_idx];
+        for (auto &r : phi.regions) {
+            double depth = r.get_depth();
+            string path = "skeleton";
+            string color = "blue";
+
+            if (!r.polygon.is_simple()) {
+                path += "/not_simple";
+                color = "orange";
+            }
+
+
+            ss << format("$color {}\n"
+                         "$line\n"
+                         "$marks fcircle\n"
+                         "$path boundary\n"
+                         "{} {}\n"
+                         "{} {}\n\n"
+                         "$color red\n"
+                         "$line\n"
+                         "$marks fcircle\n"
+                         "$path {}\n"
+                         ,
+                         color,
+                         r.polygon[0].x(), r.polygon[0].y(),
+                         r.polygon[1].x(), r.polygon[1].y(),
+                         path);
+            // Inner skeleton lines
+            int n = r.polygon.size();
+            for (size_t i=1; i<r.polygon.size()+1; i++) 
+                ss << format("{} {}\n", r.polygon[i%n].x(), r.polygon[i%n].y());
+            ss << ("\n");
+        }
+
+    }
+    giv_string = ss.str();
+
     return phole_infos;
 }
 
 // TBD restorethis!
 
 // Turn the skeleton into a 3D mesh
-Mesh TeXtrusion::skeleton_to_mesh(const vector<PHoleInfo>& phole_infos)
+Mesh TeXtrusion::skeleton_to_mesh(const vector<PHoleInfo>& phole_infos,
+                                  // output
+                                  string& giv_string
+                                  )
 {
-    // Loop one glyph at a time
-    ofstream of;
-
-    if (giv_filename.length())
-        of.open(giv_filename, ofstream::out);
+    // Always save the string stream and provide it to the skeleton
+    // viewer!
+    stringstream ss;
 
     Mesh mesh; // A container for the 3D mesh
 
@@ -318,7 +366,7 @@ Mesh TeXtrusion::skeleton_to_mesh(const vector<PHoleInfo>& phole_infos)
             }
 
 
-            of << format("$color {}\n"
+            ss << format("$color {}\n"
                          "$line\n"
                          "$marks fcircle\n"
                          "$path boundary\n"
@@ -336,8 +384,8 @@ Mesh TeXtrusion::skeleton_to_mesh(const vector<PHoleInfo>& phole_infos)
             // Inner skeleton lines
             int n = r.polygon.size();
             for (size_t i=1; i<r.polygon.size()+1; i++) 
-                of << format("{} {}\n", r.polygon[i%n].x(), r.polygon[i%n].y());
-            of << ("\n");
+                ss << format("{} {}\n", r.polygon[i%n].x(), r.polygon[i%n].y());
+            ss << ("\n");
 
             if (!r.polygon.is_simple()) {
                 cerr << format("Oops! The polygon isn't simple. Skipping!\n");
@@ -355,7 +403,7 @@ Mesh TeXtrusion::skeleton_to_mesh(const vector<PHoleInfo>& phole_infos)
 
                 auto pp = r.get_offset_curve_and_triangulate(offs_start,offs_end);
                 for (const auto &poly : pp) {
-                    of << format("$color green\n"
+                    ss << format("$color green\n"
                                  "$line\n"
                                  "$marks fcircle\n"
                                  "$path offset curves/{}\n",
@@ -382,7 +430,7 @@ Mesh TeXtrusion::skeleton_to_mesh(const vector<PHoleInfo>& phole_infos)
                             float(p.x()),
                             -float(p.y()), 
                             float(z) };
-                        of << format("{} {}\n", p.x(), p.y());
+                        ss << format("{} {}\n", p.x(), p.y());
 
                         // Back side
                         tri_back[i] = glm::vec3 {
@@ -390,8 +438,8 @@ Mesh TeXtrusion::skeleton_to_mesh(const vector<PHoleInfo>& phole_infos)
                             -float(p.y()), 
                             float(-zdepth) };
                     }
-                    of << "z\n";
-                    of << "\n";
+                    ss << "z\n";
+                    ss << "\n";
 
                     // Add triangles to mesh
                     for (int i=0; i<3; i++)
@@ -414,7 +462,13 @@ Mesh TeXtrusion::skeleton_to_mesh(const vector<PHoleInfo>& phole_infos)
             }
         }
     }
+    giv_string = ss.str();
+
+#if 0
+    ofstream of("path.giv");
+    of << giv_string;
     of.close();
+#endif
 
     return mesh;
 }
@@ -523,6 +577,7 @@ void PHoleInfo::divide_into_regions()
         if (!poly.is_simple()) {
             printf("Oops! Poly isn't simple. Saving to not-simple.giv\n");
 
+#if 0
             ofstream of("not-simple.giv");
             of << format("$marks fcircle\n"
                          "$color red\n"
@@ -531,6 +586,7 @@ void PHoleInfo::divide_into_regions()
               of << format("{:f} {:f}\n", p.x(), p.y());
             of << "z\n";
             of.close();
+#endif
         }
 
         if (poly.size()>2) { // Why do I get smaller lines??

@@ -37,6 +37,8 @@ WorkerSkeleton::WorkerSkeleton(Pomelo *caller) :
   m_skeleton_updater = make_shared<SkeletonUpdater>(this);
   m_textrusion = make_shared<TeXtrusion>(m_skeleton_updater);
   m_mesh = make_shared<Mesh>();
+  m_giv_string = make_shared<string>();
+  m_mesh_giv_string = make_shared<string>();
 }
 
 // Get current porgress
@@ -92,16 +94,20 @@ void WorkerSkeleton::do_work_skeleton(
   // Do the time consuming tasks
   bool finished_successfully = false;
   string error_message;
+  string giv_string;
   try {
     auto cr = m_textrusion->markup_to_context();
     auto polys = m_textrusion->cairo_path_to_polygons(cr);
     auto polys_with_holes = m_textrusion->polys_to_polys_with_holes(polys);
-    m_phole_infos = m_textrusion->skeletonize(polys_with_holes);
+    m_phole_infos = m_textrusion->skeletonize(polys_with_holes,
+                                              // output
+                                              giv_string);
     finished_successfully=true;
   }
   catch(EAborted&) {
   }
   catch(CGAL::Failure_exception&) {
+    // We should still show errors!
     error_message = "Illegal geometry found! Try another font!";
   }
 
@@ -112,6 +118,7 @@ void WorkerSkeleton::do_work_skeleton(
     m_has_stopped = true;
     m_finished_successfully = finished_successfully;
     m_error_message = error_message;
+    *m_giv_string = giv_string;
   }
 
   m_caller->notify();
@@ -139,9 +146,11 @@ void WorkerSkeleton::do_work_profile(
   bool finished_successfully = false;
   string error_message;
   Mesh mesh;
+  string giv_string;
   try {
-    mesh = m_textrusion->skeleton_to_mesh(m_phole_infos);
-
+    mesh = m_textrusion->skeleton_to_mesh(m_phole_infos,
+                                          // output
+                                          giv_string);
     finished_successfully=true;
   }
   catch(EAborted&) {
@@ -157,6 +166,7 @@ void WorkerSkeleton::do_work_profile(
     m_finished_successfully = finished_successfully;
     m_error_message = error_message;
     *m_mesh = mesh;
+    *m_mesh_giv_string = giv_string; 
   }
 
   m_caller->notify();

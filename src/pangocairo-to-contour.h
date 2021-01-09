@@ -180,10 +180,14 @@ class TeXtrusion {
     std::vector<Polygon_with_holes> polys_to_polys_with_holes(std::vector<Polygon_2> polys);
 
     // Skeletonize the glyphs
-    std::vector<PHoleInfo> skeletonize(const std::vector<Polygon_with_holes>& polys_with_holes);
+    std::vector<PHoleInfo> skeletonize(const std::vector<Polygon_with_holes>& polys_with_holes,
+                                       // output
+                                       std::string& giv_string);
 
     // Turn the skeleton into a mesh
-    Mesh skeleton_to_mesh(const std::vector<PHoleInfo>& phole_infos);
+    Mesh skeleton_to_mesh(const std::vector<PHoleInfo>& phole_infos,
+                          // output
+                          std::string& giv_string);
 
     // configuration
     bool do_rtl = false;

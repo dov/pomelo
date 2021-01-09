@@ -16,8 +16,8 @@ DirText "Choose a folder in which to install ${NAME_CAP}"
 ; Show details
 ShowInstDetails show
 
-Icon ${ICON_NAME}.ico
-UninstallIcon ${ICON_NAME}.ico
+Icon ${ICON_DIR}/${ICON_NAME}.ico
+UninstallIcon ${ICON_DIR}/${ICON_NAME}.ico
 XPStyle on
 
 ; optional section
@@ -94,7 +94,12 @@ File \usr\${ARCH}\sys-root\mingw\bin\libsigc-2.0-0.dll
 File \usr\${ARCH}\sys-root\mingw\bin\libmpfr-6.dll
 File \usr\local\mingw64\bin\libfmt.dll
 File \usr\local\mingw64\bin\libgmp-10.dll
-File ${OUTDIR}\${NAME}.exe
+File ${OUTDIR}\src\${NAME}.exe
+File ${OUTDIR}\src\giv-widget\libgiv-widget.dll
+File ${OUTDIR}\src\giv-widget\gtk-image-viewer\libgtk_image_viewer.dll
+File ${OUTDIR}\src\giv-widget\agg\libagg.dll
+File ${OUTDIR}\src\giv-widget\plis\libplis.dll
+
 
 SetOutPath "$INSTDIR"
 File /r \usr\${ARCH}\sys-root\mingw\etc

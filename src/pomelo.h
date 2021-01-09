@@ -13,6 +13,7 @@
 #include "pangocairo-to-contour.h"
 #include "worker-skeleton.h"
 #include "progress-dialog.h"
+#include "skeleton-viewer.h"
 
 class Pomelo;
 
@@ -57,6 +58,7 @@ private:
   void on_action_file_quit();
   void on_action_file_export_stl();
   void on_action_help_about();
+  void on_action_view_skeleton();
 
   void on_build_skeleton(Glib::ustring text_string,
                          double linear_limit,
@@ -72,6 +74,7 @@ private:
   MainInput m_main_input;
   MeshViewer m_mesh_viewer;
   ProgressDialog m_progress_dialog;
+  Glib::RefPtr<SkeletonViewer> m_skeleton_viewer;
 
   Gtk::Statusbar m_statusbar;
   Glib::RefPtr<Gtk::Builder> m_refBuilder;

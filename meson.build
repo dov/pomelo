@@ -1,44 +1,6 @@
 project('gtkmm_example','cpp','c')
 
-sources = ['src/pomelo-main.cc',
-           'src/pomelo.cc',
-           'src/mesh-viewer.cc',
-           'src/trackball.cc',
-           'src/main-input.cc',
-           'src/mesh.cc',
-           'src/pangocairo-to-contour.cc',
-           'src/worker-skeleton.cc',
-           'src/progress-dialog.cc'
-          ]
-
-cc = meson.get_compiler('c')
-m_dep = cc.find_library('m', required : false)
-pthread_dep = cc.find_library('pthread', required : false)
-gtkmmdep = dependency('gtkmm-3.0')
-pangoftdep = dependency('pangoft2')
-epoxydep = dependency('epoxy')
-fmtdep = dependency('fmt')
-glmdep = dependency('glm')
-gmpdep = dependency('gmp')
-mpfrdep = dependency('mpfr')
-deps = [gtkmmdep,
-        pangoftdep,
-        epoxydep,
-        fmtdep,
-        glmdep,
-        gmpdep,
-        mpfrdep,
-        m_dep,
-        pthread_dep]
-
 gnome = import('gnome')
-
-resources = gnome.compile_resources(
-  'resources',
-  'src/resources.xml',
-  c_name :'resources',
-  source_dir : 'src'
-)
 
 name='pomelo'
 name_cap = 'Pomelo'
@@ -58,29 +20,15 @@ if r.returncode() != 0
 endif
 commit_time=r.stdout().strip()
 
-if host_machine.system() == 'windows'
-  cpp_args = ['-Wa,-mbig-obj']
-  mod_rescomp = import('windows')
-  sources += mod_rescomp.compile_resources('pomelo.rc')
-else
-  cpp_args = []
-endif
+cpp_args = ['-DCOMMIT_ID="'+sha1+'"',
+            '-DCOMMIT_TIME="'+commit_time+'"'
+           ]
 
-cpp_args += ['-DCOMMIT_ID="'+sha1+'"',
-             '-DCOMMIT_TIME="'+commit_time+'"'
-            ]
-
-exe = executable(name_cap,
-                 sources,
-                 resources,
-                 dependencies: deps,
-                 gui_app : true,
-                 cpp_args : cpp_args
-                )
+subdir('src')
 
 fs = import('fs')
 builddir = fs.name(meson.current_build_dir())
-
+buildroot = fs.name(meson.current_source_dir())
 if host_machine.system() == 'windows'
   arch = 'x86_64-w64-mingw32'
   host = 'w64'
@@ -88,6 +36,7 @@ if host_machine.system() == 'windows'
   nsis_cmd = [
     find_program('makensis'),
     '-DOUTDIR='+builddir,
+    '-DICON_DIR=.',
     '-DCOMMITID_SHORT='+sha1_short,
     '-DNAME='+name,
     '-DNAME_CAP='+name_cap,

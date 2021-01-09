@@ -70,6 +70,9 @@ public:
   std::shared_ptr<Mesh> get_mesh() {
     return m_mesh;
   }
+  std::shared_ptr<std::string> get_giv_string() {
+    return m_giv_string;
+  }
 
 private:
   // Synchronizes access to member data.
@@ -84,6 +87,8 @@ private:
   std::shared_ptr<SkeletonUpdater> m_skeleton_updater;
   std::vector<PHoleInfo> m_phole_infos;
   std::shared_ptr<Mesh> m_mesh; // The result of the work
+  std::shared_ptr<std::string> m_giv_string; // The result of the work
+  std::shared_ptr<std::string> m_mesh_giv_string; // The result of the work
   std::shared_ptr<TeXtrusion> m_textrusion;
   std::string m_error_message;
   Pomelo* m_caller; // Used for notifications
