@@ -488,7 +488,6 @@ Mesh TeXtrusion::skeleton_to_mesh(const vector<PHoleInfo>& phole_infos,
     return mesh;
 }
 
-#if 0
 // The following two functions are from:
 //   https://doc.cgal.org/latest/Triangulation_2/Triangulation_2_2polygon_triangulation_8cpp-example.html
 static void
@@ -542,7 +541,6 @@ mark_domains(CDT& cdt)
     }
   }
 }
-#endif
 
 // Convert the member polygon_with_holes into a skeleton
 void PHoleInfo::skeletonize()
@@ -795,7 +793,14 @@ vector<Polygon3D> SkeletonPolygonRegion::get_offset_curve_and_triangulate(double
     
         CDT cdt;
         cdt.insert_constraint(poly.vertices_begin(), poly.vertices_end(), true);
+
+        // Choose what polygons are inside!
+        mark_domains(cdt);
+        
         for (const Face_handle& f : cdt.finite_face_handles()) {
+            if (!f->info().in_domain())
+                continue;
+
             // For each vertex measure its distance to the boundary
             // line and insert it as z
             Polygon3D tri3;
