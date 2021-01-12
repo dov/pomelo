@@ -166,7 +166,13 @@ void WorkerSkeleton::do_work_profile(
     m_finished_successfully = finished_successfully;
     m_error_message = error_message;
     *m_mesh = mesh;
-    *m_mesh_giv_string = giv_string; 
+    *m_mesh_giv_string = giv_string;
+
+#if 0
+    ofstream of("path.giv");
+    of << *m_mesh_giv_string;
+    of.close();
+#endif
   }
 
   m_caller->notify();

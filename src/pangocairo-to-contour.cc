@@ -354,14 +354,16 @@ Mesh TeXtrusion::skeleton_to_mesh(const vector<PHoleInfo>& phole_infos,
     double offset_thickness = 0.5;
     for (int ph_idx=0; ph_idx < (int)phole_infos.size(); ph_idx++) {
         auto& phi = phole_infos[ph_idx];
+        int r_idx = -1;
         for (auto &r : phi.regions) {
+            r_idx++;
             double depth = r.get_depth();
             int num_offsets = int(ceil(depth/offset_thickness));
-            string path = "skeleton";
             string color = "blue";
+            string path_modifier;
 
             if (!r.polygon.is_simple()) {
-                path += "/not_simple";
+                path_modifier += " (not_simple)";
                 color = "orange";
             }
 
@@ -369,18 +371,24 @@ Mesh TeXtrusion::skeleton_to_mesh(const vector<PHoleInfo>& phole_infos,
             ss << format("$color {}\n"
                          "$line\n"
                          "$marks fcircle\n"
-                         "$path boundary\n"
+                         "$path boundary{}/ph {}/region {}\n"
                          "{} {}\n"
-                         "{} {}\n\n"
+                         "{} {}\n"
+                         "\n"
                          "$color red\n"
                          "$line\n"
                          "$marks fcircle\n"
-                         "$path {}\n"
+                         "$path skeleton{}/ph {}/region {}\n\n"
                          ,
                          color,
+                         path_modifier,
+                         ph_idx+1,
+                         r_idx+1,
                          r.polygon[0].x(), r.polygon[0].y(),
                          r.polygon[1].x(), r.polygon[1].y(),
-                         path);
+                         path_modifier,
+                         ph_idx+1,
+                         r_idx+1);
             // Inner skeleton lines
             int n = r.polygon.size();
             for (size_t i=1; i<r.polygon.size()+1; i++) 
@@ -393,22 +401,29 @@ Mesh TeXtrusion::skeleton_to_mesh(const vector<PHoleInfo>& phole_infos,
             }
 
             // The upper surface Loop over the offsets
+            double epsilon = 1e-5;
             for (int d_idx=0; d_idx<this->profile_num_radius_steps+1; d_idx++) {
                 double angle_start = M_PI/2 * d_idx/this->profile_num_radius_steps;
                 double angle_end = M_PI/2 * (d_idx+1)/this->profile_num_radius_steps;
                 double offs_start = profile_radius*(1-cos(angle_start));
                 double offs_end = profile_radius*(1-cos(angle_end));
                 if (d_idx == this->profile_num_radius_steps)
-                  offs_end = depth;
+                  offs_end = depth+epsilon;
 
                 auto pp = r.get_offset_curve_and_triangulate(offs_start,offs_end);
+                int poly_idx = 0;
                 for (const auto &poly : pp) {
                     ss << format("$color green\n"
                                  "$line\n"
                                  "$marks fcircle\n"
-                                 "$path offset curves/{}\n",
-                                 d_idx+1
+                                 "$path offset curves/ph {}/region {}/{}/{}\n"
+                                 ,
+                                 ph_idx+1,
+                                 r_idx+1,
+                                 d_idx+1,
+                                 poly_idx+1
                                  );
+                    poly_idx++;
                     if (poly.size()!=3)
                         throw std::runtime_error("Expected 3 vertices!");
                     glm::vec3 tri[3], tri_back[3];
