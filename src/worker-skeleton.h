@@ -44,6 +44,7 @@ public:
                         Glib::ustring markup);
   // Do the profile part of the shaping
   void do_work_profile(double radius,
+                       double round_max_angle,
                        int num_radius_steps,
                        double zdepth);
 

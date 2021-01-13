@@ -195,6 +195,7 @@ class TeXtrusion {
     std::string markup;
     Pango::FontDescription font_description;
     double profile_radius = 3.0;
+    double profile_round_max_angle = M_PI/2;
     double profile_num_radius_steps = 10;
     std::string giv_filename;
     double zdepth = 2;

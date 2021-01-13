@@ -64,6 +64,7 @@ private:
                          double linear_limit,
                          Pango::FontDescription font_description);
   void on_build_profile(double radius,
+                        double round_max_angle,
                         int num_radius_steps,
                         double zdepth);
 

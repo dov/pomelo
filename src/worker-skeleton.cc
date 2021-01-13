@@ -126,6 +126,7 @@ void WorkerSkeleton::do_work_skeleton(
 
 void WorkerSkeleton::do_work_profile(
   double radius,
+  double round_max_angle,
   int num_radius_steps,
   double zdepth
 )
@@ -140,6 +141,7 @@ void WorkerSkeleton::do_work_profile(
 
   m_textrusion->zdepth = zdepth; 
   m_textrusion->profile_radius = radius; 
+  m_textrusion->profile_round_max_angle = round_max_angle; 
   m_textrusion->profile_num_radius_steps = num_radius_steps; 
 
   // Do the time consuming tasks

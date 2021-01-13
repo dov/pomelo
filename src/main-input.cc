@@ -1,8 +1,11 @@
 #include "main-input.h"
 #include "dov-mm-macros.h"
+#include <math.h>
 #include <fmt/core.h>
 
 using namespace fmt;
+
+constexpr double DEG2RAD = M_PI/180;
 
 static Gtk::Widget* mmLabelAligned(const gchar *markup, double xAlign)
 {
@@ -81,6 +84,14 @@ MainInput::MainInput()
   m_num_radius_steps.signal_value_changed().connect(sigc::mem_fun(*this,
     &MainInput::on_profile_input_changed));
 
+  // Setup the round max angle steps
+  m_round_max_angle_in_degrees.set_digits(0);
+  m_round_max_angle_in_degrees.set_range(0,180);
+  m_round_max_angle_in_degrees.set_increments(1,10);
+  m_round_max_angle_in_degrees.set_value(90);
+  m_round_max_angle_in_degrees.signal_value_changed().connect(sigc::mem_fun(*this,
+    &MainInput::on_profile_input_changed));
+
   // Setup the radius button
   m_zdepth.set_digits(1);
   m_zdepth.set_range(0,1000);
@@ -129,6 +140,10 @@ MainInput::MainInput()
   w_grid->attach(*mmLabelRight("Num radius steps:"), 0,row);
   w_grid->attach(m_num_radius_steps,              1,row);
   row++;
+  w_grid->attach(*mmLabelRight("Round max angle:"), 0,row);
+  w_grid->attach(m_round_max_angle_in_degrees, 1,row);
+  w_grid->attach(*mmLabelLeft("[Degrees]"), 2, row);
+  row++;
   w_grid->attach(*mmLabelRight("Z-depth:"), 0,row);
   w_grid->attach(m_zdepth,               1,row);
   row++;
@@ -161,6 +176,7 @@ void MainInput::on_button_skeleton_clicked()
 void MainInput::on_button_profile_clicked()
 {
   m_signal_build_profile(m_radius.get_value(),
+                         m_round_max_angle_in_degrees.get_value()*DEG2RAD,
                          int(m_num_radius_steps.get_value()),
                          m_zdepth.get_value());
 }

@@ -244,6 +244,7 @@ void Pomelo::on_build_skeleton(Glib::ustring text_string,
 }
 
 void Pomelo::on_build_profile(double radius,
+                              double round_max_angle,
                               int num_radius_steps,
                               double zdepth)
 {
@@ -255,7 +256,10 @@ void Pomelo::on_build_profile(double radius,
   m_worker_action = ACTION_PROFILE;
   m_worker_skeleton_thread = make_unique<std::thread>(
     [=] {
-      m_worker_skeleton.do_work_profile(radius,num_radius_steps,zdepth);
+      m_worker_skeleton.do_work_profile(radius,
+                                        round_max_angle,
+                                        num_radius_steps,
+                                        zdepth);
     });
 
   m_main_input.set_profile_ready_state(true);

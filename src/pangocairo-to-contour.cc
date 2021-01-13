@@ -402,9 +402,10 @@ Mesh TeXtrusion::skeleton_to_mesh(const vector<PHoleInfo>& phole_infos,
 
             // The upper surface Loop over the offsets
             double epsilon = 1e-5;
+            double angle_span = profile_round_max_angle;
             for (int d_idx=0; d_idx<this->profile_num_radius_steps+1; d_idx++) {
-                double angle_start = M_PI/2 * d_idx/this->profile_num_radius_steps;
-                double angle_end = M_PI/2 * (d_idx+1)/this->profile_num_radius_steps;
+                double angle_start = angle_span * d_idx/this->profile_num_radius_steps;
+                double angle_end = angle_span * (d_idx+1)/this->profile_num_radius_steps;
                 double offs_start = profile_radius*(1-cos(angle_start));
                 double offs_end = profile_radius*(1-cos(angle_end));
                 if (d_idx == this->profile_num_radius_steps)
@@ -434,9 +435,9 @@ Mesh TeXtrusion::skeleton_to_mesh(const vector<PHoleInfo>& phole_infos,
 
                         // Transform z
                         double r = profile_radius;
-                        if (z > r)
-                            z = r;
-                        else
+                        if (z > r - r * cos(angle_span))
+                            z = r * sin(angle_span);
+                        else 
                             z = sqrt(r*r-(z-r)*(z-r));
                         
                         // Do the 2-i to get the correct direction

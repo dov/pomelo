@@ -24,6 +24,7 @@ class MainInput : public Gtk::Box
 
   using type_signal_build_profile = sigc::signal<void(
     double,         // Radius
+    double,         // Round max angle in radians
     int,            // Num radius steps
     double          // ZDepth
     )>;
@@ -39,6 +40,7 @@ class MainInput : public Gtk::Box
   Gtk::FontButton m_font_picker; 
   Gtk::SpinButton m_radius; 
   Gtk::SpinButton m_num_radius_steps; 
+  Gtk::SpinButton m_round_max_angle_in_degrees; 
   Gtk::SpinButton m_zdepth; 
   Gtk::SpinButton m_linear_limit;
   Gtk::Label m_skeleton_status_label;
