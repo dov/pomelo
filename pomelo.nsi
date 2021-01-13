@@ -92,6 +92,7 @@ File \usr\${ARCH}\sys-root\mingw\bin\libgiomm-2.4-1.dll
 File \usr\${ARCH}\sys-root\mingw\bin\gdbus.exe
 File \usr\${ARCH}\sys-root\mingw\bin\libsigc-2.0-0.dll
 File \usr\${ARCH}\sys-root\mingw\bin\libmpfr-6.dll
+File \usr\${ARCH}\sys-root\mingw\bin\libepoxy-0.dll
 File \usr\local\mingw64\bin\libfmt.dll
 File \usr\local\mingw64\bin\libgmp-10.dll
 File ${OUTDIR}\src\${NAME}.exe
