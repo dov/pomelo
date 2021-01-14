@@ -37,6 +37,9 @@ SetOutPath $INSTDIR\bin
 File \usr\${ARCH}\sys-root\mingw\bin\libintl-8.dll
 File \usr\${ARCH}\sys-root\mingw\bin\iconv.dll
 File \usr\${ARCH}\sys-root\mingw\bin\libpcre-1.dll
+File \usr\${ARCH}\sys-root\mingw\bin\libgtk-3-0.dll
+File \usr\${ARCH}\sys-root\mingw\bin\libgdk-3-0.dll
+File \usr\${ARCH}\sys-root\mingw\bin\libssp-0.dll
 File \usr\${ARCH}\sys-root\mingw\bin\libgdk-win32-2.0-0.dll
 File \usr\${ARCH}\sys-root\mingw\bin\libgdk_pixbuf-2.0-0.dll
 File \usr\${ARCH}\sys-root\mingw\bin\libgtk-win32-2.0-0.dll
@@ -44,6 +47,7 @@ File \usr\${ARCH}\sys-root\mingw\bin\libpixman-1-0.dll
 File \usr\${ARCH}\sys-root\mingw\bin\libffi-6.dll
 File \usr\${ARCH}\sys-root\mingw\bin\libgio-2.0-0.dll
 File \usr\${ARCH}\sys-root\mingw\bin\libcairo-2.dll
+File \usr\${ARCH}\sys-root\mingw\bin\libcairo-gobject-2.dll
 File \usr\${ARCH}\sys-root\mingw\bin\zlib1.dll
 File \usr\${ARCH}\sys-root\mingw\bin\libglib-2.0-0.dll
 File \usr\${ARCH}\sys-root\mingw\bin\libatk-1.0-0.dll

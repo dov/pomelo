@@ -43,7 +43,7 @@ if host_machine.system() == 'windows'
     '-DICON_NAME='+name + '_logo',
     '-DARCH='+arch,
     '-DHOST='+host,
-    '-DVERSION='+version,
+    '-DVERSION='+'v'+ version + 'a',
     '-DLIBGCCDLL=libgcc_s_seh-1.dll',
     '@INPUT@',
   ]
