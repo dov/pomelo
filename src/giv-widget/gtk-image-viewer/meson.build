@@ -16,11 +16,14 @@ patch_src = custom_target('patch-output',
 gtkimageviewer_sources = [ patch_src ]
 
 gtk_dep = dependency('gtk+-3.0')
+cc = meson.get_compiler('c')
+m_dep = cc.find_library('m', required : false)
 
 libgtkimageviewer = library(
   'gtk_image_viewer',
   sources: gtkimageviewer_sources,
   install: false,
-  dependencies: [gtk_dep],
+  dependencies: [gtk_dep,
+                m_dep],
 )
 

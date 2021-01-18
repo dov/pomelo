@@ -31,10 +31,16 @@ MeshViewer::MeshViewer()
   this->add_events (
     Gdk::EventMask(GDK_POINTER_MOTION_MASK    |
                    GDK_BUTTON_PRESS_MASK      |
+                   GDK_KEY_PRESS_MASK      |
+                   GDK_FOCUS_CHANGE_MASK |
+                   GDK_LEAVE_NOTIFY_MASK |
+                   GDK_ENTER_NOTIFY_MASK |
                    GDK_SCROLL_MASK      |
                    GDK_VISIBILITY_NOTIFY_MASK 
                    ));
 
+
+  set_can_focus(true);
 
   // Setup the project matrix. Currently static
   double thetaInDeg=8.0;
@@ -164,9 +170,6 @@ void MeshViewer::init_shaders ()
           error_string));
     }
 
-  print("pos={} color={} normal={} bary={}\n",
-        m_position_index, m_color_index, m_normal_index, m_bary_index);
-
   /* the individual shaders can be detached and destroyed */
   glDetachShader (m_program, vertex);
   glDetachShader (m_program, fragment);
@@ -248,13 +251,18 @@ void MeshViewer::on_realize()
   // Init the buffer
   init_buffers (&m_vao);
 
+  setup_quat();
+}
+
+// The default quaternion
+void MeshViewer::setup_quat()
+{
   // Set up the initial view transformation
   float sine = sin (0.5 * VIEW_INIT_ANGLE * DIG_2_RAD);
   m_view_quat[0] = VIEW_INIT_AXIS_X * sine;
   m_view_quat[1] = VIEW_INIT_AXIS_Y * sine;
   m_view_quat[2] = VIEW_INIT_AXIS_Z * sine;
   m_view_quat[3] = cos (0.5 * VIEW_INIT_ANGLE * DIG_2_RAD);
-
 }
 
 void MeshViewer::on_unrealize()
@@ -402,6 +410,33 @@ bool MeshViewer::on_button_press_event (GdkEventButton* button_event)
   return true;
 }
 
+bool MeshViewer::on_key_press_event (GdkEventKey* key_event)
+{
+  print("Got a key press = {}\n", key_event->string);
+  string key_string(key_event->string);
+  if (key_string == "1"
+      || key_string == "f")
+    reset_view();
+
+  return true;
+}
+
+void MeshViewer::reset_view()
+{
+  auto bbox = m_hw_mesh.bbox; // shortcut
+  
+  m_view_scale = 1.0;
+  // Pivot point for rotating around the center of the object.
+  m_pivot = vec3 {
+    0.5*(bbox[0]+bbox[3]),
+    0.5*(bbox[1]+bbox[4]),
+    0.5*(bbox[2]+bbox[5])};
+  
+  setup_quat();
+
+  redraw();
+}
+
 bool MeshViewer::on_motion_notify_event (GdkEventMotion* motion_event)
 {
   double w = get_allocation().get_width();
@@ -474,6 +509,14 @@ bool MeshViewer::on_scroll_event(GdkEventScroll *scroll_event)
   return true;
 }
 
+bool MeshViewer::on_enter_notify_event (GdkEventCrossing *event)
+{
+  print("Enter notify\n");
+  if (!this->has_focus())
+    this->grab_focus();
+  return true;
+}
+
 void MeshViewer::redraw()
 {
   double w = get_window()->get_width();
@@ -537,7 +580,7 @@ void MeshViewer::set_mesh(shared_ptr<Mesh> mesh)
     if (dim >dim_max)
         dim_max = dim;
   }
-  m_size_scale = 1.0/dim_max/1.44 * 2; // Not sure why I need the two here...
+  m_size_scale = 2.0/dim_max; // Not sure why I need the two here...
   
   // Pivot point for rotating around the center of the object.
   m_pivot = vec3 {

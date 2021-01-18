@@ -31,6 +31,9 @@ class MeshViewer : public Gtk::GLArea
   void set_mesh_file(const std::string& mesh_filename);
   void redraw();
 
+  // Reset the view to the original view
+  void reset_view();
+
   private:
 
   // signals
@@ -38,8 +41,10 @@ class MeshViewer : public Gtk::GLArea
   void on_unrealize() override;
   bool on_render (const Glib::RefPtr< Gdk::GLContext >& context) override;
   bool on_button_press_event (GdkEventButton* button_event) override;
+  bool on_key_press_event (GdkEventKey* key_event) override;
   bool on_motion_notify_event (GdkEventMotion* motion_event) override;
   bool on_scroll_event (GdkEventScroll* scroll_event) override;
+  bool on_enter_notify_event (GdkEventCrossing *event) override;
 
   // Used during init
   void init_shaders();
@@ -53,6 +58,10 @@ class MeshViewer : public Gtk::GLArea
   void setup_world(double scale,
                    float *view_quat,
                    const glm::vec3& pivot);
+
+  // The default quaternion
+  void setup_quat();
+
   // Build the projection matrix. This uses the current window size.
   void build_projection_matrix();
 

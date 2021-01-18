@@ -59,6 +59,7 @@ private:
   void on_action_file_export_stl();
   void on_action_help_about();
   void on_action_view_skeleton();
+  void on_action_reset_3d_view();
 
   void on_build_skeleton(Glib::ustring text_string,
                          double linear_limit,

@@ -39,6 +39,9 @@ Pomelo::Pomelo()
   m_refActionGroup->add_action("about",
     sigc::mem_fun(*this, &Pomelo::on_action_help_about) );
 
+  m_refActionGroup->add_action("reset_3d_view",
+    sigc::mem_fun(*this, &Pomelo::on_action_reset_3d_view) );
+
   m_refActionGroup->add_action("view_skeleton",
     sigc::mem_fun(*this, &Pomelo::on_action_view_skeleton) );
 
@@ -62,6 +65,13 @@ Pomelo::Pomelo()
     "          <attribute name='accel'>&lt;Primary&gt;q</attribute>"
     "        </item>"
     "      </section>"
+    "    </submenu>"
+    "    <submenu>"
+    "      <attribute name='label' translatable='yes'>_View</attribute>"
+    "      <item>"
+    "        <attribute name='label' translatable='yes'>_Reset 3D View</attribute>"
+    "        <attribute name='action'>pomelo.reset_3d_view</attribute>"
+    "      </item>"
     "    </submenu>"
     "    <submenu>"
     "      <attribute name='label' translatable='yes'>_Tools</attribute>"
@@ -204,6 +214,11 @@ void Pomelo::on_action_help_about()
 void Pomelo::on_action_view_skeleton()
 {
   m_skeleton_viewer->show();
+}
+
+void Pomelo::on_action_reset_3d_view()
+{
+  m_mesh_viewer.reset_view();
 }
 
 #if 0

@@ -58,7 +58,8 @@ exe = executable(name_cap,
                  cpp_args : cpp_args,
                  include_directories : incdir,
                  link_with : [libgivwidget,
-                              libgtkimageviewer]
+                              libgtkimageviewer],
+                 install :true
                 )
 
 
