@@ -58,7 +58,7 @@ typedef Kernel::Point_2                                   Point_2;
 typedef Kernel::Point_3                                   Point3;
 typedef KernelE::Point_2                                  PointE2;
 typedef CGAL::Polygon_2<Kernel>                           Polygon_2;
-typedef CGAL::Polygon_2<KernelE>                          PolygonE;
+typedef CGAL::Polygon_2<KernelE>                          PolygonE_2;
 typedef std::vector<Point3>                               Polygon3D;
 typedef CGAL::Line_2<Kernel>                              Line_2;
 typedef CGAL::Vector_2<Kernel>                            Vector_2;

@@ -9,10 +9,143 @@
 #include <vector>
 #include <list>
 #include "pangocairo-to-contour.h"
+#include <CGAL/Cartesian.h>
+#include <CGAL/MP_Float.h>
+#include <CGAL/Quotient.h>
+#include <CGAL/Arr_segment_traits_2.h>
+#include <CGAL/Arrangement_2.h>
+#include "Winding_number.h"
+#include "polygon_repairing.h"
+
+
+typedef CGAL::Quotient<CGAL::MP_Float> Number_type;
+typedef CGAL::Cartesian<Number_type> KernelQ;
+typedef CGAL::Arr_segment_traits_2<KernelQ> Traits_2;
+typedef Traits_2::X_monotone_curve_2 Segment_2;
+typedef CGAL::Arrangement_2<Traits_2> Arrangement_2;
 
 using namespace std;
 using namespace Glib;
 using namespace fmt;
+
+static int bad_poly_idx=0;
+
+// Utilities
+static void poly_to_giv(ustring filename,
+                  ustring header,
+                  const Polygon_2& poly,
+                  bool append)
+{
+    auto flags = ofstream::out;
+    if (append)
+        flags |= ofstream::app;
+    ofstream of(filename, flags);
+    if (of.good())
+      {
+        of << header;
+        of << "m ";
+        for (const auto& p  : poly)
+            of << p.x() << " " << p.y() << "\n";
+        of << "z\n\n";
+        of.close();
+      }
+}
+                     
+static Polygon_2 ccb_to_polygon(const Arrangement_2::Ccb_halfedge_const_circulator& circ)
+{
+  Polygon_2 poly;
+
+  auto first = circ;
+  auto curr = circ;
+
+  do {
+    Arrangement_2::Halfedge_const_handle he = curr;
+
+    poly.push_back({
+        CGAL::to_double(he->target()->point().x()),
+        CGAL::to_double(he->target()->point().y())});
+  } while(++curr != first);
+
+  return poly;
+}
+
+static vector<Polygon_2> prune_outer_loops(Polygon_2 pp)
+{
+  if (pp.is_simple())
+    return {pp};
+
+  // Turn into segments.
+  vector<Segment_2> segments;
+
+  int n = (int)pp.size();
+  for (int i=0; i<n; i++)
+    segments.push_back({
+        {
+          pp[i].x(),
+          pp[i].y()
+        },
+        {
+          pp[(i+1)%n].x(),
+          pp[(i+1)%n].y()
+        }});
+
+  // Repair polygons by modified version from chapter 6 from the
+  // arrangement book
+  vector<Polygon_2> res;
+  polygon_repairing(segments.begin(), segments.end(),
+                    res, Traits_2());
+
+  return res;
+}
+
+static Polygon_2 prune_inner_loops(Polygon_2 pp)
+{
+  Arrangement_2 arr;
+
+  // Create an arrangement
+  vector<Segment_2> segments;
+
+  int n = (int)pp.size();
+  for (int i=0; i<n; i++)
+    segments.push_back({
+        {
+          pp[i].x(),
+          pp[i].y()
+        },
+        {
+          pp[(i+1)%n].x(),
+          pp[(i+1)%n].y()
+        }});
+
+  CGAL::insert (arr, segments.begin(), segments.end());
+
+  // Get the first hole of the unbounded face
+  for (auto fit = arr.faces_begin(); fit != arr.faces_end(); ++fit) {
+    if (!fit->is_unbounded())
+      continue;
+
+    int num_holes=0;
+    for (auto hit= fit->holes_begin(); hit!= fit->holes_end(); ++hit)
+      num_holes++;
+
+    if (num_holes!= 1)
+      print("Oops! Did not get one hole as expected!\n");
+    if (num_holes>=1)
+      pp = ccb_to_polygon(*fit->holes_begin());
+  }
+  
+  return pp;
+}
+
+static vector<Polygon_2> prune_small_loops(Polygon_2 pp)
+{
+  vector<Polygon_2> polys = prune_outer_loops(pp);
+
+  for (auto& poly : polys)
+    poly = prune_inner_loops(poly);
+
+  return polys;
+}
 
 // Take a pango markup and turn it into a cairo context that is returned
 Cairo::RefPtr<Cairo::Context> TeXtrusion::markup_to_context()
@@ -105,7 +238,7 @@ TeXtrusion::cairo_path_to_polygons(Cairo::RefPtr<Cairo::Context>& cr)
           }
                    
           polys.push_back(poly);
-          poly.clear(); 
+          poly.clear();
           break;
       }
   }
@@ -113,8 +246,20 @@ TeXtrusion::cairo_path_to_polygons(Cairo::RefPtr<Cairo::Context>& cr)
       if (updater->info("cairo path to polygons", 1.0))
           throw EAborted("Aborted!");
 
-  // Get rid of collinear points. TBD move into a routine
-  for (auto& poly : polys) {
+  // Clean up polys. TBD move into a utility routine.
+  vector<Polygon_2> filtered_polys;
+
+  int poly_idx=0;
+  for (auto& poly : polys)
+    {
+      poly_idx++;
+      poly_to_giv("cairo_contour.giv",
+                  format("$path poly/{}\n"
+                         "$marks fcircle\n",
+                         poly_idx),
+                  poly,
+                  poly_idx>1);
+
       // search for a degenerate sliver angle and remove the vertex
       size_t n = poly.size();
       for (size_t i=0; i<n; i++) {
@@ -128,9 +273,29 @@ TeXtrusion::cairo_path_to_polygons(Cairo::RefPtr<Cairo::Context>& cr)
               n-=1;
           }
       }
+
+      // Use arrangements to clean the polygons further
+      try {
+        auto split_polys = prune_small_loops(poly);
+        for (auto&p : split_polys)
+          {
+            if (!p.is_simple())
+              print("I shouldn't get back non simple polygons!\n");
+          
+            filtered_polys.push_back(p);
+          }
+      } catch(CGAL::Failure_exception&)
+          {
+            print("Got another bad poly!\n");
+            poly_to_giv(format("bad_poly-{}.giv",bad_poly_idx++),
+                        "",
+                        poly,
+                        true);
+            throw;
+          }
   }
 
-  return polys;
+  return filtered_polys;
 }
 
 // The routine polys_to_polys_with_holes() is called after
@@ -183,26 +348,29 @@ TeXtrusion::polys_to_polys_with_holes(vector<Polygon_2> polys)
     // Optionally save the cairo paths colored by the direction.
     if (do_save_cairo_paths) {
         ofstream fh("cairo_paths.giv");
-        array<string,2> color = {"red","green"};
-  
-        int poly_idx=0;
-        for (auto &poly : polys) {
-            fh << format("$arrow end\n"
-                         "$marks fcircle\n"
-                         "$line\n"
-                         "$color {}\n"
-                         "$lw 2\n"
-                         "$balloon orientation {}\n"
-                         "$path poly/{}\n",
-                         color[poly.orientation()<0],
-                         poly.orientation(),
-                         poly_idx++);
-            for (auto&p : poly) 
-                fh << format("{:.7f} {:.7f}\n", p.x(), p.y());
-            fh << "z\n\n";
-        }
+        if (fh.good())
+          {
+            array<string,2> color = {"red","green"};
+      
+            int poly_idx=0;
+            for (auto &poly : polys) {
+                fh << format("$arrow end\n"
+                             "$marks fcircle\n"
+                             "$line\n"
+                             "$color {}\n"
+                             "$lw 2\n"
+                             "$balloon orientation {}\n"
+                             "$path poly/{}\n",
+                             color[poly.orientation()<0],
+                             poly.orientation(),
+                             poly_idx++);
+                for (auto&p : poly) 
+                    fh << format("{:.7f} {:.7f}\n", p.x(), p.y());
+                fh << "z\n\n";
+            }
+            fh.close();
+          }
     }
-
 
     // Build the polygons with holes. Must do it with exact arithmetics
     // This again checks inclusion from the previous steps. This should
@@ -227,7 +395,7 @@ TeXtrusion::polys_to_polys_with_holes(vector<Polygon_2> polys)
 
             // TBD - check bounding boxes...
 
-            PolygonE pA, pB;
+            PolygonE_2 pA, pB;
             for (const auto& p : polys_with_holes[polys_with_holes.size()-1].outer_boundary())
                 
                 pA.push_back(PointE2(p.x(), p.y()));
@@ -818,20 +986,3 @@ vector<Polygon3D> SkeletonPolygonRegion::get_offset_curve_and_triangulate(double
     return tris3;
 }
   
-void poly_to_giv(ustring filename,
-                  ustring header,
-                  Polygon_2 poly,
-                  bool append)
-{
-    auto flags = ofstream::out;
-    if (append)
-        flags |= ofstream::app;
-    ofstream of(filename, flags);
-    of << header;
-    of << "m ";
-    for (const auto& p  : poly)
-        of << p.x() << " " << p.y() << "\n";
-    of << "z\n\n";
-    of.close();
-}
-                     
