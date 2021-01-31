@@ -1,10 +1,11 @@
-project('gtkmm_example','cpp','c')
+project('pomelo','cpp','c')
+subproject('nanosvg')
 
 gnome = import('gnome')
 
 name='pomelo'
 name_cap = 'Pomelo'
-version = '0.0.2'
+version = '0.0.3'
 
 r = run_command('git', 'rev-parse', 'HEAD')
 if r.returncode() != 0
@@ -21,7 +22,8 @@ endif
 commit_time=r.stdout().strip()
 
 cpp_args = ['-DCOMMIT_ID="'+sha1+'"',
-            '-DCOMMIT_TIME="'+commit_time+'"'
+            '-DCOMMIT_TIME="'+commit_time+'"',
+            '-DVERSION="'+version+'"',
            ]
 
 subdir('src')
@@ -43,7 +45,7 @@ if host_machine.system() == 'windows'
     '-DICON_NAME='+name + '_logo',
     '-DARCH='+arch,
     '-DHOST='+host,
-    '-DVERSION='+'v'+ version + 'a',
+    '-DVERSION='+'v'+ version,
     '-DLIBGCCDLL=libgcc_s_seh-1.dll',
     '@INPUT@',
   ]

@@ -76,7 +76,8 @@ void WorkerSkeleton::do_work_skeleton(
   bool do_rtl,
   Pango::FontDescription font_description,
   double linear_limit,
-  Glib::ustring markup)
+  Glib::ustring markup,
+  Glib::ustring svg_filename)
 {
   {
     std::lock_guard<mutex> lock(m_mutex);
@@ -89,14 +90,17 @@ void WorkerSkeleton::do_work_skeleton(
   m_textrusion->do_rtl = do_rtl;
   m_textrusion->font_description = font_description;
   m_textrusion->linear_limit = linear_limit;
-  m_textrusion->markup = markup;
 
   // Do the time consuming tasks
   bool finished_successfully = false;
   string error_message;
   string giv_string;
   try {
-    auto cr = m_textrusion->markup_to_context();
+    Cairo::RefPtr<Cairo::Context> cr;
+    if (svg_filename.size()>0)
+      cr = m_textrusion->svg_filename_to_context(svg_filename);
+    else
+      cr = m_textrusion->markup_to_context(markup);
     auto polys = m_textrusion->cairo_path_to_polygons(cr);
     auto polys_with_holes = m_textrusion->polys_to_polys_with_holes(polys);
     m_phole_infos = m_textrusion->skeletonize(polys_with_holes,

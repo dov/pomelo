@@ -30,9 +30,16 @@ class MainInput : public Gtk::Box
     )>;
   type_signal_build_profile signal_build_profile();
 
+  // When the text is edited, the following signal is sent
+  using type_signal_text_edited = sigc::signal<void()>;
+  type_signal_text_edited signal_text_edited();
+
   // Setup UI for readiness
   void set_skeleton_ready_state(bool is_ready);
   void set_profile_ready_state(bool is_ready);
+
+  // Change the text to a placeholder
+  void set_text_edit_info_string(const Glib::ustring& info_string);
 
   private:
   Gtk::TextView m_text;
@@ -45,16 +52,25 @@ class MainInput : public Gtk::Box
   Gtk::SpinButton m_linear_limit;
   Gtk::Label m_skeleton_status_label;
   Gtk::Label m_profile_status_label;
+  Gtk::Button m_skeleton_button;
   Gtk::Button m_profile_button;
+
+  // If the text was set externally then this flag tells the
+  // widget that on the next edit, we should clean and send a signal
+  // about it.
+  bool m_clean_on_edit = false;
 
   // Signals
   type_signal_build_skeleton m_signal_build_skeleton;
   type_signal_build_profile m_signal_build_profile;
+  type_signal_text_edited m_signal_text_edited;
 
   void on_button_skeleton_clicked();
   void on_button_profile_clicked();
   void on_skeleton_input_changed();
   void on_profile_input_changed();
+  //  void on_text_insert_at_cursor(const Glib::ustring& str);
+  bool on_text_focus_in(GdkEventFocus*);
 
 };
 

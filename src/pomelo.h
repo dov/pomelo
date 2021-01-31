@@ -60,7 +60,11 @@ private:
   void on_action_help_about();
   void on_action_view_skeleton();
   void on_action_reset_3d_view();
+  void on_action_load_svg();
 
+  // If the svg_filename is non-nil, use the svg filename,
+  // otherwise use the text_string with the given font
+  // decription
   void on_build_skeleton(Glib::ustring text_string,
                          double linear_limit,
                          Pango::FontDescription font_description);
@@ -68,6 +72,10 @@ private:
                         double round_max_angle,
                         int num_radius_steps,
                         double zdepth);
+
+  // Info that the text was edited. This indicates that the svg
+  // file is invalid.
+  void on_input_text_edited();
 
   // Dispatcher handler.
   void on_notification_from_skeleton_worker_thread();
@@ -83,6 +91,8 @@ private:
   Glib::RefPtr<Gio::SimpleActionGroup> m_refActionGroup;
   std::shared_ptr<PomeloUpdater> m_updator;
   Glib::Dispatcher m_dispatcher;
+  Glib::ustring m_last_selected_file;
+  Glib::ustring m_svg_filename;
   WorkerSkeleton m_worker_skeleton;
   std::unique_ptr<std::thread> m_worker_skeleton_thread;
   WorkerAction m_worker_action;  // What is our worker doing

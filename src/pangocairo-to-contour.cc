@@ -9,13 +9,25 @@
 #include <vector>
 #include <list>
 #include "pangocairo-to-contour.h"
+#include "svgpath-to-cairo.h"
 
 using namespace std;
 using namespace Glib;
 using namespace fmt;
 
+// Create a pango context from a svg filename
+Cairo::RefPtr<Cairo::Context> TeXtrusion::svg_filename_to_context(const string& filename)
+{
+  auto surface = Cairo::ImageSurface::create (Cairo::FORMAT_ARGB32, 500, 500);
+  auto cr = Cairo::Context::create(surface);
+
+  svgpaths_to_cairo(cr->cobj(), filename.c_str(), true);
+
+  return cr;
+}
+
 // Take a pango markup and turn it into a cairo context that is returned
-Cairo::RefPtr<Cairo::Context> TeXtrusion::markup_to_context()
+Cairo::RefPtr<Cairo::Context> TeXtrusion::markup_to_context(const string& markup)
 {
   PangoFontMap *fm;
   fm = pango_ft2_font_map_new();
@@ -296,7 +308,6 @@ vector<PHoleInfo> TeXtrusion::skeletonize(const std::vector<Polygon_with_holes>&
     for (int ph_idx=0; ph_idx < (int)phole_infos.size(); ph_idx++) {
         auto& phi = phole_infos[ph_idx];
         for (auto &r : phi.regions) {
-            double depth = r.get_depth();
             string path = "skeleton";
             string color = "blue";
 
@@ -353,12 +364,14 @@ Mesh TeXtrusion::skeleton_to_mesh(const vector<PHoleInfo>& phole_infos,
     // triangulation for both.
     double offset_thickness = 0.5;
     for (int ph_idx=0; ph_idx < (int)phole_infos.size(); ph_idx++) {
+        if (updater->info("profile", 1.0*ph_idx/phole_infos.size()))
+            throw EAborted("Aborted!");
+
         auto& phi = phole_infos[ph_idx];
         int r_idx = -1;
         for (auto &r : phi.regions) {
             r_idx++;
             double depth = r.get_depth();
-            int num_offsets = int(ceil(depth/offset_thickness));
             string color = "blue";
             string path_modifier;
 
@@ -485,6 +498,8 @@ Mesh TeXtrusion::skeleton_to_mesh(const vector<PHoleInfo>& phole_infos,
     of << giv_string;
     of.close();
 #endif
+    if (updater->info("profile", 1.0))
+        throw EAborted("Aborted!");
 
     return mesh;
 }

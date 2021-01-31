@@ -41,7 +41,8 @@ public:
   void do_work_skeleton(bool do_rtl,
                         Pango::FontDescription font_description,
                         double linear_limit,
-                        Glib::ustring markup);
+                        Glib::ustring markup,
+                        Glib::ustring svg_filename);
   // Do the profile part of the shaping
   void do_work_profile(double radius,
                        double round_max_angle,

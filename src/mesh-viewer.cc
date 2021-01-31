@@ -511,7 +511,6 @@ bool MeshViewer::on_scroll_event(GdkEventScroll *scroll_event)
 
 bool MeshViewer::on_enter_notify_event (GdkEventCrossing *event)
 {
-  print("Enter notify\n");
   if (!this->has_focus())
     this->grab_focus();
   return true;

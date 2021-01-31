@@ -169,8 +169,11 @@ class TeXtrusion {
       this->updater = updater;
     }
   
+    // Create a pango context from a svg filename
+    Cairo::RefPtr<Cairo::Context> svg_filename_to_context(const std::string& filename);
+
     // Create a pango context for pango markup
-    Cairo::RefPtr<Cairo::Context> markup_to_context();
+    Cairo::RefPtr<Cairo::Context> markup_to_context(const std::string& markup);
 
     // Turn the pango markup into a vector of polygons
     std::vector<Polygon_2> cairo_path_to_polygons(Cairo::RefPtr<Cairo::Context>& cr);
@@ -192,7 +195,6 @@ class TeXtrusion {
     // configuration
     bool do_rtl = false;
     double linear_limit = 500;
-    std::string markup;
     Pango::FontDescription font_description;
     double profile_radius = 3.0;
     double profile_round_max_angle = M_PI/2;

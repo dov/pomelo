@@ -16,6 +16,7 @@ Pomelo::Pomelo()
     m_worker_skeleton(this)
 {
   set_title("Pomelo");
+  set_icon(Gdk::Pixbuf::create_from_resource("/about/pomelo_logo.png", -1, 80, true));
   set_default_size(800, 1000);
 
   auto w_vbox = mmVBox;
@@ -32,6 +33,9 @@ Pomelo::Pomelo()
 
   m_refActionGroup->add_action("export_stl",
     sigc::mem_fun(*this, &Pomelo::on_action_file_export_stl) );
+
+  m_refActionGroup->add_action("load_svg",
+    sigc::mem_fun(*this, &Pomelo::on_action_load_svg) );
 
   m_refActionGroup->add_action("quit",
     sigc::mem_fun(*this, &Pomelo::on_action_file_quit) );
@@ -57,6 +61,11 @@ Pomelo::Pomelo()
     "        <item>"
     "          <attribute name='label' translatable='yes'>_Export STL</attribute>"
     "          <attribute name='action'>pomelo.export_stl</attribute>"
+    "          <attribute name='accel'>&lt;Primary&gt;s</attribute>"
+    "        </item>"
+    "        <item>"
+    "          <attribute name='label' translatable='yes'>_Load SVG</attribute>"
+    "          <attribute name='action'>pomelo.load_svg</attribute>"
     "          <attribute name='accel'>&lt;Primary&gt;s</attribute>"
     "        </item>"
     "        <item>"
@@ -110,12 +119,14 @@ Pomelo::Pomelo()
      &Pomelo::on_build_skeleton) );
   m_main_input.signal_build_profile().connect( sigc::mem_fun(*this,
      &Pomelo::on_build_profile) );
+  m_main_input.signal_text_edited().connect( sigc::mem_fun(*this,
+     &Pomelo::on_input_text_edited) );
 
   w_vbox->pack_start(m_main_input, false, true);
 
   w_vbox->pack_start(m_mesh_viewer, true, true);
   w_vbox->pack_start(m_statusbar, false, false);
-  m_statusbar.push("Welcome to Hello World");
+  m_statusbar.push("Welcome to Pomelo");
 
   // Connect the handler to the dispatcher.
   m_dispatcher.connect(sigc::mem_fun(*this, &Pomelo::on_notification_from_skeleton_worker_thread));
@@ -170,6 +181,44 @@ void Pomelo::on_action_file_export_stl()
   }
 }
 
+//Signal handlers:
+void Pomelo::on_action_load_svg()
+{
+  m_svg_filename = "";
+  auto dialog = Gtk::FileChooserNative::create("SVG filename",
+                                               *this,
+                                               Gtk::FILE_CHOOSER_ACTION_OPEN);
+  
+  if (m_last_selected_file.size())
+    dialog->select_filename(m_last_selected_file);
+
+  // Show the dialog and wait for a user response:
+  const int result = dialog->run();
+
+  // Handle the response:
+  switch (result)
+  {
+  case Gtk::RESPONSE_ACCEPT:
+  {
+    m_svg_filename = dialog->get_filename();
+    Glib::RefPtr<Gio::File> file = Gio::File::create_for_path(m_svg_filename);
+    string basename = file->get_basename();
+    m_last_selected_file = m_svg_filename;
+    
+    set_status(format("Loading path from svg file {}",basename));
+    m_main_input.set_text_edit_info_string(basename);
+    break;
+  }
+
+  case Gtk::RESPONSE_CANCEL:
+    set_status("Canceled svg import");
+    break;
+
+  default:
+    break;
+  }
+}
+
 
 //Signal handlers:
 void Pomelo::on_action_file_quit()
@@ -184,7 +233,7 @@ void Pomelo::on_action_help_about()
   Gtk::AboutDialog Dialog;
   Dialog.set_logo(Gdk::Pixbuf::create_from_resource("/about/pomelo_logo.png", -1, 80, true));
 
-  Dialog.set_version("0.0.1");
+  Dialog.set_version(VERSION);
   Dialog.set_copyright("Dov Grobgeld <dov.grobgeld@gmail.com>");
   Dialog.set_comments(format(
                         "A program for generating 3D meshes of text\n\n"
@@ -238,7 +287,8 @@ void Pomelo::set_mesh(const std::string& mesh_filename)
 
 void Pomelo::on_build_skeleton(Glib::ustring text_string,
                                double linear_limit,
-                               Pango::FontDescription font_description)
+                               Pango::FontDescription font_description
+                               )
 {
   m_progress_dialog.set_title("Build Skeleton");
   m_progress_dialog.show();
@@ -253,7 +303,8 @@ void Pomelo::on_build_skeleton(Glib::ustring text_string,
                                          do_rtl,
                                          font_description,
                                          linear_limit,
-                                         text_string);
+                                         text_string,
+                                         m_svg_filename);
     });
   
 }
@@ -278,6 +329,11 @@ void Pomelo::on_build_profile(double radius,
     });
 
   m_main_input.set_profile_ready_state(true);
+}
+
+void Pomelo::on_input_text_edited()
+{
+  m_svg_filename = ""; 
 }
 
 void Pomelo::set_status(const string& message)

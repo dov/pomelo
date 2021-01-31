@@ -46,6 +46,8 @@ MainInput::MainInput()
 
   // Configure the widgets
   m_text.set_hexpand(true);
+  m_text.set_focus_on_click(true);
+  m_text.signal_focus_in_event().connect( sigc::mem_fun(*this, &MainInput::on_text_focus_in));
   m_text_buffer = m_text.get_buffer();
   m_text_buffer->set_text("Pomelo");
   m_text_buffer->signal_changed().connect( sigc::mem_fun(*this,
@@ -117,12 +119,12 @@ MainInput::MainInput()
   // Button box
   auto w_hbox = mmHBox;
   w_vbox->pack_start(*w_hbox, Gtk::PACK_SHRINK);
-  auto w_button = mm<Gtk::Button>("Build");
-  w_hbox->pack_start(*w_button, false,false);
+  m_skeleton_button.set_label("Build");
+  w_hbox->pack_start(m_skeleton_button, false,false);
   m_skeleton_status_label.set_markup("Status: <span foreground=\"red\">❌</span>");
   w_hbox->pack_end(m_skeleton_status_label, false,false);
 
-  w_button->signal_clicked().connect( sigc::mem_fun(*this,
+  m_skeleton_button.signal_clicked().connect( sigc::mem_fun(*this,
      &MainInput::on_button_skeleton_clicked) );
   
   // Lower frame
@@ -161,6 +163,11 @@ MainInput::MainInput()
 
   w_hbox->pack_end(m_profile_status_label, false,false);
 
+  // Create tags or the text buffer
+  Glib::RefPtr<Gtk::TextBuffer::Tag> refTag;
+
+  refTag = m_text_buffer->create_tag("info");
+  refTag->property_foreground() = "#808080";
 }
 
 void MainInput::on_button_skeleton_clicked()
@@ -217,6 +224,18 @@ void MainInput::on_profile_input_changed()
   set_profile_ready_state(false);
 }
 
+//void MainInput::on_text_insert_at_cursor(const Glib::ustring& str)
+bool MainInput::on_text_focus_in(GdkEventFocus*)
+{
+  if (m_clean_on_edit)
+    {
+      m_clean_on_edit = false;
+      m_text_buffer->set_text("");
+      m_signal_text_edited();
+    }
+  return true;
+}
+
 MainInput::type_signal_build_skeleton MainInput::signal_build_skeleton()
 {
   return m_signal_build_skeleton;
@@ -226,3 +245,19 @@ MainInput::type_signal_build_profile MainInput::signal_build_profile()
 {
   return m_signal_build_profile;
 }
+
+MainInput::type_signal_text_edited MainInput::signal_text_edited()
+{
+  return m_signal_text_edited;
+}
+
+void MainInput::set_text_edit_info_string(const Glib::ustring& info_string)
+{
+  m_skeleton_button.grab_focus();
+  m_text_buffer->set_text("");
+  auto iter = m_text_buffer->begin();
+  m_text_buffer->insert_with_tag(iter,info_string,"info");
+  m_clean_on_edit = true;
+  
+}
+
