@@ -1,14 +1,19 @@
+engine_sources = ['pangocairo-to-contour.cc',
+                  'smooth-sharp-angles.cc',
+                  'svgpath-to-cairo.cc']
+
 sources = ['pomelo-main.cc',
            'pomelo.cc',
            'mesh-viewer.cc',
            'trackball.cc',
            'main-input.cc',
            'mesh.cc',
-           'pangocairo-to-contour.cc',
            'worker-skeleton.cc',
            'progress-dialog.cc',
            'skeleton-viewer.cc',
-           'svgpath-to-cairo.cc',
+           'settings-dialog.cc',
+           'pomelo-widget-utils.cc',
+           'pomelo-settings.cc'
           ]
 
 if host_machine.system() == 'windows'
@@ -32,18 +37,6 @@ gmp_dep = dependency('gmp')
 mpfr_dep = dependency('mpfr')
 nanosvg_dep = dependency('nanosvg')
 
-deps = [gtkmm_dep,
-        pangoft_dep,
-        epoxy_dep,
-        fmt_dep,
-        glm_dep,
-        gmp_dep,
-        mpfr_dep,
-        m_dep,
-        pthread_dep,
-        nanosvg_dep]
-
-
 subdir('giv-widget')
 
 resources = gnome.compile_resources(
@@ -55,6 +48,21 @@ resources = gnome.compile_resources(
                 '../images',]
 )
 
+deps = [gtkmm_dep,
+        pangoft_dep,
+        epoxy_dep,
+        fmt_dep,
+        glm_dep,
+        gmp_dep,
+        mpfr_dep,
+        m_dep,
+        pthread_dep,
+        nanosvg_dep]
+
+lib_engine = static_library('engine',
+                            engine_sources,
+                            dependencies : deps)
+
 incdir = ['giv-widget']
 exe = executable(name_cap,
                  sources,
@@ -65,6 +73,7 @@ exe = executable(name_cap,
                  include_directories : incdir,
                  link_with : [libgivwidget,
                               libgtkimageviewer,
+                              lib_engine
                               ],
                  install :true
                 )
@@ -72,6 +81,12 @@ exe = executable(name_cap,
 
 # An example for converting an svg path to cairo
 executable('test-svgpath-to-cairo',
-           ['test-svgpath-to-cairo.cc',
-            'svgpath-to-cairo.cc'],
+           ['test-svgpath-to-cairo.cc'],
+           link_with : [lib_engine],
+           dependencies : deps)
+
+# An example for converting an svg path to cairo
+executable('test-svg-to-skeleton',
+           ['test-svg-to-skeleton.cc'],
+           link_with : [lib_engine],
            dependencies : deps)

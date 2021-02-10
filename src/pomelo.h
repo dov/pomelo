@@ -14,6 +14,7 @@
 #include "worker-skeleton.h"
 #include "progress-dialog.h"
 #include "skeleton-viewer.h"
+#include "settings-dialog.h"
 
 class Pomelo;
 
@@ -35,7 +36,7 @@ class Pomelo : public Gtk::Window
 {
 
 public:
-  Pomelo();
+  Pomelo(std::shared_ptr<PomeloSettings> pomelo_settings);
   virtual ~Pomelo();
 
   void set_mesh(const std::string& mesh_filename);
@@ -60,6 +61,7 @@ private:
   void on_action_help_about();
   void on_action_view_skeleton();
   void on_action_reset_3d_view();
+  void on_action_view_settings();
   void on_action_load_svg();
 
   // If the svg_filename is non-nil, use the svg filename,
@@ -85,6 +87,7 @@ private:
   MeshViewer m_mesh_viewer;
   ProgressDialog m_progress_dialog;
   Glib::RefPtr<SkeletonViewer> m_skeleton_viewer;
+  Glib::RefPtr<SettingsDialog> m_settings_dialog;
 
   Gtk::Statusbar m_statusbar;
   Glib::RefPtr<Gtk::Builder> m_refBuilder;
@@ -96,6 +99,7 @@ private:
   WorkerSkeleton m_worker_skeleton;
   std::unique_ptr<std::thread> m_worker_skeleton_thread;
   WorkerAction m_worker_action;  // What is our worker doing
+  std::shared_ptr<PomeloSettings> m_pomelo_settings;
 };
 
 #endif /* HELLO-WORLD */

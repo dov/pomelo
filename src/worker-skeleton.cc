@@ -21,18 +21,26 @@
 #include <sstream>
 #include <chrono>
 #include <fmt/core.h>
+#include "smooth-sharp-angles.h"
+
 
 using namespace std;
 using namespace fmt;
 
+const double MY_PI=3.141592653589793;
+const double DEG2RAD=MY_PI/180;
+
 // constructor
-WorkerSkeleton::WorkerSkeleton(Pomelo *caller) :
+WorkerSkeleton::WorkerSkeleton(Pomelo *caller,
+                               shared_ptr<PomeloSettings> pomelo_settings
+                               ) :
   m_mutex(),
   m_shall_stop(false),
   m_has_stopped(false),
   m_fraction_done(0.0),
   m_message(),
-  m_caller(caller)
+  m_caller(caller),
+  m_pomelo_settings(pomelo_settings)
 {
   m_skeleton_updater = make_shared<SkeletonUpdater>(this);
   m_textrusion = make_shared<TeXtrusion>(m_skeleton_updater);
@@ -95,6 +103,7 @@ void WorkerSkeleton::do_work_skeleton(
   bool finished_successfully = false;
   string error_message;
   string giv_string;
+
   try {
     Cairo::RefPtr<Cairo::Context> cr;
     if (svg_filename.size()>0)
@@ -103,6 +112,14 @@ void WorkerSkeleton::do_work_skeleton(
       cr = m_textrusion->markup_to_context(markup);
     auto polys = m_textrusion->cairo_path_to_polygons(cr);
     auto polys_with_holes = m_textrusion->polys_to_polys_with_holes(polys);
+
+    if (m_pomelo_settings->get_int_default("smooth_sharp_angles",1))
+      {
+        double max_angle_to_smooth = m_pomelo_settings->get_double_default("smooth_max_angle", 135) * DEG2RAD;
+        print("max_angle_to_smooth = {}\n", max_angle_to_smooth/DEG2RAD);
+        polys_with_holes = smooth_acute_angles(0.1, max_angle_to_smooth, polys_with_holes, 16);
+      }
+    
     m_phole_infos = m_textrusion->skeletonize(polys_with_holes,
                                               // output
                                               giv_string);

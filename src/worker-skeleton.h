@@ -12,6 +12,7 @@
 #include <mutex>
 #include "pangocairo-to-contour.h"
 #include "mesh.h"
+#include "pomelo-settings.h"
 
 class Pomelo;
 class WorkerSkeleton;
@@ -33,7 +34,8 @@ class SkeletonUpdater : public Updater
 class WorkerSkeleton
 {
 public:
-  WorkerSkeleton(Pomelo*caller);
+  WorkerSkeleton(Pomelo* caller,
+                 std::shared_ptr<PomeloSettings> pomelo_settings);
 
   // Thread functions
 
@@ -94,6 +96,7 @@ private:
   std::shared_ptr<TeXtrusion> m_textrusion;
   std::string m_error_message;
   Pomelo* m_caller; // Used for notifications
+  std::shared_ptr<PomeloSettings> m_pomelo_settings;
 };
 
 

@@ -11,9 +11,10 @@ using namespace std;
 using namespace fmt;
 
 
-Pomelo::Pomelo()
+Pomelo::Pomelo(shared_ptr<PomeloSettings> pomelo_settings)
   : m_progress_dialog(*this,""),
-    m_worker_skeleton(this)
+    m_worker_skeleton(this, pomelo_settings),
+    m_pomelo_settings(pomelo_settings)
 {
   set_title("Pomelo");
   set_icon(Gdk::Pixbuf::create_from_resource("/about/pomelo_logo.png", -1, 80, true));
@@ -26,6 +27,22 @@ Pomelo::Pomelo()
   m_skeleton_viewer = Glib::RefPtr<SkeletonViewer>(new SkeletonViewer(*this));
   m_skeleton_viewer->signal_response().connect([=](int response_id) {
     m_skeleton_viewer->hide();
+  });
+
+  m_settings_dialog = Glib::RefPtr<SettingsDialog>(new SettingsDialog(*this,
+                                                                      m_pomelo_settings));
+  m_settings_dialog->signal_response().connect([=](int response_id)
+  {
+    if (response_id==1) // OK - Should make this an enum
+      {
+        m_settings_dialog->save_to_settings();
+        m_pomelo_settings->save();
+        m_main_input.set_skeleton_ready_state(false);
+      }
+    else
+      m_settings_dialog->load_from_settings();
+      
+    m_settings_dialog->hide();
   });
 
   //Define the actions:
@@ -48,6 +65,9 @@ Pomelo::Pomelo()
 
   m_refActionGroup->add_action("view_skeleton",
     sigc::mem_fun(*this, &Pomelo::on_action_view_skeleton) );
+
+  m_refActionGroup->add_action("settings",
+    sigc::mem_fun(*this, &Pomelo::on_action_view_settings) );
 
   insert_action_group("pomelo", m_refActionGroup);
   
@@ -87,6 +107,10 @@ Pomelo::Pomelo()
     "      <item>"
     "        <attribute name='label' translatable='yes'>_View Skeleton</attribute>"
     "        <attribute name='action'>pomelo.view_skeleton</attribute>"
+    "      </item>"
+    "      <item>"
+    "        <attribute name='label' translatable='yes'>Settings</attribute>"
+    "        <attribute name='action'>pomelo.settings</attribute>"
     "      </item>"
     "    </submenu>"
     "    <submenu>"
@@ -268,6 +292,11 @@ void Pomelo::on_action_view_skeleton()
 void Pomelo::on_action_reset_3d_view()
 {
   m_mesh_viewer.reset_view();
+}
+
+void Pomelo::on_action_view_settings()
+{
+  m_settings_dialog->show();
 }
 
 #if 0

@@ -2,3 +2,7 @@
 build/
 mingw64/
 build_mingw64/
+*.giv
+*.stl
+/src/giv-widget/gtk-image-viewer/gtk-image-viewer-fixed.*
+*.svg

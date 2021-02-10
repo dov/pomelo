@@ -290,7 +290,8 @@ vector<PHoleInfo> TeXtrusion::skeletonize(const std::vector<Polygon_with_holes>&
     vector<PHoleInfo> phole_infos;
 
     for (int ph_idx=0; ph_idx < (int)polys_with_holes.size(); ph_idx++) {
-        if (updater->info("skeletonize", 1.0*ph_idx/polys_with_holes.size()))
+        if (updater &&
+            updater->info("skeletonize", 1.0*ph_idx/polys_with_holes.size()))
             throw EAborted("Aborted!");
 
         const auto& ph = polys_with_holes[ph_idx];
@@ -300,7 +301,7 @@ vector<PHoleInfo> TeXtrusion::skeletonize(const std::vector<Polygon_with_holes>&
         phi.divide_into_regions();
         phole_infos.push_back(phi);
     }
-    if (updater->info("skeletonize", 1.0))
+    if (updater && updater->info("skeletonize", 1.0))
         throw EAborted("Aborted!");
 
     // Create a skeleton giv path. This is a replication of the code
@@ -364,7 +365,7 @@ Mesh TeXtrusion::skeleton_to_mesh(const vector<PHoleInfo>& phole_infos,
     // triangulation for both.
     double offset_thickness = 0.5;
     for (int ph_idx=0; ph_idx < (int)phole_infos.size(); ph_idx++) {
-        if (updater->info("profile", 1.0*ph_idx/phole_infos.size()))
+        if (updater && updater->info("profile", 1.0*ph_idx/phole_infos.size()))
             throw EAborted("Aborted!");
 
         auto& phi = phole_infos[ph_idx];
@@ -498,7 +499,7 @@ Mesh TeXtrusion::skeleton_to_mesh(const vector<PHoleInfo>& phole_infos,
     of << giv_string;
     of.close();
 #endif
-    if (updater->info("profile", 1.0))
+    if (updater && updater->info("profile", 1.0))
         throw EAborted("Aborted!");
 
     return mesh;

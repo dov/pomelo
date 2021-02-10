@@ -1,40 +1,12 @@
 #include "main-input.h"
 #include "dov-mm-macros.h"
+#include "pomelo-widget-utils.h"
 #include <math.h>
 #include <fmt/core.h>
 
 using namespace fmt;
 
 constexpr double DEG2RAD = M_PI/180;
-
-static Gtk::Widget* mmLabelAligned(const gchar *markup, double xAlign)
-{
-  auto w_label = mm<Gtk::Label>();
-  w_label->set_markup(markup);
-  w_label->set_alignment(xAlign,0.5);
-  return w_label;
-}
-
-// Make a left aligned managed label with markup
-static Gtk::Widget* mmLabelLeft(const gchar *markup)
-{
-  return mmLabelAligned(markup, 0);
-}
-
-// Make a left aligned managed label with markup
-static Gtk::Widget* mmLabelRight(const gchar *markup)
-{
-  return mmLabelAligned(markup, 1);
-}
-
-static Gtk::Frame* mmFrameWithBoldLabel(Glib::ustring label)
-{
-  auto w_frame = mm<Gtk::Frame>();
-  auto w_frame_label = mm<Gtk::Label>();
-  w_frame_label->set_markup(Glib::ustring("<b>") + label + "</b>");
-  w_frame->set_label_widget(*w_frame_label);
-  return w_frame;
-}
 
 MainInput::MainInput()
   : Gtk::Box(Gtk::ORIENTATION_VERTICAL)
