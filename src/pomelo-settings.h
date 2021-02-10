@@ -24,6 +24,7 @@ class PomeloSettings : public Glib::KeyFile
 
   private:
   std::string m_settings_file;
+  std::string m_group_name;
 };
 
 #endif /* POMELO-SETTINGS */
