@@ -60,6 +60,7 @@ private:
   void on_action_file_export_stl();
   void on_action_help_about();
   void on_action_view_skeleton();
+  void on_action_show_edge();
   void on_action_reset_3d_view();
   void on_action_view_settings();
   void on_action_load_svg();
@@ -100,6 +101,7 @@ private:
   std::unique_ptr<std::thread> m_worker_skeleton_thread;
   WorkerAction m_worker_action;  // What is our worker doing
   std::shared_ptr<PomeloSettings> m_pomelo_settings;
+  Glib::RefPtr<Gio::SimpleAction> m_ref_show_edge_toggle;
 };
 
 #endif /* HELLO-WORLD */

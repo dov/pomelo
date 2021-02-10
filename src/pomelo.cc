@@ -66,6 +66,11 @@ Pomelo::Pomelo(shared_ptr<PomeloSettings> pomelo_settings)
   m_refActionGroup->add_action("view_skeleton",
     sigc::mem_fun(*this, &Pomelo::on_action_view_skeleton) );
 
+  bool init_show_edge = m_pomelo_settings->get_int_default("show_edge",0);
+  m_mesh_viewer.set_show_edge(init_show_edge);
+  m_ref_show_edge_toggle = m_refActionGroup->add_action_bool("show_edge",
+    sigc::mem_fun(*this, &Pomelo::on_action_show_edge), init_show_edge );
+
   m_refActionGroup->add_action("settings",
     sigc::mem_fun(*this, &Pomelo::on_action_view_settings) );
 
@@ -76,47 +81,51 @@ Pomelo::Pomelo(shared_ptr<PomeloSettings> pomelo_settings)
     "<interface>"
     "  <menu id='menubar'>"
     "    <submenu>"
-    "      <attribute name='label' translatable='yes'>_File</attribute>"
+    "      <attribute name='label'>_File</attribute>"
     "      <section>"
     "        <item>"
-    "          <attribute name='label' translatable='yes'>_Export STL</attribute>"
+    "          <attribute name='label'>_Export STL</attribute>"
     "          <attribute name='action'>pomelo.export_stl</attribute>"
     "          <attribute name='accel'>&lt;Primary&gt;s</attribute>"
     "        </item>"
     "        <item>"
-    "          <attribute name='label' translatable='yes'>_Load SVG</attribute>"
+    "          <attribute name='label'>_Load SVG</attribute>"
     "          <attribute name='action'>pomelo.load_svg</attribute>"
     "          <attribute name='accel'>&lt;Primary&gt;s</attribute>"
     "        </item>"
     "        <item>"
-    "          <attribute name='label' translatable='yes'>_Quit</attribute>"
+    "          <attribute name='label'>_Quit</attribute>"
     "          <attribute name='action'>pomelo.quit</attribute>"
     "          <attribute name='accel'>&lt;Primary&gt;q</attribute>"
     "        </item>"
     "      </section>"
     "    </submenu>"
     "    <submenu>"
-    "      <attribute name='label' translatable='yes'>_View</attribute>"
+    "      <attribute name='label'>_View</attribute>"
     "      <item>"
-    "        <attribute name='label' translatable='yes'>_Reset 3D View</attribute>"
+    "        <attribute name='label'>_Reset 3D View</attribute>"
     "        <attribute name='action'>pomelo.reset_3d_view</attribute>"
+    "      </item>"
+    "      <item>"
+    "        <attribute name='label'>Show mesh edges</attribute>"
+    "        <attribute name='action'>pomelo.show_edge</attribute>"
     "      </item>"
     "    </submenu>"
     "    <submenu>"
-    "      <attribute name='label' translatable='yes'>_Tools</attribute>"
+    "      <attribute name='label'>_Tools</attribute>"
     "      <item>"
-    "        <attribute name='label' translatable='yes'>_View Skeleton</attribute>"
+    "        <attribute name='label'>_View Skeleton</attribute>"
     "        <attribute name='action'>pomelo.view_skeleton</attribute>"
     "      </item>"
     "      <item>"
-    "        <attribute name='label' translatable='yes'>Settings</attribute>"
+    "        <attribute name='label'>Settings</attribute>"
     "        <attribute name='action'>pomelo.settings</attribute>"
     "      </item>"
     "    </submenu>"
     "    <submenu>"
-    "      <attribute name='label' translatable='yes'>_Help</attribute>"
+    "      <attribute name='label'>_Help</attribute>"
     "      <item>"
-    "        <attribute name='label' translatable='yes'>_About</attribute>"
+    "        <attribute name='label'>_About</attribute>"
     "        <attribute name='action'>pomelo.about</attribute>"
     "      </item>"
     "    </submenu>"
@@ -287,6 +296,22 @@ void Pomelo::on_action_help_about()
 void Pomelo::on_action_view_skeleton()
 {
   m_skeleton_viewer->show();
+}
+
+void Pomelo::on_action_show_edge()
+{
+  bool active = false;
+  m_ref_show_edge_toggle->get_state(active);
+
+  //The toggle action's state does not change automatically:
+  active = !active;
+  m_ref_show_edge_toggle->change_state(active);
+
+  // Store the new state
+  m_pomelo_settings->set_int("show_edge", int(active));
+  m_pomelo_settings->save();
+
+  m_mesh_viewer.set_show_edge(active);
 }
 
 void Pomelo::on_action_reset_3d_view()

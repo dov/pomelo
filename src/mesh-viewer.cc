@@ -134,47 +134,64 @@ void MeshViewer::init_shaders ()
   /* load the vertex shader */
   Glib::RefPtr<const Glib::Bytes> vertex_source = Gio::Resource::lookup_data_global("/shaders/vertex.glsl");
   Glib::RefPtr<const Glib::Bytes> fragment_source = Gio::Resource::lookup_data_global("/shaders/fragment.glsl");
+  Glib::RefPtr<const Glib::Bytes> fragment_edge_source = Gio::Resource::lookup_data_global("/shaders/fragment-edge.glsl");
   
   guint vertex = create_shader(GL_VERTEX_SHADER, vertex_source);
+  guint vertex_edge = create_shader(GL_VERTEX_SHADER, vertex_source);
   guint fragment = create_shader(GL_FRAGMENT_SHADER, fragment_source);
+  guint fragment_edge = create_shader(GL_FRAGMENT_SHADER, fragment_edge_source);
   m_program = glCreateProgram ();
   glAttachShader (m_program, vertex);
   glAttachShader (m_program, fragment);
   glLinkProgram (m_program);
+
+  // A different program for showing edges
+  m_program_edge = glCreateProgram();
+  glAttachShader (m_program_edge, vertex_edge);
+  glAttachShader (m_program_edge, fragment_edge);
+  glLinkProgram (m_program_edge);
 
   m_position_index = 0;
   m_color_index = 1;
   m_normal_index = 2;
   m_bary_index = 3;
 
-  glBindAttribLocation(m_program, m_position_index, "position");
-  glBindAttribLocation(m_program, m_color_index, "color");
-  glBindAttribLocation(m_program, m_normal_index, "normal");
-  glBindAttribLocation(m_program, m_bary_index, "bary");
-
-  int status = 0;
-  glGetProgramiv (m_program, GL_LINK_STATUS, &status);
-  if (status == GL_FALSE)
+  for (auto p : {m_program, m_program_edge})
     {
-      int log_len = 0;
-      glGetProgramiv (m_program, GL_INFO_LOG_LENGTH, &log_len);
+      glBindAttribLocation(p, m_position_index, "position");
+      glBindAttribLocation(p, m_color_index, "color");
+      glBindAttribLocation(p, m_normal_index, "normal");
+      glBindAttribLocation(p, m_bary_index, "bary");
 
-      string error_string;
-      error_string.resize(log_len+1);
-      glGetProgramInfoLog (m_program, log_len, NULL, &error_string[0]);
-
-      glDeleteProgram (m_program);
-      throw runtime_error(
-        format(
-          "Linking failure in program: {}",
-          error_string));
+      int status = 0;
+      glGetProgramiv (p, GL_LINK_STATUS, &status);
+      if (status == GL_FALSE)
+        {
+          int log_len = 0;
+          glGetProgramiv (p, GL_INFO_LOG_LENGTH, &log_len);
+    
+          string error_string;
+          error_string.resize(log_len+1);
+          glGetProgramInfoLog (p, log_len, NULL, &error_string[0]);
+    
+          glDeleteProgram (p);
+          throw runtime_error(
+            format(
+              "Linking failure in program: {}",
+              error_string));
+        }
     }
 
   /* the individual shaders can be detached and destroyed */
   glDetachShader (m_program, vertex);
   glDetachShader (m_program, fragment);
+  glDetachShader (m_program_edge, vertex_edge);
+  glDetachShader (m_program_edge, fragment_edge);
+
   glDeleteShader (vertex);
+  glDeleteShader (vertex_edge);
   glDeleteShader (fragment);
+  glDeleteShader (fragment_edge);
 }
 
 void MeshViewer::init_buffers (guint *vao_out)
@@ -341,19 +358,24 @@ void MeshViewer::build_projection_matrix()
 // Draw the mesh (or meshes)
 void MeshViewer::draw_mesh()
 {
+  guint program;
+  if (m_show_edge)
+    program = m_program_edge;
+  else
+    program = m_program;
+  glUseProgram(program);
+
   setup_world(m_size_scale*m_view_scale, 
               m_view_quat, m_pivot);
   
-  glUseProgram(m_program);
-
   // get the uniform locations
-  m_proj_loc = glGetUniformLocation (m_program, "projMatrix");
-  m_mv_loc = glGetUniformLocation (m_program, "mvMatrix");
-  m_normal_matrix_loc = glGetUniformLocation (m_program, "normalMatrix");
-  guint shininess_loc=glGetUniformLocation (m_program, "shininess");
-  guint specular_loc=glGetUniformLocation (m_program, "specular");
-  guint diffuse_loc=glGetUniformLocation (m_program, "diffuse");
-  guint ambient_loc=glGetUniformLocation (m_program, "ambient");
+  m_proj_loc = glGetUniformLocation (program, "projMatrix");
+  m_mv_loc = glGetUniformLocation (program, "mvMatrix");
+  m_normal_matrix_loc = glGetUniformLocation (program, "normalMatrix");
+  guint shininess_loc=glGetUniformLocation (program, "shininess");
+  guint specular_loc=glGetUniformLocation (program, "specular");
+  guint diffuse_loc=glGetUniformLocation (program, "diffuse");
+  guint ambient_loc=glGetUniformLocation (program, "ambient");
 
   // Fixed light properties - Should be configurable
   glUniform1f(shininess_loc, 10.0);
@@ -641,4 +663,10 @@ void MeshViewer::view_port_to_world(glm::vec3 view_port_coord,
                               1.0);
                   
   world_coord = glm::vec3(v.x/v.w,v.y/v.w,v.z/v.w);
+}
+
+void MeshViewer::set_show_edge(bool show_edge)
+{
+  m_show_edge = show_edge;
+  queue_render();
 }

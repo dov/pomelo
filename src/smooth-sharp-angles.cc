@@ -83,7 +83,7 @@ static double calc_angle(const Point_2& p,
   Vector_2 v(q,p);
   Vector_2 w(q,r);
   double angle = acos(v*w/(CGAL::sqrt(v.squared_length())*CGAL::sqrt(w.squared_length())));
-  print("angle = {} deg\n", angle*180/MY_PI);
+  //  print("angle = {} deg\n", angle*180/MY_PI);
   return angle;
 }
 

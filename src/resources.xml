@@ -4,6 +4,7 @@
   </gresource>
   <gresource prefix="/shaders">
     <file>fragment.glsl</file>
+    <file>fragment-edge.glsl</file>
     <file>vertex.glsl</file>
   </gresource>
   <gresource prefix="/about">

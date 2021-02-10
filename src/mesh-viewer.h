@@ -34,6 +34,9 @@ class MeshViewer : public Gtk::GLArea
   // Reset the view to the original view
   void reset_view();
 
+  // Whether to use the edge shader or the non-edge shader
+  void set_show_edge(bool show_edge);
+
   private:
 
   // signals
@@ -75,6 +78,7 @@ class MeshViewer : public Gtk::GLArea
   guint m_vao {0};
   guint m_buffer {0};
   guint m_program {0};
+  guint m_program_edge {0};
 
   // Describe the vertex attribute layout
   guint m_position_index {0};
@@ -94,6 +98,9 @@ class MeshViewer : public Gtk::GLArea
   guint m_specular;
   guint m_diffuse;
   guint m_ambient;
+
+  // which shader to use
+  bool m_show_edge = false;
 
   // world description
   glm::mat4 m_proj_matrix;
