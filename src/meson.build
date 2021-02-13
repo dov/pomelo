@@ -1,6 +1,7 @@
-engine_sources = ['pangocairo-to-contour.cc',
+engine_sources = ['textrusion.cc',
                   'smooth-sharp-angles.cc',
-                  'svgpath-to-cairo.cc']
+                  'svgpath-to-cairo.cc',
+                  'pango-to-cairo.cc']
 
 sources = ['pomelo-main.cc',
            'pomelo.cc',
@@ -90,3 +91,9 @@ executable('test-svg-to-skeleton',
            ['test-svg-to-skeleton.cc'],
            link_with : [lib_engine],
            dependencies : deps)
+
+executable('test-pango-to-cairo',
+           ['test-pango-to-cairo.cc'],
+           link_with : [lib_engine],
+           dependencies : deps)
+

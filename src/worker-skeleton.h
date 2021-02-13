@@ -10,7 +10,7 @@
 #include <gtkmm.h>
 #include <thread>
 #include <mutex>
-#include "pangocairo-to-contour.h"
+#include "textrusion.h"
 #include "mesh.h"
 #include "pomelo-settings.h"
 

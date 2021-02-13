@@ -1,11 +1,11 @@
 //======================================================================
-//  pangocairo-to-contour.h - 
+//  textrusion.h - Beveling of text (and svg)
 //
 //  Dov Grobgeld <dov.grobgeld@gmail.com>
 //  Thu Dec 31 07:54:07 2020
 //----------------------------------------------------------------------
-#ifndef PANGOCAIRO_TO_CONTOUR_H
-#define PANGOCAIRO_TO_CONTOUR_H
+#ifndef TEXTRUSION_H
+#define TEXTRUSION_H
 
 // pango and cairo dependencies
 #include <glibmm.h>
@@ -207,4 +207,4 @@ class TeXtrusion {
     std::shared_ptr<Updater> updater;
 };
 
-#endif /* PANGOCAIRO-TO-CONTOUR */
+#endif /* TEXTRUSION */

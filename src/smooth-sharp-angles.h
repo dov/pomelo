@@ -7,7 +7,7 @@
 #ifndef SMOOTH_SHARP_ANGLES_H
 #define SMOOTH_SHARP_ANGLES_H
 
-#include <pangocairo-to-contour.h>
+#include "textrusion.h"
 
 std::vector<Polygon_with_holes>
 smooth_acute_angles(double radius,

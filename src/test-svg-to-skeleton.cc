@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <fstream>
-#include <pangocairo-to-contour.h>
+#include <textrusion.h>
 #include <smooth-sharp-angles.h>
 
 using namespace std;

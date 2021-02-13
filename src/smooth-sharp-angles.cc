@@ -4,7 +4,7 @@
 //
 //  file:../smooth-corner.py
 
-#include "pangocairo-to-contour.h"
+#include "textrusion.h"
 #include <math.h>
 #include <fmt/core.h>
 

@@ -21,7 +21,6 @@ static void die(const char *fmt, ...)
 
 int main(int argc, char **argv)
 {
-
   int argp=1;
 
   if (argp >= argc)

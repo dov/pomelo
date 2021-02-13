@@ -1,6 +1,6 @@
 #include "pomelo.h"
 #include "fmt/core.h"
-#include "pangocairo-to-contour.h"
+#include "textrusion.h"
 #include "pomelo-settings.h"
 
 using namespace std;

@@ -19,7 +19,7 @@ using namespace glm;
 #define VIEW_INIT_AXIS_Y 0.0
 #define VIEW_INIT_AXIS_Z 0.0
 #define VIEW_INIT_ANGLE  20.0
-#define VIEW_SCALE_MAX 100.0
+#define VIEW_SCALE_MAX 10000.0
 #define VIEW_SCALE_MIN 0.001
 
 #define DIG_2_RAD (G_PI / 180.0)

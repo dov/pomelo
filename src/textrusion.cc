@@ -8,8 +8,9 @@
 #include <string.h>
 #include <vector>
 #include <list>
-#include "pangocairo-to-contour.h"
+#include "textrusion.h"
 #include "svgpath-to-cairo.h"
+#include "pango-to-cairo.h"
 
 using namespace std;
 using namespace Glib;
@@ -18,7 +19,7 @@ using namespace fmt;
 // Create a pango context from a svg filename
 Cairo::RefPtr<Cairo::Context> TeXtrusion::svg_filename_to_context(const string& filename)
 {
-  auto surface = Cairo::ImageSurface::create (Cairo::FORMAT_ARGB32, 500, 500);
+  auto surface = Cairo::ImageSurface::create (Cairo::FORMAT_ARGB32, 5000, 5000);
   auto cr = Cairo::Context::create(surface);
 
   svgpaths_to_cairo(cr->cobj(), filename.c_str(), true);
@@ -29,6 +30,14 @@ Cairo::RefPtr<Cairo::Context> TeXtrusion::svg_filename_to_context(const string& 
 // Take a pango markup and turn it into a cairo context that is returned
 Cairo::RefPtr<Cairo::Context> TeXtrusion::markup_to_context(const string& markup)
 {
+  auto surface = Cairo::ImageSurface::create (Cairo::FORMAT_ARGB32, 5000, 500);
+  auto cr = Cairo::Context::create(surface);
+
+  pangomarkup_to_cairo(cr->cobj(),       
+                       markup.c_str(),
+                       font_description.gobj());
+  return cr;
+#if 0
   PangoFontMap *fm;
   fm = pango_ft2_font_map_new();
   RefPtr<Pango::FontMap> fontmap = Glib::wrap(fm);
@@ -39,9 +48,11 @@ Cairo::RefPtr<Cairo::Context> TeXtrusion::markup_to_context(const string& markup
 
   context->set_font_description(font_description);
 
-  auto surface = Cairo::ImageSurface::create (Cairo::FORMAT_ARGB32, 500, 500);
+  auto surface = Cairo::ImageSurface::create (Cairo::FORMAT_ARGB32, 5000, 500);
   auto cr = Cairo::Context::create(surface);
   RefPtr<Pango::Layout> layout = Pango::Layout::create(cr);
+  layout->set_wrap(Pango::WRAP_WORD);
+  layout->set_width(10000*PANGO_SCALE);
   layout->set_font_description(font_description);
   layout->get_context()->set_language(Pango::Language("C"));
   layout->get_context()->set_base_dir (do_rtl ? Pango::Direction::DIRECTION_RTL : Pango::Direction::DIRECTION_LTR);
@@ -49,7 +60,9 @@ Cairo::RefPtr<Cairo::Context> TeXtrusion::markup_to_context(const string& markup
   layout->set_markup(markup);
 
   cr->translate(0,0);
-  cr->scale(100,100);
+  //  cr->scale(0.1,0.1); // This scaling is done to prevent clipping in the
+                      // cairo layout. The linear limit is changed in
+                      // in correspondance.
   cr->move_to(0,0);
   cr->set_source_rgb(0,0,0);
 
@@ -62,9 +75,47 @@ Cairo::RefPtr<Cairo::Context> TeXtrusion::markup_to_context(const string& markup
   // To do this properly we need to merge this routine with the
   // TeXtrusion::cairo_path_to_polygons() and
   // TeXtrusion::polys_to_polys_with_holes().
+  pango_cairo_update_layout(cr->cobj(), layout->gobj());
+  PangoLayoutIter *layout_iter = pango_layout_get_iter(layout->gobj());
+  float line_spacing = pango_layout_get_line_spacing(layout->gobj());
+  do {
+    do {
+      print("showing a glyph item\n");
+      PangoGlyphItem *glyph_item = pango_layout_iter_get_run(layout_iter);
+      
+      // TBD - add one glyph at a time
+      print("TBD: Layout {} glyphs\n", glyph_item->glyphs->num_glyphs);
+  
+      for (int i=0; i<glyph_item->glyphs->num_glyphs; i++)
+        {
+          PangoGlyphInfo *glyph_info = glyph_item->glyphs->glyphs+i;
+          PangoGlyphString gs = {1,
+            glyph_info,
+            glyph_item->glyphs->log_clusters + i};
+          
+          // Move to the position of the glyph
+          cr->rel_move_to(glyph_info->geometry.x_offset/PANGO_SCALE,
+                          glyph_info->geometry.y_offset/PANGO_SCALE);
+          pango_cairo_glyph_string_path(cr->cobj(),
+                                        glyph_item->item->analysis.font,
+                                        &gs);
+          cr->rel_move_to(-glyph_info->geometry.x_offset/PANGO_SCALE,
+                          -glyph_info->geometry.y_offset/PANGO_SCALE);
+          cr->rel_move_to(glyph_info->geometry.width/PANGO_SCALE,0);
+        }
+    } while(!pango_layout_iter_next_run(layout_iter));
+    cr->rel_move_to(0, line_spacing/PANGO_SCALE);
+  } while(!pango_layout_iter_next_line(layout_iter));
+
+  pango_layout_iter_free(layout_iter);
+
+#if 0
+  // The following is equivalent
   pango_cairo_layout_path(cr->cobj(), layout->gobj());
+#endif
 
   return cr;
+#endif
 }
 
 // Convert a cairo path to a vector of CGAL polygons.
@@ -78,7 +129,7 @@ TeXtrusion::cairo_path_to_polygons(Cairo::RefPtr<Cairo::Context>& cr)
   vector<Polygon_2> polys;
   Polygon_2 poly;
   
-  cr->set_tolerance(linear_limit); 
+  cr->set_tolerance(linear_limit*1e-2); 
   Cairo::Path *path = cr->copy_path_flat();
   cairo_path_t *cpath = path->cobj();
   double eps = 1e-5;
@@ -121,6 +172,7 @@ TeXtrusion::cairo_path_to_polygons(Cairo::RefPtr<Cairo::Context>& cr)
           break;
       }
   }
+  print("cpath->num_data={} poly_size={}\n", cpath->num_data, polys.size());
   if (updater)
       if (updater->info("cairo path to polygons", 1.0))
           throw EAborted("Aborted!");

@@ -10,7 +10,7 @@
 #include <gtkmm.h>
 #include "main-input.h"
 #include "mesh-viewer.h"
-#include "pangocairo-to-contour.h"
+#include "textrusion.h"
 #include "worker-skeleton.h"
 #include "progress-dialog.h"
 #include "skeleton-viewer.h"
