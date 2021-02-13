@@ -53,6 +53,7 @@ class MeshViewer : public Gtk::GLArea
   void init_shaders();
   void init_buffers(guint *vao_out);
   void update_geometry();
+  void update_matcap(); // TBD add parameter
 
   // Request a redraw
   void draw_mesh();
@@ -79,6 +80,7 @@ class MeshViewer : public Gtk::GLArea
   guint m_buffer {0};
   guint m_program {0};
   guint m_program_edge {0};
+  guint m_program_matcap {0};
 
   // Describe the vertex attribute layout
   guint m_position_index {0};
@@ -88,8 +90,9 @@ class MeshViewer : public Gtk::GLArea
 
   // Uniform locations in the shaders
   guint m_proj_loc {0};
-  guint m_mv_loc {1};
-  guint m_normal_matrix_loc {1};
+  guint m_mv_loc {0};
+  guint m_normal_matrix_loc {0};
+  guint m_texture_loc {0};
 
   guint m_buffer_id;
 
@@ -99,8 +102,14 @@ class MeshViewer : public Gtk::GLArea
   guint m_diffuse;
   guint m_ambient;
 
+  // The texture for the matcap
+  guint m_matcap_texture {0};
+
+  Glib::RefPtr< Gdk::Pixbuf > m_img;
+
   // which shader to use
   bool m_show_edge = false;
+  bool m_show_matcap = true;
 
   // world description
   glm::mat4 m_proj_matrix;

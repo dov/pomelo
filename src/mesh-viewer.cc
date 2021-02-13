@@ -9,6 +9,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include <gdkmm/pixbuf.h>
 #include "trackball.h"
 
 using namespace std;
@@ -135,11 +136,15 @@ void MeshViewer::init_shaders ()
   Glib::RefPtr<const Glib::Bytes> vertex_source = Gio::Resource::lookup_data_global("/shaders/vertex.glsl");
   Glib::RefPtr<const Glib::Bytes> fragment_source = Gio::Resource::lookup_data_global("/shaders/fragment.glsl");
   Glib::RefPtr<const Glib::Bytes> fragment_edge_source = Gio::Resource::lookup_data_global("/shaders/fragment-edge.glsl");
+  Glib::RefPtr<const Glib::Bytes> vertex_matcap_source = Gio::Resource::lookup_data_global("/shaders/vertex-matcap.glsl");
+  Glib::RefPtr<const Glib::Bytes> fragment_matcap_source = Gio::Resource::lookup_data_global("/shaders/fragment-matcap.glsl");
   
   guint vertex = create_shader(GL_VERTEX_SHADER, vertex_source);
-  guint vertex_edge = create_shader(GL_VERTEX_SHADER, vertex_source);
   guint fragment = create_shader(GL_FRAGMENT_SHADER, fragment_source);
+  guint vertex_edge = create_shader(GL_VERTEX_SHADER, vertex_source);
   guint fragment_edge = create_shader(GL_FRAGMENT_SHADER, fragment_edge_source);
+  guint vertex_matcap = create_shader(GL_VERTEX_SHADER, vertex_matcap_source);
+  guint fragment_matcap = create_shader(GL_FRAGMENT_SHADER, fragment_matcap_source);
   m_program = glCreateProgram ();
   glAttachShader (m_program, vertex);
   glAttachShader (m_program, fragment);
@@ -151,12 +156,19 @@ void MeshViewer::init_shaders ()
   glAttachShader (m_program_edge, fragment_edge);
   glLinkProgram (m_program_edge);
 
+  // And one for matcaps
+  m_program_matcap = glCreateProgram();
+  glAttachShader (m_program_matcap, vertex_matcap);
+  glAttachShader (m_program_matcap, fragment_matcap);
+  glLinkProgram (m_program_matcap);
+
+
   m_position_index = 0;
   m_color_index = 1;
   m_normal_index = 2;
   m_bary_index = 3;
 
-  for (auto p : {m_program, m_program_edge})
+  for (auto p : {m_program, m_program_edge, m_program_matcap})
     {
       glBindAttribLocation(p, m_position_index, "position");
       glBindAttribLocation(p, m_color_index, "color");
@@ -187,11 +199,15 @@ void MeshViewer::init_shaders ()
   glDetachShader (m_program, fragment);
   glDetachShader (m_program_edge, vertex_edge);
   glDetachShader (m_program_edge, fragment_edge);
+  glDetachShader (m_program_matcap, vertex_matcap);
+  glDetachShader (m_program_matcap, fragment_matcap);
 
   glDeleteShader (vertex);
-  glDeleteShader (vertex_edge);
   glDeleteShader (fragment);
+  glDeleteShader (vertex_edge);
   glDeleteShader (fragment_edge);
+  glDeleteShader (vertex_matcap);
+  glDeleteShader (fragment_matcap);
 }
 
 void MeshViewer::init_buffers (guint *vao_out)
@@ -254,6 +270,35 @@ void MeshViewer::update_geometry()
   glBindBuffer (GL_ARRAY_BUFFER, 0);
 }
 
+void MeshViewer::update_matcap()
+{
+  // The texture for the matcap
+  glGenTextures(1, &m_matcap_texture);
+
+  //  string filename = "/tmp/matcap/textures/00005.png";
+  //  string filename = "/tmp/6D6050_C8C2B9_A2998E_B4AA9F-512px.png";
+  string filename = "/tmp/6E2E36_D3A1A0_BD7175_C78C8B.png";
+  print("update_matcap from {}\n",filename);
+  m_img = Gdk::Pixbuf::create_from_file(filename)->flip(false);
+  int width = m_img->get_width();
+  int height = m_img->get_height();
+  int n_channels = m_img->get_n_channels();
+  print("n_channels = {}\n", n_channels);
+  uint8_t *data = m_img->get_pixels();
+  glBindTexture(GL_TEXTURE_2D, m_matcap_texture);
+
+  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
+    GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
+    GL_CLAMP_TO_EDGE);
+  glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+}
+
 void MeshViewer::on_realize()
 {
   m_realized = true;
@@ -267,6 +312,8 @@ void MeshViewer::on_realize()
 
   // Init the buffer
   init_buffers (&m_vao);
+
+  update_matcap();
 
   setup_quat();
 }
@@ -361,6 +408,8 @@ void MeshViewer::draw_mesh()
   guint program;
   if (m_show_edge)
     program = m_program_edge;
+  else if (m_show_matcap)
+    program = m_program_matcap;
   else
     program = m_program;
   glUseProgram(program);
@@ -372,16 +421,27 @@ void MeshViewer::draw_mesh()
   m_proj_loc = glGetUniformLocation (program, "projMatrix");
   m_mv_loc = glGetUniformLocation (program, "mvMatrix");
   m_normal_matrix_loc = glGetUniformLocation (program, "normalMatrix");
-  guint shininess_loc=glGetUniformLocation (program, "shininess");
-  guint specular_loc=glGetUniformLocation (program, "specular");
-  guint diffuse_loc=glGetUniformLocation (program, "diffuse");
-  guint ambient_loc=glGetUniformLocation (program, "ambient");
 
-  // Fixed light properties - Should be configurable
-  glUniform1f(shininess_loc, 10.0);
-  glUniform1f(specular_loc, 0.1);
-  glUniform1f(diffuse_loc, 0.8);
-  glUniform1f(ambient_loc, 0.2);
+  if (!m_show_matcap)
+    {
+      guint shininess_loc=glGetUniformLocation (program, "shininess");
+      guint specular_loc=glGetUniformLocation (program, "specular");
+      guint diffuse_loc=glGetUniformLocation (program, "diffuse");
+      guint ambient_loc=glGetUniformLocation (program, "ambient");
+    
+      // Fixed light properties - Should be configurable
+      glUniform1f(shininess_loc, 10.0);
+      glUniform1f(specular_loc, 0.1);
+      glUniform1f(diffuse_loc, 0.8);
+      glUniform1f(ambient_loc, 0.2);
+    }
+  else
+    {
+      m_texture_loc = glGetUniformLocation (program, "texMatcap");
+      glUniform1i(m_texture_loc, 0);
+      glActiveTexture(GL_TEXTURE0);
+      glBindTexture(GL_TEXTURE_2D, m_matcap_texture);
+    }
 
   //  m_world[2][1] = 0;
   //  m_world[3] = glm::vec4 {0,0,0,1};

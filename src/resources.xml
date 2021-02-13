@@ -6,6 +6,8 @@
     <file>fragment.glsl</file>
     <file>fragment-edge.glsl</file>
     <file>vertex.glsl</file>
+    <file>vertex-matcap.glsl</file>
+    <file>fragment-matcap.glsl</file>
   </gresource>
   <gresource prefix="/about">
     <file>pomelo_logo.png</file>
