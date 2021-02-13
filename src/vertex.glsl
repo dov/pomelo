@@ -20,11 +20,6 @@ uniform float ambient;
 smooth out vec4 vertexColor;
 smooth out vec3 vBC;
 
-void xxmain() {
-  gl_Position = projMatrix * mvMatrix * vec4(position, 1.0);
-  vertexColor = vec4(color, 1.0);
-}
-
 void main() {
   vBC = bary;
   vec3 vertNormal = normalMatrix * normal; // Restore this for smooth shading!
