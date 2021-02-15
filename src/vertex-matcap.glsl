@@ -12,8 +12,10 @@ uniform mat3 normalMatrix;
 
 smooth out vec3 tEye;
 smooth out vec3 tNormal;
+smooth out vec3 vBC;
 
 void main() {
+  vBC = bary;
 
   tEye = normalize( vec3( mvMatrix * vec4( position, 1.0 ) ) );
   tNormal = normalize( normalMatrix * normal );

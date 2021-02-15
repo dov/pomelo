@@ -27,7 +27,8 @@ using namespace glm;
 #define RAD_2_DIG (180.0 / G_PI)
 
 // Constructor
-MeshViewer::MeshViewer()
+MeshViewer::MeshViewer(std::shared_ptr<PomeloSettings> pomelo_settings)
+  :  m_pomelo_settings(pomelo_settings)
 {
   this->add_events (
     Gdk::EventMask(GDK_POINTER_MOTION_MASK    |
@@ -84,6 +85,7 @@ MeshViewer::MeshViewer()
   for (auto v : vertex_data)
     m_hw_mesh.vertices.push_back(v);
 
+  refresh_from_settings();
 }
 
 // Describe geometry. This is a bit wasteful, but I don't expect
@@ -138,76 +140,66 @@ void MeshViewer::init_shaders ()
   Glib::RefPtr<const Glib::Bytes> fragment_edge_source = Gio::Resource::lookup_data_global("/shaders/fragment-edge.glsl");
   Glib::RefPtr<const Glib::Bytes> vertex_matcap_source = Gio::Resource::lookup_data_global("/shaders/vertex-matcap.glsl");
   Glib::RefPtr<const Glib::Bytes> fragment_matcap_source = Gio::Resource::lookup_data_global("/shaders/fragment-matcap.glsl");
+  Glib::RefPtr<const Glib::Bytes> fragment_matcap_edge_source = Gio::Resource::lookup_data_global("/shaders/fragment-edge-matcap.glsl");
   
-  guint vertex = create_shader(GL_VERTEX_SHADER, vertex_source);
-  guint fragment = create_shader(GL_FRAGMENT_SHADER, fragment_source);
-  guint vertex_edge = create_shader(GL_VERTEX_SHADER, vertex_source);
-  guint fragment_edge = create_shader(GL_FRAGMENT_SHADER, fragment_edge_source);
-  guint vertex_matcap = create_shader(GL_VERTEX_SHADER, vertex_matcap_source);
-  guint fragment_matcap = create_shader(GL_FRAGMENT_SHADER, fragment_matcap_source);
-  m_program = glCreateProgram ();
-  glAttachShader (m_program, vertex);
-  glAttachShader (m_program, fragment);
-  glLinkProgram (m_program);
-
-  // A different program for showing edges
-  m_program_edge = glCreateProgram();
-  glAttachShader (m_program_edge, vertex_edge);
-  glAttachShader (m_program_edge, fragment_edge);
-  glLinkProgram (m_program_edge);
-
-  // And one for matcaps
-  m_program_matcap = glCreateProgram();
-  glAttachShader (m_program_matcap, vertex_matcap);
-  glAttachShader (m_program_matcap, fragment_matcap);
-  glLinkProgram (m_program_matcap);
-
-
   m_position_index = 0;
   m_color_index = 1;
   m_normal_index = 2;
   m_bary_index = 3;
 
-  for (auto p : {m_program, m_program_edge, m_program_matcap})
+  guint shaders[] = {
+    create_shader(GL_VERTEX_SHADER, vertex_source),
+    create_shader(GL_FRAGMENT_SHADER, fragment_source),
+    create_shader(GL_VERTEX_SHADER, vertex_source),
+    create_shader(GL_FRAGMENT_SHADER, fragment_edge_source),
+    create_shader(GL_VERTEX_SHADER, vertex_matcap_source),
+    create_shader(GL_FRAGMENT_SHADER, fragment_matcap_source),
+    create_shader(GL_VERTEX_SHADER, vertex_matcap_source),
+    create_shader(GL_FRAGMENT_SHADER, fragment_matcap_edge_source)
+  };
+  m_programs.clear();
+  for (int prog_idx=0; prog_idx<NUM_PROGRAMS; prog_idx++)
     {
-      glBindAttribLocation(p, m_position_index, "position");
-      glBindAttribLocation(p, m_color_index, "color");
-      glBindAttribLocation(p, m_normal_index, "normal");
-      glBindAttribLocation(p, m_bary_index, "bary");
+      guint program = glCreateProgram();
+      glAttachShader(program, shaders[prog_idx*2]);
+      glAttachShader(program, shaders[prog_idx*2+1]);
+      glLinkProgram (program);
 
       int status = 0;
-      glGetProgramiv (p, GL_LINK_STATUS, &status);
+      glGetProgramiv (program, GL_LINK_STATUS, &status);
       if (status == GL_FALSE)
         {
           int log_len = 0;
-          glGetProgramiv (p, GL_INFO_LOG_LENGTH, &log_len);
+          glGetProgramiv (program, GL_INFO_LOG_LENGTH, &log_len);
     
           string error_string;
           error_string.resize(log_len+1);
-          glGetProgramInfoLog (p, log_len, NULL, &error_string[0]);
+          glGetProgramInfoLog (program, log_len, NULL, &error_string[0]);
     
-          glDeleteProgram (p);
+          glDeleteProgram (program);
           throw runtime_error(
             format(
-              "Linking failure in program: {}",
-              error_string));
+              "Linking failure in program {}: {}",
+              program, error_string));
         }
+
+      glBindAttribLocation(program, m_position_index, "position");
+      glBindAttribLocation(program, m_color_index, "color");
+      glBindAttribLocation(program, m_normal_index, "normal");
+      glBindAttribLocation(program, m_bary_index, "bary");
+
+      m_programs.push_back(program);
     }
 
   /* the individual shaders can be detached and destroyed */
-  glDetachShader (m_program, vertex);
-  glDetachShader (m_program, fragment);
-  glDetachShader (m_program_edge, vertex_edge);
-  glDetachShader (m_program_edge, fragment_edge);
-  glDetachShader (m_program_matcap, vertex_matcap);
-  glDetachShader (m_program_matcap, fragment_matcap);
+  for (int prog_idx=0; prog_idx<(int)m_programs.size(); prog_idx++)
+    {
+      glDetachShader (m_programs[prog_idx], shaders[2*prog_idx]);
+      glDetachShader (m_programs[prog_idx], shaders[2*prog_idx+1]);
+    }
 
-  glDeleteShader (vertex);
-  glDeleteShader (fragment);
-  glDeleteShader (vertex_edge);
-  glDeleteShader (fragment_edge);
-  glDeleteShader (vertex_matcap);
-  glDeleteShader (fragment_matcap);
+  for (auto sh : shaders)
+    glDeleteShader (sh);
 }
 
 void MeshViewer::init_buffers (guint *vao_out)
@@ -275,28 +267,33 @@ void MeshViewer::update_matcap()
   // The texture for the matcap
   glGenTextures(1, &m_matcap_texture);
 
-  //  string filename = "/tmp/matcap/textures/00005.png";
-  //  string filename = "/tmp/6D6050_C8C2B9_A2998E_B4AA9F-512px.png";
-  string filename = "/tmp/6E2E36_D3A1A0_BD7175_C78C8B.png";
-  print("update_matcap from {}\n",filename);
-  m_img = Gdk::Pixbuf::create_from_file(filename)->flip(false);
-  int width = m_img->get_width();
-  int height = m_img->get_height();
-  int n_channels = m_img->get_n_channels();
-  print("n_channels = {}\n", n_channels);
-  uint8_t *data = m_img->get_pixels();
-  glBindTexture(GL_TEXTURE_2D, m_matcap_texture);
+  string filename = m_pomelo_settings->get_string_default("matcap_filename");
 
-  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
-    GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
-    GL_CLAMP_TO_EDGE);
-  glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+  try {
+    m_img = Gdk::Pixbuf::create_from_file(filename);
+    int width = m_img->get_width();
+    int height = m_img->get_height();
+    int n_channels = m_img->get_n_channels();
+    print("n_channels = {}\n", n_channels);
+    uint8_t *data = m_img->get_pixels();
+    glBindTexture(GL_TEXTURE_2D, m_matcap_texture);
+    GLenum input_format =  n_channels == 4 ? GL_RGBA : GL_RGB;
+  
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
+      GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
+      GL_CLAMP_TO_EDGE);
+    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+  
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, width, height, 0, input_format, GL_UNSIGNED_BYTE, data);
+    m_has_matcap = true;
+  }
+  catch(...) {
+    m_has_matcap= false;
+  }
 }
 
 void MeshViewer::on_realize()
@@ -341,7 +338,9 @@ bool MeshViewer::on_render (const Glib::RefPtr< Gdk::GLContext >& context)
     throw_if_error();
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
-    glClearColor (0.4, 0.4, 0.5, 1);
+    glClearColor (m_background[0],
+                  m_background[1],
+                  m_background[2], 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   
     draw_mesh();
@@ -406,12 +405,21 @@ void MeshViewer::build_projection_matrix()
 void MeshViewer::draw_mesh()
 {
   guint program;
-  if (m_show_edge)
-    program = m_program_edge;
-  else if (m_show_matcap)
-    program = m_program_matcap;
+  if (m_has_matcap && m_show_matcap)
+    {
+      if (m_show_edge)
+        program = m_programs[MATCAP_PROGRAM_EDGE];
+      else
+        program = m_programs[MATCAP_PROGRAM];
+    }
   else
-    program = m_program;
+    {
+      if (m_show_edge)
+        program = m_programs[DEFAULT_PROGRAM_EDGE];
+      else
+        program = m_programs[DEFAULT_PROGRAM];
+    }
+  
   glUseProgram(program);
 
   setup_world(m_size_scale*m_view_scale, 
@@ -422,7 +430,14 @@ void MeshViewer::draw_mesh()
   m_mv_loc = glGetUniformLocation (program, "mvMatrix");
   m_normal_matrix_loc = glGetUniformLocation (program, "normalMatrix");
 
-  if (!m_show_matcap)
+  if (m_has_matcap && m_show_matcap)
+    {
+      guint texture_loc = glGetUniformLocation (program, "texMatcap");
+      glUniform1i(texture_loc, 0);
+      glActiveTexture(GL_TEXTURE0);
+      glBindTexture(GL_TEXTURE_2D, m_matcap_texture);
+    }
+  else
     {
       guint shininess_loc=glGetUniformLocation (program, "shininess");
       guint specular_loc=glGetUniformLocation (program, "specular");
@@ -434,13 +449,6 @@ void MeshViewer::draw_mesh()
       glUniform1f(specular_loc, 0.1);
       glUniform1f(diffuse_loc, 0.8);
       glUniform1f(ambient_loc, 0.2);
-    }
-  else
-    {
-      m_texture_loc = glGetUniformLocation (program, "texMatcap");
-      glUniform1i(m_texture_loc, 0);
-      glActiveTexture(GL_TEXTURE0);
-      glBindTexture(GL_TEXTURE_2D, m_matcap_texture);
     }
 
   //  m_world[2][1] = 0;
@@ -614,6 +622,9 @@ void MeshViewer::redraw()
 
 void MeshViewer::set_mesh(shared_ptr<Mesh> mesh)
 {
+  m_mesh = mesh;
+  if (!mesh)
+    return;
   vector<vec3>& vertices = mesh->vertices; // shortcut
   auto& bbox = m_hw_mesh.bbox; // shortcut
   m_hw_mesh.vertices.clear();
@@ -645,7 +656,7 @@ void MeshViewer::set_mesh(shared_ptr<Mesh> mesh)
           m_hw_mesh.vertices.push_back({
               vertices[i+j],
               //vec3(1.0,fmod(1.0*i/(20*3),1.0),fmod(1.0*i/10,1.0)), // Color red
-              vec3(0.8,0.8,0.8),
+              m_mesh_color,
               normal,
               vec3(j==0,j==1,j==2) // bary
             });
@@ -728,5 +739,32 @@ void MeshViewer::view_port_to_world(glm::vec3 view_port_coord,
 void MeshViewer::set_show_edge(bool show_edge)
 {
   m_show_edge = show_edge;
+  queue_render();
+}
+
+void MeshViewer::set_show_matcap(bool show_matcap)
+{
+  m_show_matcap = show_matcap;
+  queue_render();
+}
+
+void MeshViewer::refresh_from_settings()
+{
+  Gdk::RGBA background_color(
+    m_pomelo_settings->get_string_default("background_color",
+                                          "#606080"));
+  m_background = {background_color.get_red(),
+    background_color.get_green(),
+    background_color.get_blue()};
+
+  Gdk::RGBA mesh_color(
+    m_pomelo_settings->get_string_default("mesh_color",
+                                          "#c0c0c0"));
+  m_mesh_color = {mesh_color.get_red(),
+    mesh_color.get_green(),
+    mesh_color.get_blue()};
+
+  update_matcap();
+  set_mesh(m_mesh);
   queue_render();
 }

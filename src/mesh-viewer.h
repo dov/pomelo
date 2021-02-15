@@ -10,6 +10,7 @@
 #include <gtkmm.h>
 #include <glm/mat4x4.hpp>
 #include <epoxy/gl.h>
+#include "pomelo-settings.h"
 #include "mesh.h"
 
 class MeshViewer : public Gtk::GLArea
@@ -24,7 +25,7 @@ class MeshViewer : public Gtk::GLArea
 
 
   // Constructor
-  MeshViewer();
+  MeshViewer(std::shared_ptr<PomeloSettings> pomelo_settings);
 
   // Create a mesh 
   void set_mesh(std::shared_ptr<Mesh> mesh);
@@ -36,6 +37,8 @@ class MeshViewer : public Gtk::GLArea
 
   // Whether to use the edge shader or the non-edge shader
   void set_show_edge(bool show_edge);
+  void set_show_matcap(bool show_matcap);
+  void refresh_from_settings();
 
   private:
 
@@ -73,14 +76,22 @@ class MeshViewer : public Gtk::GLArea
                           // output
                           glm::vec3& world_coordinate);
 
+  // Refresh from settings
+
   bool m_realized = false;
+  
+  enum {
+    DEFAULT_PROGRAM=0,
+    DEFAULT_PROGRAM_EDGE,
+    MATCAP_PROGRAM,
+    MATCAP_PROGRAM_EDGE,
+    NUM_PROGRAMS
+  };
 
   // OpenGl structures
   guint m_vao {0};
   guint m_buffer {0};
-  guint m_program {0};
-  guint m_program_edge {0};
-  guint m_program_matcap {0};
+  std::vector<guint> m_programs {0};
 
   // Describe the vertex attribute layout
   guint m_position_index {0};
@@ -92,8 +103,6 @@ class MeshViewer : public Gtk::GLArea
   guint m_proj_loc {0};
   guint m_mv_loc {0};
   guint m_normal_matrix_loc {0};
-  guint m_texture_loc {0};
-
   guint m_buffer_id;
 
   // Material definition
@@ -109,7 +118,7 @@ class MeshViewer : public Gtk::GLArea
 
   // which shader to use
   bool m_show_edge = false;
-  bool m_show_matcap = true;
+  bool m_show_matcap = false;
 
   // world description
   glm::mat4 m_proj_matrix;
@@ -124,6 +133,13 @@ class MeshViewer : public Gtk::GLArea
   double m_view_scale = 1.0;
   double m_size_scale = 1.0;
   
+  // Background color and mesh colors
+  glm::vec3 m_background = {0.4,0.4,0.5};
+  glm::vec3 m_mesh_color = {0.8,0.8,0.8};
+
+  // Whether there is a valid matcap
+  bool m_has_matcap = false;
+
   // State for the trackball
   int m_begin_x;
   int m_begin_y;
@@ -135,6 +151,8 @@ class MeshViewer : public Gtk::GLArea
   };
 
   HWMesh m_hw_mesh;
+  std::shared_ptr<PomeloSettings> m_pomelo_settings;
+  std::shared_ptr<Mesh> m_mesh;
 };
 
 #endif /* MESH-VIEWER */

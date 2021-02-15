@@ -35,18 +35,14 @@ PomeloSettings::PomeloSettings()
   rec_mkdir(config_dir);
   m_settings_file = config_dir + "/pomelo.conf";
   m_group_name = "pomelo";
-  if (!has_group("pomelo"))
-    {
-      print("Initializing pomelo\n");
-      set_value("pomelo","initialized", "true");
-    }
 
   try {
     load();
   }
   catch(...) {
-    save();
   }
+  set_string("config_dir",config_dir);
+  save();
 }
 
 void PomeloSettings::save()
@@ -74,14 +70,14 @@ void PomeloSettings::load()
 }
 
 // Convenience functions as we have only one group "pomelo"
-std::string PomeloSettings::get_string_default(const gchar *key, const char *default_value)
+std::string PomeloSettings::get_string_default(const string& key, const char *default_value)
 {
   if (!has_key(m_group_name, key))
     return default_value;
   return get_string(m_group_name, key);
 }
 
-int PomeloSettings::get_int_default(const gchar *key, int default_value)
+int PomeloSettings::get_int_default(const string& key, int default_value)
 {
   print("Getting {}\n", key);
   if (!has_group(m_group_name) || !has_key(m_group_name, key))
@@ -89,7 +85,7 @@ int PomeloSettings::get_int_default(const gchar *key, int default_value)
   return get_integer(m_group_name, key);
 }
 
-int PomeloSettings::get_double_default(const gchar *key, double default_value)
+int PomeloSettings::get_double_default(const string& key, double default_value)
 {
   print("Getting {}\n", key);
   if (!has_group(m_group_name) || !has_key(m_group_name, key))
@@ -98,15 +94,21 @@ int PomeloSettings::get_double_default(const gchar *key, double default_value)
   return get_double(m_group_name, key);
 }
 
-void PomeloSettings::set_int(const char *key, int value)
+void PomeloSettings::set_int(const string& key, int value)
 {
   print("Setting {} to {}\n", key, value);
   set_integer(m_group_name, key, value);
 }
 
-void PomeloSettings::set_double(const char *key, double value)
+void PomeloSettings::set_double(const string& key, double value)
 {
   print("Setting {} to {}\n", key, value);
   KeyFile::set_double(m_group_name, key, value);
+}
+
+void PomeloSettings::set_string(const string& key, const string& value)
+{
+  print("Setting {} to {}\n", key, value);
+  KeyFile::set_value(m_group_name, key, value);
 }
 

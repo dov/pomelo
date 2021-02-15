@@ -25,6 +25,9 @@ class SettingsDialog : public Gtk::Dialog
   Gtk::CheckButton *m_sharp_angles_checkbutton;
   Gtk::SpinButton *m_smooth_angle_max;
   std::shared_ptr<PomeloSettings> m_pomelo_settings;
+  Gtk::ColorButton *m_background_chooser;
+  Gtk::ColorButton *m_mesh_color_chooser;
+  Gtk::FileChooserButton *m_matcap_chooser;
 };
 
 

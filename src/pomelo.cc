@@ -12,7 +12,8 @@ using namespace fmt;
 
 
 Pomelo::Pomelo(shared_ptr<PomeloSettings> pomelo_settings)
-  : m_progress_dialog(*this,""),
+  : m_mesh_viewer(pomelo_settings),
+    m_progress_dialog(*this,""),
     m_worker_skeleton(this, pomelo_settings),
     m_pomelo_settings(pomelo_settings)
 {
@@ -38,6 +39,7 @@ Pomelo::Pomelo(shared_ptr<PomeloSettings> pomelo_settings)
         m_settings_dialog->save_to_settings();
         m_pomelo_settings->save();
         m_main_input.set_skeleton_ready_state(false);
+        m_mesh_viewer.refresh_from_settings();
       }
     else
       m_settings_dialog->load_from_settings();
@@ -70,6 +72,11 @@ Pomelo::Pomelo(shared_ptr<PomeloSettings> pomelo_settings)
   m_mesh_viewer.set_show_edge(init_show_edge);
   m_ref_show_edge_toggle = m_refActionGroup->add_action_bool("show_edge",
     sigc::mem_fun(*this, &Pomelo::on_action_show_edge), init_show_edge );
+
+  bool init_show_matcap = m_pomelo_settings->get_int_default("show_matcap",0);
+  m_mesh_viewer.set_show_matcap(init_show_matcap);
+  m_ref_show_matcap_toggle = m_refActionGroup->add_action_bool("show_matcap",
+    sigc::mem_fun(*this, &Pomelo::on_action_show_matcap), init_show_matcap );
 
   m_refActionGroup->add_action("settings",
     sigc::mem_fun(*this, &Pomelo::on_action_view_settings) );
@@ -109,6 +116,10 @@ Pomelo::Pomelo(shared_ptr<PomeloSettings> pomelo_settings)
     "      <item>"
     "        <attribute name='label'>Show mesh edges</attribute>"
     "        <attribute name='action'>pomelo.show_edge</attribute>"
+    "      </item>"
+    "      <item>"
+    "        <attribute name='label'>Show mesh matcap</attribute>"
+    "        <attribute name='action'>pomelo.show_matcap</attribute>"
     "      </item>"
     "    </submenu>"
     "    <submenu>"
@@ -312,6 +323,22 @@ void Pomelo::on_action_show_edge()
   m_pomelo_settings->save();
 
   m_mesh_viewer.set_show_edge(active);
+}
+
+void Pomelo::on_action_show_matcap()
+{
+  bool active = false;
+  m_ref_show_matcap_toggle->get_state(active);
+
+  //The toggle action's state does not change automatically:
+  active = !active;
+  m_ref_show_matcap_toggle->change_state(active);
+
+  // Store the new state
+  m_pomelo_settings->set_int("show_matcap", int(active));
+  m_pomelo_settings->save();
+
+  m_mesh_viewer.set_show_matcap(active);
 }
 
 void Pomelo::on_action_reset_3d_view()

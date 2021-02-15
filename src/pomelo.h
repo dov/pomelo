@@ -61,6 +61,7 @@ private:
   void on_action_help_about();
   void on_action_view_skeleton();
   void on_action_show_edge();
+  void on_action_show_matcap();
   void on_action_reset_3d_view();
   void on_action_view_settings();
   void on_action_load_svg();
@@ -102,6 +103,7 @@ private:
   WorkerAction m_worker_action;  // What is our worker doing
   std::shared_ptr<PomeloSettings> m_pomelo_settings;
   Glib::RefPtr<Gio::SimpleAction> m_ref_show_edge_toggle;
+  Glib::RefPtr<Gio::SimpleAction> m_ref_show_matcap_toggle;
 };
 
 #endif /* HELLO-WORLD */

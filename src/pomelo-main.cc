@@ -29,17 +29,10 @@ int main(int argc, char *argv[])
                 );
           exit(0);
         }
-      if (S_ == "--mesh")
-        {
-          mesh_filename = argv[argp++];
-          continue;
-        }
     }
 
   auto app = Gtk::Application::create(); // argc, argv, "org.dov.pomelo");
   Pomelo pomelo(pomelo_settings);
-  if (mesh_filename.size())
-    pomelo.set_mesh(mesh_filename);
 
   return app->run(pomelo, argc, argv);
 }
