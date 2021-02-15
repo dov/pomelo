@@ -60,9 +60,17 @@ deps = [gtkmm_dep,
         pthread_dep,
         nanosvg_dep]
 
-lib_engine = static_library('engine',
-                            engine_sources,
-                            dependencies : deps)
+if host_machine.system() == 'windows'
+  lib_engine = shared_library('engine',
+                              engine_sources,
+                              dependencies : deps,
+                              install :true
+                             )
+else
+  lib_engine = static_library('engine',
+                              engine_sources,
+                              dependencies : deps)
+endif
 
 incdir = ['giv-widget']
 exe = executable(name_cap,

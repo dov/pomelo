@@ -100,6 +100,7 @@ File \usr\${ARCH}\sys-root\mingw\bin\libepoxy-0.dll
 File \usr\local\mingw64\bin\libfmt.dll
 File \usr\local\mingw64\bin\libgmp-10.dll
 File ${OUTDIR}\src\${NAME}.exe
+File ${OUTDIR}\src\libengine.dll
 File ${OUTDIR}\src\giv-widget\libgiv-widget.dll
 File ${OUTDIR}\src\giv-widget\gtk-image-viewer\libgtk_image_viewer.dll
 File ${OUTDIR}\src\giv-widget\agg\libagg.dll
