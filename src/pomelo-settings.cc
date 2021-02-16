@@ -109,6 +109,6 @@ void PomeloSettings::set_double(const string& key, double value)
 void PomeloSettings::set_string(const string& key, const string& value)
 {
   print("Setting {} to {}\n", key, value);
-  KeyFile::set_value(m_group_name, key, value);
+  KeyFile::set_string(m_group_name, key, value);
 }
 

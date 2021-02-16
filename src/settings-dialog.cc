@@ -3,8 +3,10 @@
 #include "settings-dialog.h"
 #include "pomelo-widget-utils.h"
 #include "dov-mm-macros.h"
+#include <fmt/core.h>
 
 using namespace std;
+using namespace fmt;
 
 SettingsDialog::SettingsDialog(Gtk::Window& parent,
                                shared_ptr<PomeloSettings> pomelo_settings)
@@ -133,6 +135,8 @@ void SettingsDialog::save_to_settings()
         m_pomelo_settings->set_string("matcap_source_filename",
                                       matcap_source_filename);
       }
-      catch(...) {}
+      catch(std::exception& e) {
+        print("Got error: {}\n", e.what());
+      }
     }
 }
