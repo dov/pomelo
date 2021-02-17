@@ -274,12 +274,15 @@ void MeshViewer::update_matcap()
     int width = m_img->get_width();
     int height = m_img->get_height();
     int n_channels = m_img->get_n_channels();
+    int row_stride = m_img->get_rowstride();
     print("n_channels = {}\n", n_channels);
     uint8_t *data = m_img->get_pixels();
     glBindTexture(GL_TEXTURE_2D, m_matcap_texture);
     GLenum input_format =  n_channels == 4 ? GL_RGBA : GL_RGB;
+
+    // No support for row stride in glTexImage2D
   
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 4); // Match gdkpixbuf
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
