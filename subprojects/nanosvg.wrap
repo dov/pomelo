@@ -1,0 +1,4 @@
+[wrap-git]
+url = http://github.com:dov/nanosvg.git
+revision = master
+
