@@ -1,4 +1,4 @@
 [wrap-git]
-url = http://github.com/dov/nanosvg.git
+url = https://github.com/dov/nanosvg.git
 revision = master
 

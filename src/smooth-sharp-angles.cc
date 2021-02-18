@@ -154,14 +154,18 @@ smooth_acute_angles(double radius,
                             false,
                             true));
 
-      for (const auto& h : ph.holes())
-        out_ph.add_hole(
-          calc_smooth_polygon(h,
-                              radius,
-                              max_angle_to_smooth,
-                              num_smooth_points,
-                              false,
-                              true));
+      for (auto it=ph.holes_begin(); it!= ph.holes_end(); ++it)
+        {
+          auto& h = *it;
+  
+          out_ph.add_hole(
+            calc_smooth_polygon(h,
+                                radius,
+                                max_angle_to_smooth,
+                                num_smooth_points,
+                                true,
+                                false));
+        }
       ret.push_back(out_ph);
     }
   return ret;
