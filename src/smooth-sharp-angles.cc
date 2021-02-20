@@ -160,8 +160,8 @@ smooth_acute_angles(double radius,
                               radius,
                               max_angle_to_smooth,
                               num_smooth_points,
-                              true,
-                              false));
+                              false,
+                              true));
       ret.push_back(out_ph);
     }
   return ret;

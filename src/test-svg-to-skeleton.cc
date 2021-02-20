@@ -42,12 +42,16 @@ int main(int argc, char **argv)
 
     CASE("--help") {
       printf("test-svg-skeleton - Test the skeleton library\n\n"
+             "\n"
+             "Description:\n"
+             "   Tests the skeleton library with smoothing. Writes the\n"
+             "   result to a giv file\n\n"
              "Syntax:\n"
              "    test-svg-skeleton ...\n"
              "\n"
              "Options:\n"
-             "    -o   fn                 Set giv filename output\n"
-             "    --max_anlge max_angle   Max angle to smooth\n"
+             "    -o   fn                 Set giv filename output (Default is skeleton.giv)\n"
+             "    --max_angle max_angle   Max angle to smooth\n"
              );
       exit(0);
     }
