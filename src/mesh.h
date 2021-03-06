@@ -19,5 +19,6 @@ class Mesh {
 
 std::shared_ptr<Mesh> read_stl(const std::string& filename);
 void save_stl(std::shared_ptr<Mesh> mesh, const std::string& filename);
+void save_gltf(std::shared_ptr<Mesh> mesh, const std::string& filename);
 
 #endif /* MESH */

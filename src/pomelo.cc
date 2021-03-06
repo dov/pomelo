@@ -1,4 +1,9 @@
-// A template application.
+//======================================================================
+// The pomelo application file
+//
+// Dov Grobgeld <dov.grobgeld@gmail.com>
+// 2021-03-06 Sat
+//----------------------------------------------------------------------
 #include <gtkmm.h>
 #include <gtkmm/button.h>
 #include <gtkmm/window.h>
@@ -53,6 +58,9 @@ Pomelo::Pomelo(shared_ptr<PomeloSettings> pomelo_settings)
   m_refActionGroup->add_action("export_stl",
     sigc::mem_fun(*this, &Pomelo::on_action_file_export_stl) );
 
+  m_refActionGroup->add_action("export_gltf",
+    sigc::mem_fun(*this, &Pomelo::on_action_file_export_gltf) );
+
   m_refActionGroup->add_action("load_svg",
     sigc::mem_fun(*this, &Pomelo::on_action_load_svg) );
 
@@ -94,6 +102,11 @@ Pomelo::Pomelo(shared_ptr<PomeloSettings> pomelo_settings)
     "          <attribute name='label'>_Export STL</attribute>"
     "          <attribute name='action'>pomelo.export_stl</attribute>"
     "          <attribute name='accel'>&lt;Primary&gt;s</attribute>"
+    "        </item>"
+    "        <item>"
+    "          <attribute name='label'>_Export GLTF</attribute>"
+    "          <attribute name='action'>pomelo.export_gltf</attribute>"
+    "          <attribute name='accel'>&lt;Primary&gt;g</attribute>"
     "        </item>"
     "        <item>"
     "          <attribute name='label'>_Load SVG</attribute>"
@@ -194,7 +207,7 @@ void Pomelo::on_action_file_export_stl()
 {
   string mesh_filename;
 
-  auto dialog = Gtk::FileChooserNative::create("Mesh filename",
+  auto dialog = Gtk::FileChooserNative::create("STL filename",
                                                *this,
                                                Gtk::FILE_CHOOSER_ACTION_SAVE);
   
@@ -218,6 +231,42 @@ void Pomelo::on_action_file_export_stl()
 
   case Gtk::RESPONSE_CANCEL:
     set_status("Canceled STL export");
+    break;
+
+  default:
+    break;
+  }
+}
+
+//Signal handlers:
+void Pomelo::on_action_file_export_gltf()
+{
+  string mesh_filename;
+
+  auto dialog = Gtk::FileChooserNative::create("GLTF filename",
+                                               *this,
+                                               Gtk::FILE_CHOOSER_ACTION_SAVE);
+  
+  // Show the dialog and wait for a user response:
+  const int result = dialog->run();
+
+  // Handle the response:
+  switch (result)
+  {
+  case Gtk::RESPONSE_ACCEPT:
+  {
+    mesh_filename = dialog->get_filename();
+    auto mesh = m_worker_skeleton.get_mesh();
+    save_gltf(mesh, mesh_filename);
+    set_status(format("Saved mesh with {} vertices to {}\n",
+                      mesh->vertices.size(),
+                      mesh_filename));
+
+    break;
+  }
+
+  case Gtk::RESPONSE_CANCEL:
+    set_status("Canceled GLTF export");
     break;
 
   default:

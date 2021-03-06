@@ -37,6 +37,8 @@ glm_dep = dependency('glm')
 gmp_dep = dependency('gmp')
 mpfr_dep = dependency('mpfr')
 nanosvg_dep = dependency('nanosvg')
+#gltf_dep = tinygltf_proj.get_variable('tinygltf_dep')
+tinygltf_dep = dependency('tinygltf')
 
 subdir('giv-widget')
 
@@ -58,7 +60,8 @@ deps = [gtkmm_dep,
         mpfr_dep,
         m_dep,
         pthread_dep,
-        nanosvg_dep]
+        nanosvg_dep,
+        tinygltf_dep]
 
 if host_machine.system() == 'windows'
   lib_engine = shared_library('engine',

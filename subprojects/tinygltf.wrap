@@ -1,0 +1,6 @@
+[wrap-git]
+directory = tinygltf
+
+url = https://github.com/dov/tinygltf
+revision = meson
+

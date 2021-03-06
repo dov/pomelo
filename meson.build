@@ -1,5 +1,6 @@
 project('pomelo','cpp','c')
 subproject('nanosvg')
+subproject('tinygltf')
 
 gnome = import('gnome')
 

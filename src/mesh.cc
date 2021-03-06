@@ -9,6 +9,14 @@
 #include <iostream>
 #include "fmt/core.h"
 
+// Define these only in *one* .cc file.
+#define TINYGLTF_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+
+// #define TINYGLTF_NOEXCEPTION // optional. disable exception handling.
+#include "tinygltf/tiny_gltf.h"
+
 using namespace fmt;
 using namespace std;
 using namespace glm;
@@ -111,6 +119,8 @@ void save_stl(std::shared_ptr<Mesh> mesh, const std::string& filename)
   
   fh.write(header, header_size);
 
+  // Make use of the fact that all the vertices are ordered in
+  // groups of three composing the contained triangles.
   const  auto& vertices = mesh->vertices; // shortcut
   size_t size = (size_t)vertices.size()/3;
   cout << fmt::format("mesh.size={}\n", size);
@@ -130,3 +140,132 @@ void save_stl(std::shared_ptr<Mesh> mesh, const std::string& filename)
   fh.close();
 }
 
+void save_gltf(std::shared_ptr<Mesh> mesh, const std::string& filename)
+{
+  // Create a model with a single mesh and save it as a gltf file
+  tinygltf::Model m;
+  tinygltf::Scene scene;
+  tinygltf::Mesh tmesh;
+  tinygltf::Primitive primitive;
+  tinygltf::Node node;
+  tinygltf::Buffer buffer;
+  tinygltf::BufferView bufferView1;
+  tinygltf::BufferView bufferView2;
+  tinygltf::Accessor accessor1;
+  tinygltf::Accessor accessor2;
+  tinygltf::Asset asset;
+
+
+  const  auto& vertices = mesh->vertices; // shortcut
+  print("num_vertices={}\n", vertices.size());
+  int num_vertices = vertices.size();
+  int num_faces = num_vertices/3;
+  buffer.data.resize(num_faces * 3 * sizeof(int32_t)
+                     + num_vertices * 3 * sizeof(float));
+
+  // First place the faces
+  uint8_t *p = buffer.data.data();
+  uint32_t *fp = (uint32_t*)p;
+
+  // Make use of the fact that the vertices are ordered
+  for (int i=0; i<num_faces*3; i++)
+    *fp++ = i;
+
+  // And now the vertices
+  float *vp = (float*)fp;
+  // Vertices
+  vector<double> minValues = {numeric_limits<float>::max(),numeric_limits<float>::max(),numeric_limits<float>::max()};
+  vector<double> maxValues = {numeric_limits<float>::lowest(),numeric_limits<float>::lowest(),numeric_limits<float>::lowest()};
+
+  for (auto& v : vertices)
+    {
+      float *pvp = vp; // Keep for min and max
+
+      // Swap y and z
+      *vp++ = v[0];
+      *vp++ = v[2]; 
+      *vp++ = -v[1];
+      for (int i=0; i<3; i++)
+        {
+          if (*pvp < minValues[i])
+            minValues[i] = *pvp;
+          if (*pvp > maxValues[i])
+            maxValues[i] = *pvp;
+          pvp++;
+        }
+    }
+  
+  // The indices
+  bufferView1.buffer = 0;
+  bufferView1.byteOffset=0;
+  bufferView1.byteLength=num_faces*3*sizeof(uint32_t);
+  bufferView1.target = TINYGLTF_TARGET_ELEMENT_ARRAY_BUFFER;
+
+  // And the faces
+  bufferView2.buffer = 0;
+  bufferView2.byteOffset=bufferView1.byteLength;
+  bufferView2.byteLength=num_vertices * 3 * sizeof(float);
+  bufferView2.target = TINYGLTF_TARGET_ARRAY_BUFFER;
+
+  // Describe the layout of bufferView1, the indices of the vertices
+  accessor1.bufferView = 0;
+  accessor1.byteOffset = 0;
+  accessor1.componentType = TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT;
+  accessor1.count = num_faces*3;
+  accessor1.type = TINYGLTF_TYPE_SCALAR;
+  accessor1.maxValues.push_back(num_vertices-1);
+  accessor1.minValues.push_back(0);
+
+  // Describe the layout of bufferView2, the vertices themself
+  accessor2.bufferView = 1;
+  accessor2.byteOffset = 0;
+  accessor2.componentType = TINYGLTF_COMPONENT_TYPE_FLOAT;
+  accessor2.count = num_vertices;
+  accessor2.type = TINYGLTF_TYPE_VEC3;
+  accessor2.maxValues = maxValues;
+  accessor2.minValues = minValues;
+
+  // Build the mesh primitive and add it to the mesh
+  primitive.indices = 0;                 // The index of the accessor for the vertex indices
+  primitive.attributes["POSITION"] = 1;  // The index of the accessor for positions
+  //  primitive.material = 0;
+  primitive.mode = TINYGLTF_MODE_TRIANGLES;
+  tmesh.primitives.push_back(primitive);
+
+  // Other tie ups
+  node.mesh = 0;
+  scene.nodes.push_back(0); // Default scene
+
+  // Define the asset. The version is required
+  asset.version = "2.0";
+  asset.generator = "tinygltf";
+
+  // Now all that remains is to tie back all the loose objects into the
+  // our single model.
+  m.scenes.push_back(scene);
+  m.meshes.push_back(tmesh);
+  m.nodes.push_back(node);
+  m.buffers.push_back(buffer);
+  m.bufferViews.push_back(bufferView1);
+  m.bufferViews.push_back(bufferView2);
+  m.accessors.push_back(accessor1);
+  m.accessors.push_back(accessor2);
+  m.asset = asset;
+
+#if 0
+  // Create a simple material
+  tinygltf::Material mat;
+  mat.pbrMetallicRoughness.baseColorFactor = {1.0f, 0.9f, 0.9f, 1.0f};  
+  mat.doubleSided = false;
+  m.materials.push_back(mat);
+#endif
+
+  // Save it to a file
+  tinygltf::TinyGLTF gltf;
+  gltf.WriteGltfSceneToFile(&m, filename.c_str(),
+                           true, // embedImages
+                           true, // embedBuffers
+                           true, // pretty print
+                           true); // write binary
+
+}

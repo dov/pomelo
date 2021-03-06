@@ -58,6 +58,7 @@ private:
   //Signal handlers:
   void on_action_file_quit();
   void on_action_file_export_stl();
+  void on_action_file_export_gltf();
   void on_action_help_about();
   void on_action_view_skeleton();
   void on_action_show_edge();
