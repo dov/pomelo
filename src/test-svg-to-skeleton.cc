@@ -45,8 +45,11 @@ static void save_poly_to_giv(ustring filename,
     ofstream of(filename, flags);
     of << header;
     of << "m ";
-    for (const auto& p  : poly)
+    for (auto it=poly.vertices_begin(); it != poly.vertices_end(); ++it)
+      {
+        auto& p = *it;
         of << p.x() << " " << p.y() << "\n";
+      }
     of << "z\n\n";
     of.close();
 }
@@ -127,8 +130,10 @@ int main(int argc, char **argv)
                        hp.outer_boundary(),
                   hp_idx>0);
       int hole_idx=-1;
-      for (auto h : hp.holes())
+      for (auto it = hp.holes_begin(); it!= hp.holes_end(); ++it)
         {
+          auto& h = *it;
+
           hole_idx++;
           save_poly_to_giv("hp.giv",
                            format("$path {}/hole {}\n"

@@ -41,6 +41,7 @@ boost_dep = dependency('boost')
 boost_thread_dep = cc.find_library('boost_thread')
 
 nanosvg_dep = dependency('nanosvg', fallback : ['nanosvg','nanosvg_dep'])
+tinygltf_dep = dependency('tinygltf', fallback : ['tinygltf','tinygltf_dep'])
 
 # Dependencies for old fedora
 gmp_dep = cc.find_library('gmp')
