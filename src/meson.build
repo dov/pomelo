@@ -37,8 +37,7 @@ glm_dep = dependency('glm')
 gmp_dep = dependency('gmp')
 mpfr_dep = dependency('mpfr')
 nanosvg_dep = dependency('nanosvg')
-#gltf_dep = tinygltf_proj.get_variable('tinygltf_dep')
-tinygltf_dep = dependency('tinygltf')
+tinygltf_dep = dependency('tinygltf',fallback:['tinygltf','tinygltf_dep'])
 
 subdir('giv-widget')
 
