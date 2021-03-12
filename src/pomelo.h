@@ -61,6 +61,7 @@ private:
   void on_action_file_export_gltf();
   void on_action_help_about();
   void on_action_view_skeleton();
+  void on_action_orthonormal();
   void on_action_show_edge();
   void on_action_show_matcap();
   void on_action_reset_3d_view();
@@ -105,6 +106,7 @@ private:
   std::shared_ptr<PomeloSettings> m_pomelo_settings;
   Glib::RefPtr<Gio::SimpleAction> m_ref_show_edge_toggle;
   Glib::RefPtr<Gio::SimpleAction> m_ref_show_matcap_toggle;
+  Glib::RefPtr<Gio::SimpleAction> m_ref_orthonormal_toggle;
 };
 
 #endif /* HELLO-WORLD */

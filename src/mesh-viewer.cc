@@ -26,6 +26,17 @@ using namespace glm;
 #define DIG_2_RAD (G_PI / 180.0)
 #define RAD_2_DIG (180.0 / G_PI)
 
+// Print a floating matrix from a pointer
+static void print_mat(float *m)
+{
+  for (int i=0; i<16; i++)
+    {
+      print("{:.2} ", m[i]);
+      if ((i+1)%4==0)
+        print("\n");
+    }
+}
+
 // Constructor
 MeshViewer::MeshViewer(std::shared_ptr<PomeloSettings> pomelo_settings)
   :  m_pomelo_settings(pomelo_settings)
@@ -43,35 +54,7 @@ MeshViewer::MeshViewer(std::shared_ptr<PomeloSettings> pomelo_settings)
 
 
   set_can_focus(true);
-
-  // Setup the project matrix. Currently static
-  double thetaInDeg=8.0;
-  double near=1;
-  double far=20;
-  double width = get_allocation().get_width();
-  double height = get_allocation().get_height();
-  double aspect = 1.0*width / height; // aspect ratio
-  static double PI { 3.141592653589793 };
-  float theta = thetaInDeg / 180.0 * PI;
-  float range = far - near;
-  float invtan = 1./tan(theta/2.);
-
-#if 0
-  m_proj_matrix = glm::perspective(thetaInDeg,aspect,near,far);
-  m_proj_matrix = glm::lookAt(glm::vec3(0,0,-10),
-                              glm::vec3(0,0,0),
-                              glm::vec3(0,1,0));
-
-#endif
-  m_proj_matrix = glm::mat4(1.0);
-  m_proj_matrix[0][0] = invtan / aspect;
-  m_proj_matrix[1][1] = invtan;
-  m_proj_matrix[2][2] = -(near + far) / range;
-  m_proj_matrix[3][2] = -1;
-  m_proj_matrix[2][3] = -2 * near * far / range;
-  m_proj_matrix[3][3] = 1;
-  //  m_proj_matrix = glm::transpose(m_proj_matrix);
-
+  setup_projection_matrix();
 
   // Some sample static data
   static const struct MeshViewer::VertexInfo vertex_data[] = {
@@ -86,6 +69,68 @@ MeshViewer::MeshViewer(std::shared_ptr<PomeloSettings> pomelo_settings)
     m_hw_mesh.vertices.push_back(v);
 
   refresh_from_settings();
+}
+
+// setup the projection matrix based on the current setting
+void MeshViewer::setup_projection_matrix()
+{
+  // Setup the project matrix. Currently static
+  double thetaInDeg=8.0;
+  double near=1;
+  double far=20;
+  double width = get_allocation().get_width();
+  double height = get_allocation().get_height();
+  double aspect = 1.0*width / height; // aspect ratio
+  static double PI { 3.141592653589793 };
+  float theta = thetaInDeg / 180.0 * PI;
+  float range = far - near;
+  float invtan = 1./tan(theta/2.);
+
+  m_proj_matrix = glm::mat4(1.0);
+
+  if (m_orthonormal)
+    {
+      double l=-2.4,r=2.4;
+      double t=1,b=-1;
+      double dx = l-r;
+      double dy = -dx/aspect;
+      double dz = 1000; // Not sure about this!
+
+      m_proj_matrix[0][0] = -2.0 / dx;
+      m_proj_matrix[1][1] = 2.0 / dy;
+      m_proj_matrix[2][2] = -2.0/ dz;
+      m_proj_matrix[3][3] = 1;
+
+#if 0
+      double rx = 0;
+      double ry = 0;
+      double rz = 0; // -(far+near)/(far-near);
+
+      m_proj_matrix[3][0] = rx;
+      m_proj_matrix[3][1] = ry;
+      m_proj_matrix[3][2] = rz*0.01;
+#endif
+
+    }
+  else
+    {
+    #if 0
+      m_proj_matrix = glm::perspective(thetaInDeg,aspect,near,far);
+      m_proj_matrix = glm::lookAt(glm::vec3(0,0,-10),
+                                  glm::vec3(0,0,0),
+                                  glm::vec3(0,1,0));
+    
+    #endif
+      m_proj_matrix[0][0] = invtan / aspect;
+      m_proj_matrix[1][1] = invtan;
+      m_proj_matrix[2][2] = -(near + far) / range;
+      m_proj_matrix[3][2] = -1;
+      m_proj_matrix[2][3] = -2 * near * far / range;
+      m_proj_matrix[3][3] = 1;
+      //  m_proj_matrix = glm::transpose(m_proj_matrix);
+    }
+  print("proj matrix\n");
+  print_mat(&m_proj_matrix[0][0]);
 }
 
 // Describe geometry. This is a bit wasteful, but I don't expect
@@ -363,47 +408,6 @@ bool MeshViewer::on_render (const Glib::RefPtr< Gdk::GLContext >& context)
   
 }
 
-// Print a floating matrix from a pointer
-static void print_mat(float *m)
-{
-  for (int i=0; i<16; i++)
-    {
-      print("{:.2} ", m[i]);
-      if ((i+1)%4==0)
-        print("\n");
-    }
-}
-
-void MeshViewer::build_projection_matrix()
-{
-  double thetaInDeg=8.0;
-  double near=1;
-  double far=20;
-  double width = get_allocation().get_width();
-  double height = get_allocation().get_height();
-  double aspect = 1.0*width / height; // aspect ratio
-  static double PI { 3.141592653589793 };
-  float theta = thetaInDeg / 180.0 * PI;
-  float range = far - near;
-  float invtan = 1./tan(theta/2.);
-
-#if 0
-  m_proj_matrix = glm::perspective(thetaInDeg,aspect,near,far);
-  m_proj_matrix = glm::lookAt(glm::vec3(0,0,-10),
-                              glm::vec3(0,0,0),
-                              glm::vec3(0,1,0));
-
-#endif
-  m_proj_matrix = glm::mat4(1.0);
-  m_proj_matrix[0][0] = invtan / aspect;
-  m_proj_matrix[1][1] = invtan;
-  m_proj_matrix[2][2] = -(near + far) / range;
-  m_proj_matrix[3][2] = -1;
-  m_proj_matrix[2][3] = -2 * near * far / range;
-  m_proj_matrix[3][3] = 1;
-  //  m_proj_matrix = glm::transpose(m_proj_matrix);
-}
-
 // Draw the mesh (or meshes)
 void MeshViewer::draw_mesh()
 {
@@ -459,7 +463,7 @@ void MeshViewer::draw_mesh()
   auto model_view_matrix = glm::translate(glm::mat4(1.0), m_camera) * m_world;
 
   // Build the projection matrix. Is there a better place?
-  build_projection_matrix();
+  setup_projection_matrix();
 
   glUniformMatrix4fv (m_proj_loc, 1, GL_FALSE, &m_proj_matrix[0][0]);
 
@@ -742,6 +746,13 @@ void MeshViewer::view_port_to_world(glm::vec3 view_port_coord,
 void MeshViewer::set_show_edge(bool show_edge)
 {
   m_show_edge = show_edge;
+  queue_render();
+}
+
+void MeshViewer::set_orthonormal(bool orthonormal)
+{
+  m_orthonormal = orthonormal;
+  setup_projection_matrix();
   queue_render();
 }
 

@@ -37,8 +37,10 @@ class MeshViewer : public Gtk::GLArea
 
   // Whether to use the edge shader or the non-edge shader
   void set_show_edge(bool show_edge);
+  void set_orthonormal(bool orthonormal);
   void set_show_matcap(bool show_matcap);
   void refresh_from_settings();
+  void setup_projection_matrix();
 
   private:
 
@@ -70,8 +72,6 @@ class MeshViewer : public Gtk::GLArea
   void setup_quat();
 
   // Build the projection matrix. This uses the current window size.
-  void build_projection_matrix();
-
   void view_port_to_world(glm::vec3 view_port_coord,
                           // output
                           glm::vec3& world_coordinate);
@@ -119,6 +119,7 @@ class MeshViewer : public Gtk::GLArea
   // which shader to use
   bool m_show_edge = false;
   bool m_show_matcap = false;
+  bool m_orthonormal = false;
 
   // world description
   glm::mat4 m_proj_matrix;

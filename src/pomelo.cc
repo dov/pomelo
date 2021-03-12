@@ -76,6 +76,11 @@ Pomelo::Pomelo(shared_ptr<PomeloSettings> pomelo_settings)
   m_refActionGroup->add_action("view_skeleton",
     sigc::mem_fun(*this, &Pomelo::on_action_view_skeleton) );
 
+  bool init_orthonormal = m_pomelo_settings->get_int_default("orthonormal",0);
+  m_mesh_viewer.set_orthonormal(init_orthonormal);
+  m_ref_orthonormal_toggle = m_refActionGroup->add_action_bool("orthonormal_camera",
+    sigc::mem_fun(*this, &Pomelo::on_action_orthonormal), init_orthonormal );
+
   bool init_show_edge = m_pomelo_settings->get_int_default("show_edge",0);
   m_mesh_viewer.set_show_edge(init_show_edge);
   m_ref_show_edge_toggle = m_refActionGroup->add_action_bool("show_edge",
@@ -122,6 +127,10 @@ Pomelo::Pomelo(shared_ptr<PomeloSettings> pomelo_settings)
     "    </submenu>"
     "    <submenu>"
     "      <attribute name='label'>_View</attribute>"
+    "      <item>"
+    "        <attribute name='label'>_Orthonormal camera</attribute>"
+    "        <attribute name='action'>pomelo.orthonormal_camera</attribute>"
+    "      </item>"
     "      <item>"
     "        <attribute name='label'>_Reset 3D View</attribute>"
     "        <attribute name='action'>pomelo.reset_3d_view</attribute>"
@@ -356,6 +365,22 @@ void Pomelo::on_action_help_about()
 void Pomelo::on_action_view_skeleton()
 {
   m_skeleton_viewer->show();
+}
+
+void Pomelo::on_action_orthonormal()
+{
+  bool active = false;
+  m_ref_orthonormal_toggle->get_state(active);
+
+  //The toggle action's state does not change automatically:
+  active = !active;
+  m_ref_orthonormal_toggle->change_state(active);
+
+  // Store the new state
+  m_pomelo_settings->set_int("orthonormal", int(active));
+  m_pomelo_settings->save();
+
+  m_mesh_viewer.set_orthonormal(active);
 }
 
 void Pomelo::on_action_show_edge()
