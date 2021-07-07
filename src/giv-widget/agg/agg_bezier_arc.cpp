@@ -68,7 +68,7 @@ namespace agg
 
 
     //------------------------------------------------------------------------
-    double _fmod(register const double n, register const double d)
+    double _fmod(const double n, const double d)
     {
       /*	        
       Use this implementation in WIN64 because fmod VS2003 SP1 math fmod bad implementation.
@@ -78,7 +78,7 @@ namespace agg
       if (d == 0.0)
         throw "fmod - Division by zero is not allowed";
 
-      register double q = n/d;
+      double q = n/d;
       return n - ((q < 0) ? ceil(q) : floor(q))*d;
     }
 

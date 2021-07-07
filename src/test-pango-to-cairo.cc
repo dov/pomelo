@@ -56,7 +56,6 @@ void path_to_giv(cairo_path_t *cpath,
 int main(int argc, char **argv)
 {
   int argp=1;
-  Pango::init();
 
   if (argp >= argc)
     die("Need markup!\n");

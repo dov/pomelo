@@ -18,7 +18,6 @@
 #include <pango/pangocairo.h>
 
 // Include CGAL for polygon processing
-#include <boost/shared_ptr.hpp>
 #include <CGAL/Exact_predicates_exact_constructions_kernel.h>
 #include <CGAL/Point_3.h>
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>

@@ -17,8 +17,18 @@ sources = ['pomelo-main.cc',
            'pomelo-settings.cc'
           ]
 
-if host_machine.system() == 'windows'
-  cpp_args += ['-Wa,-mbig-obj']
+link_args = []
+cpp_args += ['-DBOOST_ALLOW_DEPRECATED_HEADERS']
+
+if host_machine.system() == 'windows' 
+  cpp_args += ['-Wa,-mbig-obj',
+               '-Wno-attributes',
+               '-DBOOST_BIND_GLOBAL_PLACEHOLDERS',
+              ]
+  if get_option('optimization')=='0'
+    cpp_args += ['-g','-O1']
+  endif
+  link_args += ['-Wa,-mbig-obj']
   mod_rescomp = import('windows')
   sources += mod_rescomp.compile_resources('pomelo.rc')
 else

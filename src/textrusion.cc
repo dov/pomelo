@@ -415,7 +415,6 @@ Mesh TeXtrusion::skeleton_to_mesh(const vector<PHoleInfo>& phole_infos,
     // The upper surface and lower surfaces. The upper surface
     // is bumped, and the lower is flat, but we are using the same
     // triangulation for both.
-    double offset_thickness = 0.5;
     for (int ph_idx=0; ph_idx < (int)phole_infos.size(); ph_idx++) {
         if (updater && updater->info("profile", 1.0*ph_idx/phole_infos.size()))
             throw EAborted("Aborted!");
@@ -620,6 +619,10 @@ void PHoleInfo::skeletonize()
 // Divide the member skeleton into SkeletonPolygonRegions
 void PHoleInfo::divide_into_regions()
 {
+    // Why does this happen
+    if (!skeleton)
+        return;
+
     for (auto it = skeleton->halfedges_begin(); it != skeleton->halfedges_end(); ++it) {
         // Find a boundary edge
         if (it->is_bisector())
