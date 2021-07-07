@@ -27,7 +27,7 @@ MainInput::MainInput()
 
   // Setup the linear limit button
   m_linear_limit.set_digits(3);
-  m_linear_limit.set_range(0.001,1000);
+  m_linear_limit.set_range(0.001,20);
   m_linear_limit.set_increments(0.01,1);
   m_linear_limit.set_value(5.0);
   m_linear_limit.signal_value_changed().connect(sigc::mem_fun(*this,
@@ -66,7 +66,7 @@ MainInput::MainInput()
   m_round_max_angle_in_degrees.signal_value_changed().connect(sigc::mem_fun(*this,
     &MainInput::on_profile_input_changed));
 
-  // Setup the radius button
+  // The zdepth spin button
   m_zdepth.set_digits(1);
   m_zdepth.set_range(0,1000);
   m_zdepth.set_increments(0.1,1);
@@ -101,12 +101,27 @@ MainInput::MainInput()
   
   // Lower frame
   w_frame = mmFrameWithBoldLabel("3D Profile");
-
   this->pack_start(*w_frame, true,true);
-  w_grid = mm<Gtk::Grid>();
-  row = 0;
+
   w_vbox = mmVBox; // Main window vbox
   w_frame->add(*w_vbox);
+
+  w_hbox = mmHBox;
+  m_type_chooser.append("Round");
+  m_type_chooser.append("Curve");
+  m_type_chooser.set_active(0);
+  m_type_chooser.signal_changed().connect(
+     sigc::mem_fun(*this,
+                   &MainInput::on_combo_type_chooser_changed) );  
+  w_hbox->pack_start(*mmLabel("Profile option: "), false,false);
+  w_hbox->pack_start(m_type_chooser, false,false);
+  w_vbox->pack_start(*w_hbox, false,false);
+
+  m_profile_type_notebook.set_show_tabs(false); // Will be controlled by the type chooser
+  w_vbox->pack_start(m_profile_type_notebook, true,true);
+
+  w_grid = mm<Gtk::Grid>();
+  row = 0;
 
   w_grid->attach(*mmLabelRight("Radius:"), 0,row);
   w_grid->attach(m_radius,               1,row);
@@ -118,10 +133,29 @@ MainInput::MainInput()
   w_grid->attach(m_round_max_angle_in_degrees, 1,row);
   w_grid->attach(*mmLabelLeft("[Degrees]"), 2, row);
   row++;
+  m_profile_type_notebook.append_page(*w_grid, "");
+
+  w_grid = mm<Gtk::Grid>();
+  row = 0;
+
+  w_grid->attach(*mmLabelRight("Profile:"), 0,row);
+  auto w_prof_chooser = mm<Gtk::ComboBoxText>();
+  w_prof_chooser->append("Prof1");
+  w_prof_chooser->append("Prof2");
+  w_prof_chooser->set_active(0);
+  w_grid->attach(*w_prof_chooser,               1,row);
+  w_grid->attach(*mm<Gtk::Button>("Edit"),      2,row);
+  m_profile_type_notebook.append_page(*w_grid, "");
+  row++;
+  
+  // Common options
+  w_grid = mm<Gtk::Grid>();
+  row = 0;
   w_grid->attach(*mmLabelRight("Z-depth:"), 0,row);
   w_grid->attach(m_zdepth,               1,row);
   row++;
   w_vbox->pack_start(*w_grid, Gtk::PACK_SHRINK);
+
 
   // Lower Button box
   w_hbox = mmHBox;
@@ -233,3 +267,8 @@ void MainInput::set_text_edit_info_string(const Glib::ustring& info_string)
   
 }
 
+void MainInput::on_combo_type_chooser_changed()
+{
+  int active_page = m_type_chooser.get_active_row_number();
+  m_profile_type_notebook.set_current_page(active_page);
+}

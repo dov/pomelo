@@ -10,6 +10,13 @@
     <file>fragment-matcap.glsl</file>
     <file>fragment-edge-matcap.glsl</file>
   </gresource>
+  <gresource prefix="/icons">
+    <file>corner-icon.svg</file>
+    <file>round-icon.svg</file>
+    <file>round-symmetric-icon.svg</file>
+    <file>add-node-icon.svg</file>
+    <file>remove-node-icon.svg</file>
+  </gresource>
   <gresource prefix="/about">
     <file>pomelo_logo.png</file>
     <file>COPYING</file>

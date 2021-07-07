@@ -15,8 +15,6 @@ void pangomarkup_to_cairo(cairo_t *cr,
                           const char *markup,
                           PangoFontDescription *desc)
 {
-  PangoFontMap *fm = pango_cairo_font_map_new();
-
   PangoLayout *layout = pango_cairo_create_layout(cr);
   PangoContext *context = pango_layout_get_context(layout);
   pango_context_set_language(context, pango_language_from_string("C"));

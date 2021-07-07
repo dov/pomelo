@@ -45,6 +45,7 @@ epoxy_dep = dependency('epoxy')
 fmt_dep = dependency('fmt')
 glm_dep = dependency('glm')
 gmp_dep = dependency('gmp')
+goo_dep = dependency('goocanvasmm-2.0')
 mpfr_dep = dependency('mpfr')
 nanosvg_dep = dependency('nanosvg')
 tinygltf_dep = dependency('tinygltf',fallback:['tinygltf','tinygltf_dep'])
@@ -70,27 +71,35 @@ deps = [gtkmm_dep,
         m_dep,
         pthread_dep,
         nanosvg_dep,
-        tinygltf_dep]
+        tinygltf_dep,
+        goo_dep]
 
 if host_machine.system() == 'windows'
   lib_engine = shared_library('engine',
                               engine_sources,
                               dependencies : deps,
-                              install :true
+                              install :true,
+                              cpp_args : cpp_args,
+                              link_args : link_args
                              )
 else
   lib_engine = static_library('engine',
                               engine_sources,
-                              dependencies : deps)
+                              dependencies : deps,
+                              cpp_args : cpp_args,
+                              link_args : link_args
+                             )
 endif
 
 incdir = ['giv-widget']
+
 exe = executable(name_cap,
                  sources,
                  resources,
                  dependencies: deps,
-                 gui_app : true,
+                 gui_app : false,
                  cpp_args : cpp_args,
+                 link_args : link_args,
                  include_directories : incdir,
                  link_with : [libgivwidget,
                               libgtkimageviewer,
@@ -103,17 +112,27 @@ exe = executable(name_cap,
 # An example for converting an svg path to cairo
 executable('test-svgpath-to-cairo',
            ['test-svgpath-to-cairo.cc'],
+           cpp_args : cpp_args,
            link_with : [lib_engine],
            dependencies : deps)
 
 # An example for converting an svg path to cairo
 executable('test-svg-to-skeleton',
            ['test-svg-to-skeleton.cc'],
+           cpp_args : cpp_args,
            link_with : [lib_engine],
            dependencies : deps)
 
 executable('test-pango-to-cairo',
            ['test-pango-to-cairo.cc'],
+           cpp_args : cpp_args,
            link_with : [lib_engine],
+           dependencies : deps)
+
+executable('test-profile-editor',
+           ['test-profile-editor.cc',
+            'profile-editor.cc'],
+           resources,
+           cpp_args : cpp_args,
            dependencies : deps)
 

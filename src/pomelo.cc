@@ -23,7 +23,7 @@ Pomelo::Pomelo(shared_ptr<PomeloSettings> pomelo_settings)
     m_pomelo_settings(pomelo_settings)
 {
   set_title("Pomelo");
-  set_icon(Gdk::Pixbuf::create_from_resource("/about/pomelo_logo.png", -1, 80, true));
+  //set_icon(Gdk::Pixbuf::create_from_resource("/about/pomelo_logo.png", -1, 80, true));
   set_default_size(800, 1000);
 
   auto w_vbox = mmVBox;

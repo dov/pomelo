@@ -54,6 +54,8 @@ class MainInput : public Gtk::Box
   Gtk::Label m_profile_status_label;
   Gtk::Button m_skeleton_button;
   Gtk::Button m_profile_button;
+  Gtk::ComboBoxText m_type_chooser;
+  Gtk::Notebook m_profile_type_notebook;
 
   // If the text was set externally then this flag tells the
   // widget that on the next edit, we should clean and send a signal
@@ -71,7 +73,7 @@ class MainInput : public Gtk::Box
   void on_profile_input_changed();
   //  void on_text_insert_at_cursor(const Glib::ustring& str);
   bool on_text_focus_in(GdkEventFocus*);
-
+  void on_combo_type_chooser_changed();
 };
 
 #endif /* MAIN-INPUT */

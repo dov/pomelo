@@ -91,7 +91,6 @@ void MeshViewer::setup_projection_matrix()
   if (m_orthonormal)
     {
       double l=-2.4,r=2.4;
-      double t=1,b=-1;
       double dx = l-r;
       double dy = -dx/aspect;
       double dz = 1000; // Not sure about this!
@@ -319,7 +318,6 @@ void MeshViewer::update_matcap()
     int width = m_img->get_width();
     int height = m_img->get_height();
     int n_channels = m_img->get_n_channels();
-    int row_stride = m_img->get_rowstride();
     print("n_channels = {}\n", n_channels);
     uint8_t *data = m_img->get_pixels();
     glBindTexture(GL_TEXTURE_2D, m_matcap_texture);
