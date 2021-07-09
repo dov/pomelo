@@ -138,13 +138,17 @@ MainInput::MainInput()
   w_grid = mm<Gtk::Grid>();
   row = 0;
 
+  m_profile_edit_button.set_label("Edit");
+  m_profile_edit_button.signal_clicked().connect( sigc::mem_fun(*this,
+     &MainInput::on_button_profile_edit_clicked) );
+
   w_grid->attach(*mmLabelRight("Profile:"), 0,row);
   auto w_prof_chooser = mm<Gtk::ComboBoxText>();
   w_prof_chooser->append("Prof1");
   w_prof_chooser->append("Prof2");
   w_prof_chooser->set_active(0);
-  w_grid->attach(*w_prof_chooser,               1,row);
-  w_grid->attach(*mm<Gtk::Button>("Edit"),      2,row);
+  w_grid->attach(*w_prof_chooser,       1,row);
+  w_grid->attach(m_profile_edit_button, 2,row);
   m_profile_type_notebook.append_page(*w_grid, "");
   row++;
   
@@ -192,6 +196,15 @@ void MainInput::on_button_profile_clicked()
                          m_round_max_angle_in_degrees.get_value()*DEG2RAD,
                          int(m_num_radius_steps.get_value()),
                          m_zdepth.get_value());
+}
+
+void MainInput::on_button_profile_edit_clicked()
+{
+#if 0
+  m_profile_editor_window.show();
+  m_profile_editor_window.set_profile(profile_row);
+#endif
+  print("TBD");
 }
 
 void MainInput::set_skeleton_ready_state(bool is_ready)
