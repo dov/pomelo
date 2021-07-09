@@ -13,7 +13,7 @@ void main() {
   float m = 2. * sqrt( pow( r.x, 2. ) + pow( r.y, 2. ) + pow( r.z + 1., 2. ) );
   vec2 vN = r.xy / m + .5;
 
-  vec3 base = texture2D( texMatcap, vN ).rgb;
+  vec3 base = texture( texMatcap, vN ).rgb;
 
   outputColor = vec4( base, 1. );
 }
