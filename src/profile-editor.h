@@ -9,6 +9,7 @@
 
 #include <gtkmm.h>
 #include <goocanvasmm.h>
+#include "profile.h"
 
 enum NodeType {
   NODE_CORNER,
@@ -20,33 +21,11 @@ enum NodeType {
 class ProfileEditor;
 class Layer;
 
-struct Vec2 : std::array<double,2> {
-  Vec2(double x=0, double y=0) {
-    (*this)[0] = x;
-    (*this)[1] = y;
-  }
-  double& x() {
-    return (*this)[0];
-  }
-  double& y() {
-    return (*this)[1];
-  }
-
-  Vec2 operator+(Vec2 b)
-  {
-    return { this->x()+b.x(),this->y()+b.y() };
-  }
-  Vec2 operator-(Vec2 b)
-  {
-    return { this->x()-b.x(),this->y()-b.y() };
-  }
-};
-
 class Node {
   public:
   Node(ProfileEditor *pe,
        Layer *layer,
-       NodeType type, double x, double y)
+       NodeType type, double x=0, double y=0)
     : type(type),
       xy(x,y),
       pe(pe),
@@ -140,6 +119,12 @@ class ProfileEditor : public Gtk::Box
   void profile_delta_to_canvas_delta(double dpx, double dpy,
                                      // output
                                      double &dcx,double &dcy);
+
+  // Get the current edited profile as an exported profile data
+  ProfileData get_profile();
+  
+  // Set the profile from the external data
+  void set_profile(const ProfileData& prof);
 
   private:
   // A canvas item for the layers graphs

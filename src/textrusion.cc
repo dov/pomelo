@@ -869,7 +869,7 @@ vector<Polygon3D> SkeletonPolygonRegion::get_offset_curve_and_triangulate(double
         // Choose what polygons are inside!
         mark_domains(cdt);
         
-        for (const Face_handle& f : cdt.finite_face_handles()) {
+        for (const Face_handle f : cdt.finite_face_handles()) {
             if (!f->info().in_domain())
                 continue;
 

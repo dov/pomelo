@@ -1,6 +1,7 @@
 project('pomelo','cpp','c')
 subproject('nanosvg')
 subproject('tinygltf')
+subproject('nlohmann_json')
 
 gnome = import('gnome')
 

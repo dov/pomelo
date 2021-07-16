@@ -14,7 +14,8 @@ sources = ['pomelo-main.cc',
            'skeleton-viewer.cc',
            'settings-dialog.cc',
            'pomelo-widget-utils.cc',
-           'pomelo-settings.cc'
+           'pomelo-settings.cc',
+           'profile.cc'
           ]
 
 link_args = []
@@ -49,6 +50,7 @@ goo_dep = dependency('goocanvasmm-2.0')
 mpfr_dep = dependency('mpfr')
 nanosvg_dep = dependency('nanosvg')
 tinygltf_dep = dependency('tinygltf',fallback:['tinygltf','tinygltf_dep'])
+nhlohmann_json_dep = dependency('nlohmann_json')
 
 subdir('giv-widget')
 
@@ -72,6 +74,7 @@ deps = [gtkmm_dep,
         pthread_dep,
         nanosvg_dep,
         tinygltf_dep,
+        nhlohmann_json_dep,
         goo_dep]
 
 if host_machine.system() == 'windows'
@@ -131,7 +134,19 @@ executable('test-pango-to-cairo',
 
 executable('test-profile-editor',
            ['test-profile-editor.cc',
-            'profile-editor.cc'],
+            'profile-editor.cc',
+            'profile.cc'
+           ],
+           resources,
+           cpp_args : cpp_args,
+           dependencies : deps)
+
+executable('test-profile-editor-window',
+           ['test-profile-editor-window.cc',
+            'profile-editor-window.cc',
+            'profile-editor.cc',
+            'profile.cc'
+           ],
            resources,
            cpp_args : cpp_args,
            dependencies : deps)

@@ -141,7 +141,7 @@ ProfileEditor::ProfileEditor()
   populate_canvas_items();
   draw_layers();
   
-
+#if 0
   // Lower buttons (a dialog?)
   w_hbox = mmHBox;
   this->pack_start(*w_hbox, Gtk::PACK_SHRINK);
@@ -153,6 +153,7 @@ ProfileEditor::ProfileEditor()
     w_button = mm<Gtk::Button>("Close");
     w_hbox->pack_start(*w_button, Gtk::PACK_SHRINK);
   }
+#endif
 
   show_all_children();
 }
@@ -286,7 +287,7 @@ void ProfileEditor::draw_layers()
 
       double cx, cy;
 
-      profile_coord_to_canvas_coord(layer[i].xy.x(), layer[i].xy.y(),
+      profile_coord_to_canvas_coord(layer[i].xy.x, layer[i].xy.y,
                                     // output
                                     cx,cy);
       if (i==0)
@@ -294,13 +295,13 @@ void ProfileEditor::draw_layers()
       else
         {
           double cp1x, cp1y, cp2x, cp2y;
-          profile_coord_to_canvas_coord(layer[i-1].xy.x()+layer[i-1].dxyp.x(),
-                                        layer[i-1].xy.y()+layer[i-1].dxyp.y(),
+          profile_coord_to_canvas_coord(layer[i-1].xy.x+layer[i-1].dxyp.x,
+                                        layer[i-1].xy.y+layer[i-1].dxyp.y,
                                         // output
                                         cp1x,cp1y);
 
-          profile_coord_to_canvas_coord(layer[i].xy.x()+layer[i].dxym.x(),
-                                        layer[i].xy.y()+layer[i].dxym.y(),
+          profile_coord_to_canvas_coord(layer[i].xy.x+layer[i].dxym.x,
+                                        layer[i].xy.y+layer[i].dxym.y,
                                         // output
                                         cp2x,cp2y);
           path_string += format("C {} {} {} {} {} {} ",
@@ -320,8 +321,8 @@ void ProfileEditor::draw_layers()
           // Angle of line
           // TBD - Do this in canvas space!
           double dx,dy,th0;
-          profile_delta_to_canvas_delta(layer[i].dxym.x(),
-                                        layer[i].dxym.y(),
+          profile_delta_to_canvas_delta(layer[i].dxym.x,
+                                        layer[i].dxym.y,
                                         // output
                                         dx,dy);
           th0 = MY_TWO_PI/6-atan2(dy,dx);
@@ -335,7 +336,6 @@ void ProfileEditor::draw_layers()
               points.set_coordinate(j, cx+radius * ct, cy-radius * st);
             }
           
-          print("updating polyline to {},{}\n", cx,cy);
           poly->property_points() = points;
           poly->property_fill_color() = color;
 
@@ -354,7 +354,7 @@ void ProfileEditor::draw_layers()
       if (i>0)
           {
             double dx,dy;
-            profile_delta_to_canvas_delta(n.dxym.x(),n.dxym.y(),
+            profile_delta_to_canvas_delta(n.dxym.x,n.dxym.y,
                                           // output
                                           dx,dy);
             double vx=cx+dx;
@@ -367,7 +367,7 @@ void ProfileEditor::draw_layers()
       if (i < layer.size()-1)
           {
             double dx,dy;
-            profile_delta_to_canvas_delta(n.dxyp.x(),n.dxyp.y(),
+            profile_delta_to_canvas_delta(n.dxyp.x,n.dxyp.y,
                                           // output
                                           dx,dy);
             double vx=cx+dx;
@@ -515,38 +515,38 @@ void Node::move_control_point(int control_point, double dpx, double dpy)
 {
   if (control_point==0)
     {
-      dxym.x() += dpx;
-      dxym.y() += dpy;
+      dxym.x += dpx;
+      dxym.y += dpy;
 
       if (type == NODE_CURVE_SYMMETRIC
           || type == NODE_CURVE)
         {
-          double old_length = sqrt(dxyp.x()*dxyp.x()+dxyp.y()*dxyp.y());
-          double sym_length = sqrt(dxym.x()*dxym.x()+dxym.y()*dxym.y());
+          double old_length = sqrt(dxyp.x*dxyp.x+dxyp.y*dxyp.y);
+          double sym_length = sqrt(dxym.x*dxym.x+dxym.y*dxym.y);
           double s=1.0;
           if (type==NODE_CURVE)
             s = old_length/sym_length;
 
-          dxyp.x() = -dxym.x()*s;
-          dxyp.y() = -dxym.y()*s;
+          dxyp.x = -dxym.x*s;
+          dxyp.y = -dxym.y*s;
         }
     }
   else
     {
-      dxyp.x() += dpx;
-      dxyp.y() += dpy;
+      dxyp.x += dpx;
+      dxyp.y += dpy;
 
       if (type == NODE_CURVE_SYMMETRIC
           || type == NODE_CURVE)
         {
-          double old_length = sqrt(dxym.x()*dxym.x()+dxym.y()*dxym.y());
-          double sym_length = sqrt(dxyp.x()*dxyp.x()+dxyp.y()*dxyp.y());
+          double old_length = sqrt(dxym.x*dxym.x+dxym.y*dxym.y);
+          double sym_length = sqrt(dxyp.x*dxyp.x+dxyp.y*dxyp.y);
           double s=1.0;
           if (type==NODE_CURVE)
             s = old_length/sym_length;
 
-          dxym.x() = -dxyp.x()*s;
-          dxym.y() = -dxyp.y()*s;
+          dxym.x = -dxyp.x*s;
+          dxym.y = -dxyp.y*s;
         }
 
     }
@@ -561,8 +561,8 @@ void Layer::insert_node()
       if ((*this)[i].selected && (*this)[i+1].selected) {
         // Create an average of the two nodes and insert it.
         // TBD: update it for bezier curves
-        double new_x = 0.5*((*this)[i].xy.x()+(*this)[i+1].xy.x());
-        double new_y = 0.5*((*this)[i].xy.y()+(*this)[i+1].xy.y());
+        double new_x = 0.5*((*this)[i].xy.x+(*this)[i+1].xy.x);
+        double new_y = 0.5*((*this)[i].xy.y+(*this)[i+1].xy.y);
         Node new_node(this->pe, this, NODE_CURVE, new_x, new_y);
 
         // TBD - calculcate control points!
@@ -638,7 +638,7 @@ bool Node::on_motion_notify(const Glib::RefPtr<Goocanvas::Item>& item,
 
       // Calculate and update the translation of the node
       double dpx,dpy;
-      pe->canvas_delta_to_profile_delta(new_x-drag_xy.x(), new_y-drag_xy.y(),
+      pe->canvas_delta_to_profile_delta(new_x-drag_xy.x, new_y-drag_xy.y,
                                         // output
                                         dpx,dpy);
 
@@ -682,4 +682,58 @@ void Node::set_show_control(bool show_control)
   else
     // "Hide it" by moving it far far away
     item_control_group->set_simple_transform(0,9999,1.0,0);
+}
+
+// Get the current edited profile as an exported profile data
+ProfileData ProfileEditor::get_profile()
+{
+  ProfileData prof;
+
+  for (const auto& layer : m_layers)
+  {
+    LayerData layer_data;
+
+    for (auto& n : layer)
+    {
+      NodeData node_data;
+      node_data.node_type = int(n.type); // tbd
+      node_data.xy = n.xy;
+      node_data.control_before_xy = n.xy+n.dxym;
+      node_data.control_after_xy = n.xy+n.dxyp;
+      layer_data.push_back(node_data);
+    }
+
+    prof.push_back(layer_data);
+  }
+
+  return prof;
+}
+
+// Set the profile from the ProfileData
+void ProfileEditor::set_profile(const ProfileData& prof)
+{
+  m_layers.clear();
+  m_layers.resize(prof.size());
+  print("prof_size = {}\n", prof.size());
+  for (size_t i=0; i<prof.size(); i++)
+  {
+    auto & layer_data = prof[i];
+
+    // Initialize the new layer
+    m_layers[i].pe = this;
+    
+    m_layers[i].clear();
+    for (auto& node_data : layer_data)
+    {
+      Node n(this,
+             &m_layers[i],
+             NodeType(node_data.node_type));
+      n.xy = node_data.xy;
+      n.dxym = node_data.control_before_xy - node_data.xy;
+      n.dxyp = node_data.control_after_xy - node_data.xy;
+      m_layers[i].push_back(n);
+    }
+  }
+  populate_canvas_items();
+  draw_layers();
 }
