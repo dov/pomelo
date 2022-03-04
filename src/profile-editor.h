@@ -134,17 +134,19 @@ class ProfileEditor : public Gtk::Box
   void on_corner_node_clicked();
   void on_round_node_clicked();
   void on_round_symmetric_node_clicked();
+  void on_remove_layer_clicked();
+  void on_add_layer_clicked();
 
   std::vector<Layer> m_layers;
-  double m_xmargin=50;
-  double m_graph_xmargin=40;
-  double m_graph_ymargin=40;
-  double m_ymargin=50;
+  double m_xmargin=40;
+  double m_graph_xmargin=50; // distance from end of data to axis arrow
+  double m_graph_ymargin=50;
+  double m_ymargin=40;
   double m_canvas_width=800;
-  double m_canvas_height=500;
+  double m_canvas_height=800;
 
-  double m_profile_maxx = 100;
-  double m_profile_maxy = 50;
+  double m_profile_maxx = 10;
+  double m_profile_maxy = 10;
 };
 
 #endif /* PROFILE-EDITING */

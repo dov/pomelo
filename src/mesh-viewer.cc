@@ -128,8 +128,10 @@ void MeshViewer::setup_projection_matrix()
       m_proj_matrix[3][3] = 1;
       //  m_proj_matrix = glm::transpose(m_proj_matrix);
     }
+#if 0
   print("proj matrix\n");
   print_mat(&m_proj_matrix[0][0]);
+#endif
 }
 
 // Describe geometry. This is a bit wasteful, but I don't expect

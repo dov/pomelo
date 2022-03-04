@@ -60,7 +60,6 @@ ProfileEditor::ProfileEditor()
     
     w_hbox->pack_start(*mm<Gtk::Separator>(), Gtk::PACK_SHRINK, 15);
 
-
     w_button = mmSvgButton("add-node-icon.svg");
     w_button->signal_clicked().connect(sigc::mem_fun(*this,
       &ProfileEditor::on_add_node_clicked));
@@ -69,6 +68,18 @@ ProfileEditor::ProfileEditor()
     w_hbox->pack_start(*w_button, Gtk::PACK_SHRINK);
     w_button->signal_clicked().connect(sigc::mem_fun(*this,
       &ProfileEditor::on_remove_node_clicked));
+
+
+    w_hbox->pack_start(*mm<Gtk::Separator>(), Gtk::PACK_SHRINK, 15);
+
+    w_button = mmSvgButton("add-layer-icon.svg");
+    w_hbox->pack_start(*w_button, Gtk::PACK_SHRINK);
+    w_button->signal_clicked().connect(sigc::mem_fun(*this,
+      &ProfileEditor::on_add_layer_clicked));
+    w_button = mmSvgButton("remove-layer-icon.svg");
+    w_hbox->pack_start(*w_button, Gtk::PACK_SHRINK);
+    w_button->signal_clicked().connect(sigc::mem_fun(*this,
+      &ProfileEditor::on_remove_layer_clicked));
   }
 
   // Canvas
@@ -76,7 +87,7 @@ ProfileEditor::ProfileEditor()
   this->pack_start(*w_hbox, Gtk::PACK_SHRINK);
   auto w_canvas = mm<Goocanvas::Canvas>();
   w_hbox->pack_start(*w_canvas, Gtk::PACK_SHRINK);
-  w_canvas->set_size_request(800,500);
+  w_canvas->set_size_request(m_canvas_width,m_canvas_height);
 
   // Draw a graph just to make sure it works
   auto points = Goocanvas::Points(3);
@@ -447,6 +458,15 @@ void ProfileEditor::on_round_symmetric_node_clicked()
     layer.round_selected_symmetric_nodes();
 }
 
+void ProfileEditor::on_add_layer_clicked()
+{
+}
+
+
+void ProfileEditor::on_remove_layer_clicked()
+{
+}
+
 void ProfileEditor::clear_all_selected(Layer *except_layer)
 {
   for (auto& layer : m_layers) {
@@ -565,7 +585,12 @@ void Layer::insert_node()
         double new_y = 0.5*((*this)[i].xy.y+(*this)[i+1].xy.y);
         Node new_node(this->pe, this, NODE_CURVE, new_x, new_y);
 
-        // TBD - calculcate control points!
+        // Calculcate control points!
+        Vec2 v = (*this)[i+1].xy - (*this)[i].xy;
+        double s = 0.1; // arbitrary strength of new node
+        new_node.dxym = -v*s;
+        new_node.dxyp = v*s;
+
         this->insert(this->begin()+i+1, new_node);
         break;
       }

@@ -45,11 +45,16 @@ public:
                         double linear_limit,
                         Glib::ustring markup,
                         Glib::ustring svg_filename);
-  // Do the profile part of the shaping
-  void do_work_profile(double radius,
+
+  // Do the profile part of the shaping. The interface allows
+  // using one out of two method, either by radius or by the profile
+  // data in which case the radius isn't used.
+  void do_work_profile(bool use_profile_data,
+                       double radius,
                        double round_max_angle,
                        int num_radius_steps,
-                       double zdepth);
+                       double zdepth,
+                       ProfileData profile_data);
 
   // Get update on progress
   void get_progress(// output

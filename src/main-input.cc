@@ -8,8 +8,9 @@ using namespace fmt;
 
 constexpr double DEG2RAD = M_PI/180;
 
-MainInput::MainInput()
-  : Gtk::Box(Gtk::ORIENTATION_VERTICAL)
+MainInput::MainInput(Gtk::Window& window)
+  : Gtk::Box(Gtk::ORIENTATION_VERTICAL),
+    m_profile_editor_window(window)
 {
   auto w_frame = mmFrameWithBoldLabel("Skeleton");
   this->pack_start(*w_frame, true,true);
@@ -178,6 +179,22 @@ MainInput::MainInput()
 
   refTag = m_text_buffer->create_tag("info");
   refTag->property_foreground() = "#808080";
+
+  // Setup the callback for the profile editor window. TBD - do this properly
+  m_profile_editor_window.signal_response().connect([&](int response_id)
+  {
+    print("Got response {}\n", response_id);
+    m_profile_editor_window.hide();
+
+#if 0
+    // Debuging: Get the profile data and save it a json
+    ProfileData prof = profile_editor_window.get_profile();
+    prof.save_to_file("/tmp/prof.json");
+
+    prof.save_flat_to_giv("/tmp/prof.giv");
+#endif
+  });
+  
 }
 
 void MainInput::on_button_skeleton_clicked()
@@ -192,16 +209,19 @@ void MainInput::on_button_skeleton_clicked()
 
 void MainInput::on_button_profile_clicked()
 {
-  m_signal_build_profile(m_radius.get_value(),
+  m_signal_build_profile(this->use_profile_data,
+                         m_radius.get_value(),
                          m_round_max_angle_in_degrees.get_value()*DEG2RAD,
                          int(m_num_radius_steps.get_value()),
-                         m_zdepth.get_value());
+                         m_zdepth.get_value(),
+                         m_profile_editor_window.get_profile());
 }
 
 void MainInput::on_button_profile_edit_clicked()
 {
-#if 0
   m_profile_editor_window.show();
+
+#if 0
   m_profile_editor_window.set_profile(profile_row);
 #endif
   print("TBD");
@@ -284,4 +304,5 @@ void MainInput::on_combo_type_chooser_changed()
 {
   int active_page = m_type_chooser.get_active_row_number();
   m_profile_type_notebook.set_current_page(active_page);
+  use_profile_data = (active_page == 1); // Fixed row number for profile editor
 }

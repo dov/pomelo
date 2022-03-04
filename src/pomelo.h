@@ -15,6 +15,7 @@
 #include "progress-dialog.h"
 #include "skeleton-viewer.h"
 #include "settings-dialog.h"
+#include "profile.h"
 
 class Pomelo;
 
@@ -74,10 +75,12 @@ private:
   void on_build_skeleton(Glib::ustring text_string,
                          double linear_limit,
                          Pango::FontDescription font_description);
-  void on_build_profile(double radius,
+  void on_build_profile(bool use_profile_data,
+                        double radius,
                         double round_max_angle,
                         int num_radius_steps,
-                        double zdepth);
+                        double zdepth,
+                        ProfileData profile_data);
 
   // Info that the text was edited. This indicates that the svg
   // file is invalid.

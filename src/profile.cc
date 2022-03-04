@@ -75,7 +75,7 @@ void ProfileData::save_to_file(const std::string& filename)
 }
 
 // Get a flattened version of the curve
-vector<Vec2> LayerData::get_flat(double linear_limit)
+void LayerData::set_linear_limit(double linear_limit)
 {
   auto surface = Cairo::ImageSurface::create (Cairo::FORMAT_ARGB32, 100, 100);
   auto cr = Cairo::Context::create(surface);
@@ -101,19 +101,23 @@ vector<Vec2> LayerData::get_flat(double linear_limit)
   Cairo::Path *path = cr->copy_path_flat();
 
   cairo_path_t *cpath = path->cobj();
-  vector<Vec2> ret;
+  this->flat_list.clear();
   for (int i=0; i < cpath->num_data; i += cpath->data[i].header.length) {
       auto data = &cpath->data[i];
       switch (data->header.type) {
       case CAIRO_PATH_MOVE_TO:
       case CAIRO_PATH_LINE_TO:
-        ret.push_back(Vec2(data[1].point.x,data[1].point.y));
+        this->flat_list.push_back(Vec2(data[1].point.x,data[1].point.y));
         break;
       default:
         print("Oops...\n");
       }
   }
-  return ret;
+}
+
+vector<Vec2> LayerData::get_flat_list()
+{
+  return this->flat_list;
 }
 
 // for debugging
@@ -125,7 +129,8 @@ void ProfileData::save_flat_to_giv(const std::string& filename)
   int layer_idx=0;
   for (auto& layer : *this)
   {
-    auto path = layer.get_flat();
+    layer.set_linear_limit();
+    auto path = layer.get_flat_list();
 
     fh << format("$path layer {}\n"
                  "$color {}\n"
@@ -138,3 +143,4 @@ void ProfileData::save_flat_to_giv(const std::string& filename)
     layer_idx++;
   }
 }
+

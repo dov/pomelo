@@ -1,4 +1,8 @@
-// A prototype for turning a pango markup string into contours.
+// Textrusion is the "nom de guerre" that I used for the algorithmic
+// code of pomelo. It's based on text and extrusion.
+//
+// 2021-07-17 Sat
+
 #include <freetype/ftglyph.h>
 #include <freetype/ftoutln.h>
 #include <fstream>
@@ -398,8 +402,6 @@ vector<PHoleInfo> TeXtrusion::skeletonize(const std::vector<Polygon_with_holes>&
     return phole_infos;
 }
 
-// TBD restorethis!
-
 // Turn the skeleton into a 3D mesh
 Mesh TeXtrusion::skeleton_to_mesh(const vector<PHoleInfo>& phole_infos,
                                   // output
@@ -465,20 +467,119 @@ Mesh TeXtrusion::skeleton_to_mesh(const vector<PHoleInfo>& phole_infos,
                 continue;
             }
 
+            // Here is where the edge profile is applied. We either do
+            // a simple round profile or we apply the profiler curve.
+
             // The upper surface Loop over the offsets
             double epsilon = 1e-5;
-            double angle_span = profile_round_max_angle;
-            for (int d_idx=0; d_idx<this->profile_num_radius_steps+1; d_idx++) {
-                double angle_start = angle_span * d_idx/this->profile_num_radius_steps;
-                double angle_end = angle_span * (d_idx+1)/this->profile_num_radius_steps;
-                double offs_start = profile_radius*(1-cos(angle_start));
-                double offs_end = profile_radius*(1-cos(angle_end));
-                if (d_idx == this->profile_num_radius_steps)
-                  offs_end = depth+epsilon;
 
-                auto pp = r.get_offset_curve_and_triangulate(offs_start,offs_end);
-                int poly_idx = 0;
-                for (const auto &poly : pp) {
+            if (this->use_profile_data)
+              {
+                // Get the first layer
+                auto& layer = this->profile_data[0];
+                layer.set_linear_limit(); // TBD use linear limit parameter
+                auto flat_list = layer.get_flat_list();
+                
+                for (size_t d_idx=0; d_idx<flat_list.size(); d_idx++)
+                  {
+                    // Connect a connection between the previous and this point
+                    double offs_start = flat_list[d_idx].x;
+                    double z_start = flat_list[d_idx].y;
+                    if (offs_start > depth)
+                      break;
+
+                    double offs_end,z_end;
+
+                    // Extrapolate for the last point
+                    if (d_idx == flat_list.size()-1)
+                      {
+                        // The "next" point is the depth
+                        offs_end = depth+epsilon;
+
+                        // Get the slope of the last point and extrapolate
+                        auto dxy = flat_list[d_idx-1]-flat_list[d_idx-2];
+                        auto slope = dxy.y/dxy.x;
+
+                        z_end = z_start + (depth-offs_start) * slope;
+                      }
+                    else
+                      {
+                        // The next point is the depth, unless it is
+                        // larger than the depth
+                        offs_end = flat_list[d_idx+1].x;
+                        z_end = flat_list[d_idx+1].y;
+
+                        if (offs_end > depth)
+                          {
+                            z_end = z_start + (depth-offs_start)/(offs_end-offs_start)*(z_end-z_start);
+                            offs_end = depth+epsilon;
+                          }
+                      }
+                
+                    auto pp = r.get_offset_curve_and_triangulate(offs_start,offs_end);
+                    int poly_idx = 0;
+                    for (const auto &poly : pp) {
+                      ss << format("$color green\n"
+                                   "$line\n"
+                                   "$marks fcircle\n"
+                                   "$path offset curves/ph {}/region {}/{}/{}\n"
+                                   ,
+                                   ph_idx+1,
+                                   r_idx+1,
+                                   d_idx+1,
+                                   poly_idx+1
+                                   );
+                      poly_idx++;
+                      if (poly.size()!=3)
+                        throw std::runtime_error("Expected 3 vertices!");
+                      glm::vec3 tri[3], tri_back[3];
+                      for (int i=0; i<3; i++) {
+                        const auto &p = poly[i];
+  
+                        double offs = p.z(); // This is the distance of the vertex from the boundary
+                        
+                        // Transform z by interpolating
+                        double z = z_start + (offs-offs_start)/(offs_end-offs_start)*(z_end-z_start);
+                          
+                        // Do the 2-i to get the correct direction
+                        // for light from the upper side
+                        tri[2-i] = glm::vec3 {
+                          float(p.x()),
+                          -float(p.y()), 
+                          float(z) };
+                        ss << format("{} {}\n", p.x(), p.y());
+  
+                        // Back side
+                        tri_back[i] = glm::vec3 {
+                          float(p.x()),
+                          -float(p.y()), 
+                          float(-zdepth) };
+                      }
+                      ss << "z\n";
+                      ss << "\n";
+  
+                      // Add triangles to mesh
+                      for (int i=0; i<3; i++)
+                        mesh.vertices.push_back(tri[i]);
+                      for (int i=0; i<3; i++)
+                        mesh.vertices.push_back(tri_back[i]);
+                    }
+                  }
+              }
+            else
+              {
+                double angle_span = profile_round_max_angle;
+                for (int d_idx=0; d_idx<this->profile_num_radius_steps+1; d_idx++) {
+                  double angle_start = angle_span * d_idx/this->profile_num_radius_steps;
+                  double angle_end = angle_span * (d_idx+1)/this->profile_num_radius_steps;
+                  double offs_start = profile_radius*(1-cos(angle_start));
+                  double offs_end = profile_radius*(1-cos(angle_end));
+                  if (d_idx == this->profile_num_radius_steps)
+                    offs_end = depth+epsilon;
+  
+                  auto pp = r.get_offset_curve_and_triangulate(offs_start,offs_end);
+                  int poly_idx = 0;
+                  for (const auto &poly : pp) {
                     ss << format("$color green\n"
                                  "$line\n"
                                  "$marks fcircle\n"
@@ -491,55 +592,55 @@ Mesh TeXtrusion::skeleton_to_mesh(const vector<PHoleInfo>& phole_infos,
                                  );
                     poly_idx++;
                     if (poly.size()!=3)
-                        throw std::runtime_error("Expected 3 vertices!");
+                      throw std::runtime_error("Expected 3 vertices!");
                     glm::vec3 tri[3], tri_back[3];
                     for (int i=0; i<3; i++) {
-                        const auto &p = poly[i];
-
-                        double z = p.z();
-
-                        // Transform z
-                        double r = profile_radius;
-                        if (z > r - r * cos(angle_span))
-                            z = r * sin(angle_span);
-                        else 
-                            z = sqrt(r*r-(z-r)*(z-r));
-                        
-                        // Do the 2-i to get the correct direction
-                        // for light from the upper side
-                        tri[2-i] = glm::vec3 {
-                            float(p.x()),
-                            -float(p.y()), 
-                            float(z) };
-                        ss << format("{} {}\n", p.x(), p.y());
-
-                        // Back side
-                        tri_back[i] = glm::vec3 {
-                            float(p.x()),
-                            -float(p.y()), 
-                            float(-zdepth) };
+                      const auto &p = poly[i];
+  
+                      double z = p.z();
+  
+                      // Transform z
+                      double r = profile_radius;
+                      if (z > r - r * cos(angle_span))
+                        z = r * sin(angle_span);
+                      else 
+                        z = sqrt(r*r-(z-r)*(z-r));
+                          
+                      // Do the 2-i to get the correct direction
+                      // for light from the upper side
+                      tri[2-i] = glm::vec3 {
+                        float(p.x()),
+                        -float(p.y()), 
+                        float(z) };
+                      ss << format("{} {}\n", p.x(), p.y());
+  
+                      // Back side
+                      tri_back[i] = glm::vec3 {
+                        float(p.x()),
+                        -float(p.y()), 
+                        float(-zdepth) };
                     }
                     ss << "z\n";
                     ss << "\n";
-
+  
                     // Add triangles to mesh
                     for (int i=0; i<3; i++)
                       mesh.vertices.push_back(tri[i]);
                     for (int i=0; i<3; i++)
                       mesh.vertices.push_back(tri_back[i]);
+                  }
                 }
-            }
-
+              }
+  
             // Add a tube between upper and lower segment (quad)
             {
-                auto& p = r.polygon;
-
-                mesh.vertices.push_back( { float(p[0].x()),float(-p[0].y()),0.0f });
-                mesh.vertices.push_back( { float(p[1].x()),float(-p[1].y()),0.0f });
-                mesh.vertices.push_back( { float(p[0].x()),float(-p[0].y()),float(-zdepth)});
-                mesh.vertices.push_back( { float(p[1].x()),float(-p[1].y()),0.0f});
-                mesh.vertices.push_back( { float(p[1].x()),float(-p[1].y()),float(-zdepth)});
-                mesh.vertices.push_back( { float(p[0].x()),float(-p[0].y()),float(-zdepth)});
+              auto& p = r.polygon;
+              mesh.vertices.push_back( { float(p[0].x()),float(-p[0].y()),0.0f });
+              mesh.vertices.push_back( { float(p[1].x()),float(-p[1].y()),0.0f });
+              mesh.vertices.push_back( { float(p[0].x()),float(-p[0].y()),float(-zdepth)});
+              mesh.vertices.push_back( { float(p[1].x()),float(-p[1].y()),0.0f});
+              mesh.vertices.push_back( { float(p[1].x()),float(-p[1].y()),float(-zdepth)});
+              mesh.vertices.push_back( { float(p[0].x()),float(-p[0].y()),float(-zdepth)});
             }
         }
     }

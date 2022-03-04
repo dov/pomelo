@@ -146,10 +146,12 @@ void WorkerSkeleton::do_work_skeleton(
 }
 
 void WorkerSkeleton::do_work_profile(
+  bool use_profile_data,
   double radius,
   double round_max_angle,
   int num_radius_steps,
-  double zdepth
+  double zdepth,
+  ProfileData profile_data
 )
 {
   {
@@ -160,10 +162,12 @@ void WorkerSkeleton::do_work_profile(
     m_message = "";
   } 
 
+  m_textrusion->use_profile_data = use_profile_data;
   m_textrusion->zdepth = zdepth; 
   m_textrusion->profile_radius = radius; 
   m_textrusion->profile_round_max_angle = round_max_angle; 
-  m_textrusion->profile_num_radius_steps = num_radius_steps; 
+  m_textrusion->profile_num_radius_steps = num_radius_steps;
+  m_textrusion->profile_data = profile_data;
 
   // Do the time consuming tasks
   bool finished_successfully = false;

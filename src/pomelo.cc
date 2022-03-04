@@ -17,7 +17,8 @@ using namespace fmt;
 
 
 Pomelo::Pomelo(shared_ptr<PomeloSettings> pomelo_settings)
-  : m_mesh_viewer(pomelo_settings),
+  : m_main_input(*this),
+    m_mesh_viewer(pomelo_settings),
     m_progress_dialog(*this,""),
     m_worker_skeleton(this, pomelo_settings),
     m_pomelo_settings(pomelo_settings)
@@ -464,10 +465,12 @@ void Pomelo::on_build_skeleton(Glib::ustring text_string,
   
 }
 
-void Pomelo::on_build_profile(double radius,
+void Pomelo::on_build_profile(bool use_profile_data,
+                              double radius,
                               double round_max_angle,
                               int num_radius_steps,
-                              double zdepth)
+                              double zdepth,
+                              ProfileData profile_data)
 {
   m_progress_dialog.set_title("Build Profile");
   m_progress_dialog.show();
@@ -477,10 +480,12 @@ void Pomelo::on_build_profile(double radius,
   m_worker_action = ACTION_PROFILE;
   m_worker_skeleton_thread = make_unique<std::thread>(
     [=] {
-      m_worker_skeleton.do_work_profile(radius,
+      m_worker_skeleton.do_work_profile(use_profile_data,
+                                        radius,
                                         round_max_angle,
                                         num_radius_steps,
-                                        zdepth);
+                                        zdepth,
+                                        profile_data);
     });
 
   m_main_input.set_profile_ready_state(true);

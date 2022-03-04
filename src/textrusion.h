@@ -32,6 +32,7 @@
 #include <CGAL/Aff_transformation_2.h>
 #include <fmt/core.h>
 #include "mesh.h"
+#include "profile.h"
 
 // An exception when being aborted
 class EAborted : public std::runtime_error {
@@ -195,6 +196,8 @@ class TeXtrusion {
     bool do_rtl = false;
     double linear_limit = 500;
     Pango::FontDescription font_description;
+    bool use_profile_data = false;
+    ProfileData profile_data;
     double profile_radius = 3.0;
     double profile_round_max_angle = M_PI/2;
     double profile_num_radius_steps = 10;

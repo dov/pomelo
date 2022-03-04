@@ -1,7 +1,9 @@
 engine_sources = ['textrusion.cc',
                   'smooth-sharp-angles.cc',
                   'svgpath-to-cairo.cc',
-                  'pango-to-cairo.cc']
+                  'pango-to-cairo.cc',
+                  'profile.cc',
+                 ]
 
 sources = ['pomelo-main.cc',
            'pomelo.cc',
@@ -15,7 +17,8 @@ sources = ['pomelo-main.cc',
            'settings-dialog.cc',
            'pomelo-widget-utils.cc',
            'pomelo-settings.cc',
-           'profile.cc'
+           'profile-editor.cc',
+           'profile-editor-window.cc',
           ]
 
 link_args = []

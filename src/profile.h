@@ -47,8 +47,11 @@ class NodeData {
 class LayerData : public std::vector<NodeData> {
   public:
 
-  // Get a flattened version of the curve
-  std::vector<Vec2> get_flat(double linear_limit=1);
+  // Set the linear limit and calculate cache
+  void set_linear_limit(double linear_limit=0.1);
+
+  // Get a copy of the flat list. 
+  std::vector<Vec2> get_flat_list();
 
   // Get the direction beyond the flattened version
   Vec2 get_end_dir() { return Vec2(0,0); } // TBD
@@ -66,6 +69,9 @@ class LayerData : public std::vector<NodeData> {
     for (size_t i=0; i<j.size(); i++)
       (*this)[i].from_json(j[i]);
   }
+
+  private:
+  std::vector<Vec2> flat_list;
 };
 
 class ProfileData : public std::vector<LayerData> {
@@ -75,6 +81,8 @@ class ProfileData : public std::vector<LayerData> {
 
   // for debugging
   void save_flat_to_giv(const std::string& filename);
+
+  
 };
 
 #endif /* PROFILE */

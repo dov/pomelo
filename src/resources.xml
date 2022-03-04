@@ -16,6 +16,8 @@
     <file>round-symmetric-icon.svg</file>
     <file>add-node-icon.svg</file>
     <file>remove-node-icon.svg</file>
+    <file>remove-layer-icon.svg</file>
+    <file>add-layer-icon.svg</file>
   </gresource>
   <gresource prefix="/about">
     <file>pomelo_logo.png</file>

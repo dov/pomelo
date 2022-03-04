@@ -14,8 +14,8 @@ ProfileEditorWindow::ProfileEditorWindow(Gtk::Window& parent)
                 ),
     profile_editor(Gtk::make_managed<ProfileEditor>())
 {
-  profile_editor->set_size_request(400,400);
-  get_content_area()->pack_start(*profile_editor);
+  profile_editor->set_size_request(800,800);
+  get_content_area()->pack_start(*profile_editor, true,true,0);
   get_content_area()->show_all();
   
   add_button("Save",0);

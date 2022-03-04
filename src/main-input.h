@@ -8,11 +8,12 @@
 #define MAIN_INPUT_H
 
 #include <gtkmm.h>
+#include "profile-editor-window.h"
 
 class MainInput : public Gtk::Box
 {
   public:
-  MainInput();
+  MainInput(Gtk::Window& window);
 
   //signal accessor:
   using type_signal_build_skeleton = sigc::signal<void(
@@ -23,10 +24,12 @@ class MainInput : public Gtk::Box
   type_signal_build_skeleton signal_build_skeleton();
 
   using type_signal_build_profile = sigc::signal<void(
+    bool,           // use profile_data
     double,         // Radius
     double,         // Round max angle in radians
     int,            // Num radius steps
-    double          // ZDepth
+    double,         // ZDepth
+    ProfileData     // profile
     )>;
   type_signal_build_profile signal_build_profile();
 
@@ -57,11 +60,13 @@ class MainInput : public Gtk::Box
   Gtk::Button m_profile_edit_button;
   Gtk::ComboBoxText m_type_chooser;
   Gtk::Notebook m_profile_type_notebook;
+  ProfileEditorWindow m_profile_editor_window;
 
   // If the text was set externally then this flag tells the
   // widget that on the next edit, we should clean and send a signal
   // about it.
   bool m_clean_on_edit = false;
+  bool use_profile_data = false; // Type of profiling round or profile data
 
   // Signals
   type_signal_build_skeleton m_signal_build_skeleton;
