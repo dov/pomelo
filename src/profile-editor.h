@@ -53,8 +53,8 @@ class Node {
   Glib::RefPtr<Goocanvas::Ellipse> item_control_plus;
   Glib::RefPtr<Goocanvas::Polyline> item_control_line;
   
-  ProfileEditor *pe;
-  Layer *layer;
+  ProfileEditor *pe = nullptr;
+  Layer* layer = nullptr; 
 
   bool on_button_press(const Glib::RefPtr<Goocanvas::Item>& item,
                        GdkEventButton* event);
@@ -73,9 +73,15 @@ class Node {
 
 class Layer : public std::vector<Node> {
   public:
+  // constructor
+  Layer();
+  ~Layer();
   Glib::RefPtr<Goocanvas::Group> item_group; // a group for the layer
   Glib::RefPtr<Goocanvas::Path> item_path; // a group for the layer
-  ProfileEditor *pe;
+  ProfileEditor *pe=nullptr; // back reference 
+  bool is_baselayer = true;  // The first layer is a base layer it is
+                           // different in that the first and the last nodes
+                           // can't be moved.
 
   // Move all the selected nodes by the given amount
   void move_selected(double dpx, double dpy);
@@ -103,7 +109,7 @@ class ProfileEditor : public Gtk::Box
   ProfileEditor();
 
   // Used by the "friends" in the layers
-  void clear_all_selected(Layer *except_layer=nullptr);
+  void clear_all_selected(Layer* except_layer=nullptr);
   void populate_canvas_items();
   void draw_layers();
 
@@ -137,7 +143,7 @@ class ProfileEditor : public Gtk::Box
   void on_remove_layer_clicked();
   void on_add_layer_clicked();
 
-  std::vector<Layer> m_layers;
+  std::vector<std::shared_ptr<Layer>> m_layers;
   double m_xmargin=40;
   double m_graph_xmargin=50; // distance from end of data to axis arrow
   double m_graph_ymargin=50;

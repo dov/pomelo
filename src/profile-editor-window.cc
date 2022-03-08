@@ -6,6 +6,9 @@
 //----------------------------------------------------------------------
 
 #include "profile-editor-window.h"
+#include "fmt/core.h"
+
+using namespace fmt;
 
 ProfileEditorWindow::ProfileEditorWindow(Gtk::Window& parent)
   : Gtk::Dialog("Profile Editor",
@@ -33,6 +36,9 @@ ProfileData ProfileEditorWindow::get_profile()
 // Set the profile from the external data
 void ProfileEditorWindow::set_profile(const ProfileData& prof)
 {
-  profile_editor->set_profile(prof);
+  if (profile_editor)
+    profile_editor->set_profile(prof);
+  else
+    print("Oops\n");
 }
 

@@ -78,10 +78,11 @@ class ProfileData : public std::vector<LayerData> {
   public:
   void load_from_file(const std::string& filename);
   void save_to_file(const std::string& filename);
+  std::string export_string();
+  void load_from_string(const std::string& profile_string);
 
   // for debugging
   void save_flat_to_giv(const std::string& filename);
-
   
 };
 

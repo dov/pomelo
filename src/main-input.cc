@@ -185,10 +185,11 @@ MainInput::MainInput(Gtk::Window& window)
   {
     print("Got response {}\n", response_id);
     m_profile_editor_window.hide();
+    m_signal_profile_edited();
 
 #if 0
     // Debuging: Get the profile data and save it a json
-    ProfileData prof = profile_editor_window.get_profile();
+    ProfileData prof = m_profile_editor_window.get_profile();
     prof.save_to_file("/tmp/prof.json");
 
     prof.save_flat_to_giv("/tmp/prof.giv");
@@ -290,6 +291,11 @@ MainInput::type_signal_text_edited MainInput::signal_text_edited()
   return m_signal_text_edited;
 }
 
+MainInput::type_signal_profile_edited MainInput::signal_profile_edited()
+{
+  return m_signal_profile_edited;
+}
+
 void MainInput::set_text_edit_info_string(const Glib::ustring& info_string)
 {
   m_skeleton_button.grab_focus();
@@ -306,3 +312,24 @@ void MainInput::on_combo_type_chooser_changed()
   m_profile_type_notebook.set_current_page(active_page);
   use_profile_data = (active_page == 1); // Fixed row number for profile editor
 }
+
+// Get a string representation of the current profile
+Glib::ustring MainInput::get_profile_string()
+{
+  ProfileData prof = m_profile_editor_window.get_profile();
+
+  return prof.export_string();
+}
+
+// set the profile
+void MainInput::set_profile(const Glib::ustring& profile_string)
+{
+  // Don't import an empty string
+  if (profile_string.size()==0)
+    return;
+
+  ProfileData prof;
+  prof.load_from_string(profile_string);
+  m_profile_editor_window.set_profile(prof);
+}
+

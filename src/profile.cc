@@ -42,13 +42,9 @@ static string load_string_from_file(const string& filename)
                 istreambuf_iterator<char>());
 }
 
-void ProfileData::load_from_file(const string& filename)
+void ProfileData::load_from_string(const string& profile_string)
 {
-  json j;
-
-  string js = load_string_from_file(filename);
-
-  j = json::parse(js);
+  json j = json::parse(profile_string);
 
   this->resize(j["layers"].size());
 
@@ -58,6 +54,24 @@ void ProfileData::load_from_file(const string& filename)
     
     (*this)[i].from_json(jl);
   }
+}
+
+void ProfileData::load_from_file(const string& filename)
+{
+  string js = load_string_from_file(filename);
+  load_from_string(js);
+}
+
+string ProfileData::export_string()
+{
+  json root;
+  vector<json> layers;
+
+  for (auto& v : *this)
+      layers.push_back(v.as_json());
+  root["layers"] = layers;
+
+  return root.dump(2); 
 }
 
 void ProfileData::save_to_file(const std::string& filename)
@@ -71,7 +85,7 @@ void ProfileData::save_to_file(const std::string& filename)
 
   string js = root.dump(2); 
 
-  string_to_file(js, filename);
+  string_to_file(export_string(), filename);
 }
 
 // Get a flattened version of the curve

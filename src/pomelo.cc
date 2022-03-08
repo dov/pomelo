@@ -188,8 +188,12 @@ Pomelo::Pomelo(shared_ptr<PomeloSettings> pomelo_settings)
      &Pomelo::on_build_profile) );
   m_main_input.signal_text_edited().connect( sigc::mem_fun(*this,
      &Pomelo::on_input_text_edited) );
+  m_main_input.signal_profile_edited().connect( sigc::mem_fun(*this,
+     &Pomelo::on_input_profile_edited) );
 
   w_vbox->pack_start(m_main_input, false, true);
+
+  m_main_input.set_profile(m_pomelo_settings->get_string_default("profile"));
 
   w_vbox->pack_start(m_mesh_viewer, true, true);
   w_vbox->pack_start(m_statusbar, false, false);
@@ -494,6 +498,14 @@ void Pomelo::on_build_profile(bool use_profile_data,
 void Pomelo::on_input_text_edited()
 {
   m_svg_filename = ""; 
+}
+
+void Pomelo::on_input_profile_edited()
+{
+  printf("on_input_profile_edited\n");
+  m_pomelo_settings->set_string("profile",
+                                m_main_input.get_profile_string());
+  m_pomelo_settings->save();
 }
 
 void Pomelo::set_status(const string& message)

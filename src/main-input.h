@@ -37,12 +37,23 @@ class MainInput : public Gtk::Box
   using type_signal_text_edited = sigc::signal<void()>;
   type_signal_text_edited signal_text_edited();
 
+  // When the profile has been edited, the following signal is sent
+  using type_signal_profile_edited = sigc::signal<void()>;
+  type_signal_profile_edited signal_profile_edited();
+
   // Setup UI for readiness
   void set_skeleton_ready_state(bool is_ready);
   void set_profile_ready_state(bool is_ready);
 
   // Change the text to a placeholder
   void set_text_edit_info_string(const Glib::ustring& info_string);
+
+  // Get the profile for storing in a external storage
+  // Get a string representation of the current profile
+  Glib::ustring get_profile_string();
+
+  // set the profile
+  void set_profile(const Glib::ustring& profile_string);
 
   private:
   Gtk::TextView m_text;
@@ -72,6 +83,7 @@ class MainInput : public Gtk::Box
   type_signal_build_skeleton m_signal_build_skeleton;
   type_signal_build_profile m_signal_build_profile;
   type_signal_text_edited m_signal_text_edited;
+  type_signal_profile_edited m_signal_profile_edited;
 
   void on_button_skeleton_clicked();
   void on_button_profile_clicked();

@@ -139,11 +139,15 @@ ProfileEditor::ProfileEditor()
 #endif
   
   // Create a dummy layer
-  m_layers.push_back(Layer());
-  Layer* layer = &m_layers[m_layers.size()-1];
+  m_layers.push_back(make_shared<Layer>());
+  shared_ptr<Layer> layer = m_layers[m_layers.size()-1];
   layer->pe = this;
-  layer->push_back(Node(this,layer,NODE_CORNER, 0,0));
-  layer->push_back(Node(this,layer,NODE_CORNER, m_profile_maxx,m_profile_maxy));
+  layer->push_back(Node(this,layer.get(),NODE_CORNER, 0,0));
+  layer->push_back(Node(this,layer.get(),NODE_CORNER, m_profile_maxx,m_profile_maxy));
+
+  // Set control points for the first and the last points
+  (*layer)[0].dxyp = {m_profile_maxx/10,m_profile_maxy/10};
+  (*layer)[1].dxym = {-m_profile_maxx/10,-m_profile_maxy/10};
 
   // Create the group item for the layers
   m_layers_group = Goocanvas::Group::create();
@@ -173,62 +177,67 @@ ProfileEditor::ProfileEditor()
 void ProfileEditor::populate_canvas_items()
 {
   string colors[2] = { "pink", "blue" }; // colors not selected and selected
+  string color_per_layer[4] = {"red","green","orange","cyan" };
+
 
   // Remove the old layer drawing. Do from the end to not disturb the
   // enumeration
   for (int i=m_layers_group->get_n_children()-1; i>=0; i--)
     m_layers_group->remove_child(i);
 
-  for (auto& layer : m_layers) {
+  int layer_id = 0;
+  for (auto layer : m_layers) {
     // Create group for the layer
     auto layer_group = Goocanvas::Group::create();
-    layer.item_group = layer_group;
+    layer->item_group = layer_group;
 
     // Create the bezier curve
     string path_string;
 
-    for (size_t i=0; i<layer.size(); i++)
+    for (size_t i=0; i<layer->size(); i++)
       {
-        auto color = colors[int(layer[i].selected)];
+        auto color = colors[int((*layer)[i].selected)];
         Glib::RefPtr<Goocanvas::Item> item;
   
         // Create the control points
-        layer[i].item_control_group = Goocanvas::Group::create();
-        layer[i].item_control_minus = Goocanvas::Ellipse::create(0,0,9,9);
-        layer[i].item_control_plus = Goocanvas::Ellipse::create(0,0,9,9);
-        layer[i].item_control_line = Goocanvas::Polyline::create(false,Goocanvas::Points(1));
+        (*layer)[i].item_control_group = Goocanvas::Group::create();
+        (*layer)[i].item_control_minus = Goocanvas::Ellipse::create(0,0,9,9);
+        (*layer)[i].item_control_plus = Goocanvas::Ellipse::create(0,0,9,9);
+        (*layer)[i].item_control_line = Goocanvas::Polyline::create(false,Goocanvas::Points(1));
   
+#if 0
         // Set control points for the first and the last points
         if (i==0)
-          layer[i].dxyp = {m_profile_maxx/10,m_profile_maxy/10};
-        if (i==layer.size()-1)
-          layer[i].dxym = {-m_profile_maxx/10,-m_profile_maxy/10};
+          (*layer)[i].dxyp = {m_profile_maxx/10,m_profile_maxy/10};
+        if (i==layer->size()-1)
+          (*layer)[i].dxym = {-m_profile_maxx/10,-m_profile_maxy/10};
+#endif
         
-        for (auto& it : { layer[i].item_control_minus,
-                         layer[i].item_control_plus})
+        for (auto& it : { (*layer)[i].item_control_minus,
+                         (*layer)[i].item_control_plus})
           {
             it->property_fill_color() = "cyan";
             it->property_stroke_color() = "black" ;
           }
   
-        layer[i].item_control_group->add_child(layer[i].item_control_line);
+        (*layer)[i].item_control_group->add_child((*layer)[i].item_control_line);
         if (i>0)
-          layer[i].item_control_group->add_child(layer[i].item_control_minus);
-        if (i<layer.size()-1)
-          layer[i].item_control_group->add_child(layer[i].item_control_plus);
+          (*layer)[i].item_control_group->add_child((*layer)[i].item_control_minus);
+        if (i<layer->size()-1)
+          (*layer)[i].item_control_group->add_child((*layer)[i].item_control_plus);
   
         // Add the control group, and it will be hidden immediately
-        layer[i].item_group = Goocanvas::Group::create();
-        layer[i].item_group->add_child(layer[i].item_control_group);
+        (*layer)[i].item_group = Goocanvas::Group::create();
+        (*layer)[i].item_group->add_child((*layer)[i].item_control_group);
   
-        if (i<layer.size()-1)
+        if (!layer->is_baselayer || i<layer->size()-1)
           {
             auto circle = Goocanvas::Ellipse::create(0,0,15,15);
             circle->property_fill_color() = color ;
             circle->property_stroke_color() = "black" ;
             circle->property_line_width() = 1.5 ;
           
-            layer[i].item_circle = circle;
+            (*layer)[i].item_circle = circle;
             item = circle;
   
           }
@@ -243,40 +252,41 @@ void ProfileEditor::populate_canvas_items()
             poly->property_line_width() = 1.5 ;
   
             item = poly;
-            layer[i].item_poly = poly;
+            (*layer)[i].item_poly = poly;
           }
-        layer[i].item_group->add_child(item);
-        layer_group->add_child(layer[i].item_group);
-        layer[i].item = item; // An abstract pointer
+        (*layer)[i].item_group->add_child(item);
+        layer_group->add_child((*layer)[i].item_group);
+        (*layer)[i].item = item; // An abstract pointer
     
         // TBD - do this through on canvas creted like in
         //    https://github.com/GNOME/goocanvasmm/blob/goocanvasmm-2.0/examples/moving_shapes/window.cc
         for (auto it : vector<Glib::RefPtr<Goocanvas::Item>> {
-            layer[i].item,
-            layer[i].item_control_minus,
-            layer[i].item_control_plus } )
+            (*layer)[i].item,
+            (*layer)[i].item_control_minus,
+            (*layer)[i].item_control_plus } )
           {
             if (it)
               {
                 it->signal_button_press_event().connect(
-                  sigc::mem_fun(layer[i], &Node::on_button_press));
+                  sigc::mem_fun((*layer)[i], &Node::on_button_press));
                 it->signal_button_release_event().connect(
-                  sigc::mem_fun(layer[i], &Node::on_button_release));
+                  sigc::mem_fun((*layer)[i], &Node::on_button_release));
                 it->signal_motion_notify_event().connect(
-                  sigc::mem_fun(layer[i], &Node::on_motion_notify));
+                  sigc::mem_fun((*layer)[i], &Node::on_motion_notify));
               }
           }
   
         auto path = Goocanvas::Path::create("");
-        path->property_stroke_color() = "red" ;
+        path->property_stroke_color() = color_per_layer[layer_id%4] ;
         path->property_line_width() = 3.0 ;
         layer_group->add_child(path);
         path->lower();
-        layer.item_path = path;
+        layer->item_path = path;
     
         // Add the layer group
         m_layers_group->add_child(layer_group);
       }
+    layer_id++;
   }
 }
 
@@ -285,20 +295,20 @@ void ProfileEditor::draw_layers()
 {
   string colors[2] = { "pink", "blue" }; // colors not selected and selected
 
-  for (auto& layer : m_layers) {
+  for (auto layer : m_layers) {
     // Create group for the layer
-    auto layer_group = layer.item_group;
+    auto layer_group = layer->item_group;
 
     // Create the bezier curve
     string path_string;
 
-    for (size_t i=0; i<layer.size(); i++) {
-      auto& n = layer[i];
-      auto color = colors[int(layer[i].selected)];
+    for (size_t i=0; i<layer->size(); i++) {
+      auto& n = (*layer)[i];
+      auto color = colors[int((*layer)[i].selected)];
 
       double cx, cy;
 
-      profile_coord_to_canvas_coord(layer[i].xy.x, layer[i].xy.y,
+      profile_coord_to_canvas_coord((*layer)[i].xy.x, (*layer)[i].xy.y,
                                     // output
                                     cx,cy);
       if (i==0)
@@ -306,13 +316,13 @@ void ProfileEditor::draw_layers()
       else
         {
           double cp1x, cp1y, cp2x, cp2y;
-          profile_coord_to_canvas_coord(layer[i-1].xy.x+layer[i-1].dxyp.x,
-                                        layer[i-1].xy.y+layer[i-1].dxyp.y,
+          profile_coord_to_canvas_coord((*layer)[i-1].xy.x+(*layer)[i-1].dxyp.x,
+                                        (*layer)[i-1].xy.y+(*layer)[i-1].dxyp.y,
                                         // output
                                         cp1x,cp1y);
 
-          profile_coord_to_canvas_coord(layer[i].xy.x+layer[i].dxym.x,
-                                        layer[i].xy.y+layer[i].dxym.y,
+          profile_coord_to_canvas_coord((*layer)[i].xy.x+(*layer)[i].dxym.x,
+                                        (*layer)[i].xy.y+(*layer)[i].dxym.y,
                                         // output
                                         cp2x,cp2y);
           path_string += format("C {} {} {} {} {} {} ",
@@ -322,9 +332,9 @@ void ProfileEditor::draw_layers()
         }
   
       // Draw a triangle for the direction (last node)
-      if (i==layer.size()-1)
+      if (layer->is_baselayer && i==layer->size()-1)
         {
-          auto poly = layer[i].item_poly;
+          auto poly = (*layer)[i].item_poly;
 
           // TBD - Create a triangle pointing in the direction
           auto points = Goocanvas::Points(3);
@@ -332,8 +342,8 @@ void ProfileEditor::draw_layers()
           // Angle of line
           // TBD - Do this in canvas space!
           double dx,dy,th0;
-          profile_delta_to_canvas_delta(layer[i].dxym.x,
-                                        layer[i].dxym.y,
+          profile_delta_to_canvas_delta((*layer)[i].dxym.x,
+                                        (*layer)[i].dxym.y,
                                         // output
                                         dx,dy);
           th0 = MY_TWO_PI/6-atan2(dy,dx);
@@ -353,7 +363,7 @@ void ProfileEditor::draw_layers()
         }
       else
         {
-          auto circle = layer[i].item_circle;
+          auto circle = (*layer)[i].item_circle;
           circle->property_center_x() = cx;
           circle->property_center_y() = cy;
           circle->property_fill_color() = color;
@@ -375,7 +385,7 @@ void ProfileEditor::draw_layers()
             coords.push_back({vx,vy});
           }
       coords.push_back({cx,cy});
-      if (i < layer.size()-1)
+      if (i < layer->size()-1)
           {
             double dx,dy;
             profile_delta_to_canvas_delta(n.dxyp.x,n.dxyp.y,
@@ -383,18 +393,18 @@ void ProfileEditor::draw_layers()
                                           dx,dy);
             double vx=cx+dx;
             double vy=cy+dy;
-            layer[i].item_control_plus->property_center_x() = vx;
-            layer[i].item_control_plus->property_center_y() = vy;
+            (*layer)[i].item_control_plus->property_center_x() = vx;
+            (*layer)[i].item_control_plus->property_center_y() = vy;
             coords.push_back({vx,vy});
           }
       auto points = Goocanvas::Points(coords.size());
       for (size_t i=0; i<coords.size(); i++)
         points.set_coordinate(i, coords[i][0], coords[i][1]);
-      layer[i].item_control_line->property_points() = points;
-      layer[i].auto_show_control();
+      (*layer)[i].item_control_line->property_points() = points;
+      (*layer)[i].auto_show_control();
     }
       
-    layer.item_path->property_data() = path_string;
+    layer->item_path->property_data() = path_string;
   }
 }
 
@@ -431,35 +441,50 @@ void ProfileEditor::profile_coord_to_canvas_coord(double px, double py,
 void ProfileEditor::on_add_node_clicked()
 {
   for (auto& layer : m_layers)
-    layer.insert_node();
+    layer->insert_node();
 }
 
 void ProfileEditor::on_remove_node_clicked()
 {
   for (auto& layer : m_layers)
-    layer.remove_selected_nodes();
+    layer->remove_selected_nodes();
 }
 
 void ProfileEditor::on_corner_node_clicked()
 {
   for (auto& layer : m_layers)
-    layer.corner_selected_nodes();
+    layer->corner_selected_nodes();
 }
 
 void ProfileEditor::on_round_node_clicked()
 {
   for (auto& layer : m_layers)
-    layer.round_selected_nodes();
+    layer->round_selected_nodes();
 }
 
 void ProfileEditor::on_round_symmetric_node_clicked()
 {
   for (auto& layer : m_layers)
-    layer.round_selected_symmetric_nodes();
+    layer->round_selected_symmetric_nodes();
 }
 
 void ProfileEditor::on_add_layer_clicked()
 {
+  // just a dummy layer
+  m_layers.push_back(make_shared<Layer>());
+  size_t num_layers = m_layers.size();
+  Layer *layer = m_layers[num_layers-1].get();
+  layer->is_baselayer = false;
+  layer->pe = this;
+  layer->push_back(Node(this,layer,NODE_CORNER, 0,0.1*num_layers*m_profile_maxy));
+  layer->push_back(Node(this,layer,NODE_CORNER, m_profile_maxx,m_profile_maxy));
+
+  // Set control points for the first and the last points
+  (*layer)[0].dxyp = {m_profile_maxx/10,m_profile_maxy/10};
+  (*layer)[1].dxym = {-m_profile_maxx/10,-m_profile_maxy/10};
+
+  populate_canvas_items();
+  draw_layers();
 }
 
 
@@ -469,14 +494,13 @@ void ProfileEditor::on_remove_layer_clicked()
 
 void ProfileEditor::clear_all_selected(Layer *except_layer)
 {
-  for (auto& layer : m_layers) {
-    print("Comparing 0x{:x} vs 0x{:x}\n", size_t(&layer), size_t(except_layer));
-    if (&layer == except_layer)
+  for (auto layer : m_layers) {
+    if (layer.get() == except_layer)
       {
         print("Skipping zeroing selected\n");
         continue;
       }
-    for (auto& node : layer)
+    for (auto& node : *layer)
       {
         node.selected = false;
         node.set_show_control(false);
@@ -490,7 +514,6 @@ bool Node::on_button_press(const Glib::RefPtr<Goocanvas::Item>& item,
   // Set the except layer to the current layer if we are to
   // retain the selection for it
   Layer *except_layer = nullptr;
-  print("shift_pressed={}\n", bool(event->state & GDK_SHIFT_MASK));
   if (event->state & GDK_SHIFT_MASK)
     except_layer = this->layer;
   
@@ -514,6 +537,19 @@ bool Node::on_button_release(const Glib::RefPtr<Goocanvas::Item>& item,
 }
 
 
+// constructor
+Layer::Layer()
+{
+  // Dummy items
+  this->item_group = Goocanvas::Group::create();
+  this->item_path = Goocanvas::Path::create("");
+}
+
+Layer::~Layer()
+{
+  
+}
+
 void Layer::move_selected(double dpx, double dpy)
 {
   // TBD: after each dpx,dpy make sure that the resulting path
@@ -522,8 +558,8 @@ void Layer::move_selected(double dpx, double dpy)
     {
       if ((*this)[i].selected)
         {
-          // The first and last nodes are fixed in x!
-          if (i==0 || i==size()-1)
+          // The first and last nodes for the base layer are fixed in x!
+          if (this->is_baselayer && (i==0 || i==size()-1))
             (*this)[i].translate(0,dpy);
           else
             (*this)[i].translate(dpx,dpy);
@@ -718,7 +754,7 @@ ProfileData ProfileEditor::get_profile()
   {
     LayerData layer_data;
 
-    for (auto& n : layer)
+    for (auto& n : *layer)
     {
       NodeData node_data;
       node_data.node_type = int(n.type); // tbd
@@ -738,25 +774,25 @@ ProfileData ProfileEditor::get_profile()
 void ProfileEditor::set_profile(const ProfileData& prof)
 {
   m_layers.clear();
-  m_layers.resize(prof.size());
   print("prof_size = {}\n", prof.size());
   for (size_t i=0; i<prof.size(); i++)
   {
+    m_layers.push_back(make_shared<Layer>());
     auto & layer_data = prof[i];
 
     // Initialize the new layer
-    m_layers[i].pe = this;
+    m_layers[i]->pe = this;
     
-    m_layers[i].clear();
+    m_layers[i]->clear();
     for (auto& node_data : layer_data)
     {
       Node n(this,
-             &m_layers[i],
+             m_layers[i].get(),
              NodeType(node_data.node_type));
       n.xy = node_data.xy;
       n.dxym = node_data.control_before_xy - node_data.xy;
       n.dxyp = node_data.control_after_xy - node_data.xy;
-      m_layers[i].push_back(n);
+      m_layers[i]->push_back(n);
     }
   }
   populate_canvas_items();

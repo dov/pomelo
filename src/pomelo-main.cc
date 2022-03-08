@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
 
       if (S_ == "--help")
         {
-          print("pamelo - A 3D text generator\n"
+          print("pomelo - A 3D text generator\n"
                 "\n"
                 "Syntax:\n"
                 "   pomelo [--mesh m]\n"

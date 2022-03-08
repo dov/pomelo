@@ -55,8 +55,6 @@ private:
 
   //Signal handlers:
   void on_button_clicked();
-
-  //Signal handlers:
   void on_action_file_quit();
   void on_action_file_export_stl();
   void on_action_file_export_gltf();
@@ -85,6 +83,9 @@ private:
   // Info that the text was edited. This indicates that the svg
   // file is invalid.
   void on_input_text_edited();
+
+  // When the profile was changed
+  void on_input_profile_edited();
 
   // Dispatcher handler.
   void on_notification_from_skeleton_worker_thread();

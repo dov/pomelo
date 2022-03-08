@@ -23,7 +23,7 @@ class ProfileEditorWindow : public Gtk::Dialog {
   void set_profile(const ProfileData& prof);
 
   private:
-  ProfileEditor *profile_editor;
+  ProfileEditor *profile_editor=nullptr;
 };
 
 
