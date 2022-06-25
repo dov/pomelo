@@ -76,8 +76,8 @@ public:
 
   bool get_shall_stop() { return m_shall_stop; };
   bool get_finished_successfully() { return m_finished_successfully; };
-  std::shared_ptr<Mesh> get_mesh() {
-    return m_mesh;
+  std::vector<std::shared_ptr<Mesh>> get_meshes() {
+    return m_meshes;
   }
   std::shared_ptr<std::string> get_giv_string() {
     return m_giv_string;
@@ -95,7 +95,7 @@ private:
   Glib::ustring m_message;
   std::shared_ptr<SkeletonUpdater> m_skeleton_updater;
   std::vector<PHoleInfo> m_phole_infos;
-  std::shared_ptr<Mesh> m_mesh; // The result of the work
+  std::vector<std::shared_ptr<Mesh>> m_meshes; // The result of the work
   std::shared_ptr<std::string> m_giv_string; // The result of the work
   std::shared_ptr<std::string> m_mesh_giv_string; // The result of the work
   std::shared_ptr<TeXtrusion> m_textrusion;

@@ -1,5 +1,5 @@
 //======================================================================
-//  mesh.h - A simple mesh interface for saving to STL.
+//  mesh.h - A simple mesh interface for saving to STL and gltf.
 //
 //  Dov Grobgeld <dov.grobgeld@gmail.com>
 //  Mon Oct 12 22:10:45 2020

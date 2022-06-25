@@ -44,7 +44,7 @@ WorkerSkeleton::WorkerSkeleton(Pomelo *caller,
 {
   m_skeleton_updater = make_shared<SkeletonUpdater>(this);
   m_textrusion = make_shared<TeXtrusion>(m_skeleton_updater);
-  m_mesh = make_shared<Mesh>();
+  m_meshes.clear();
   m_giv_string = make_shared<string>();
   m_mesh_giv_string = make_shared<string>();
 }
@@ -172,12 +172,12 @@ void WorkerSkeleton::do_work_profile(
   // Do the time consuming tasks
   bool finished_successfully = false;
   string error_message;
-  Mesh mesh;
+  vector<Mesh> meshes;
   string giv_string;
   try {
-    mesh = m_textrusion->skeleton_to_mesh(m_phole_infos,
-                                          // output
-                                          giv_string);
+    meshes = m_textrusion->skeleton_to_mesh(m_phole_infos,
+                                            // output
+                                            giv_string);
     finished_successfully=true;
   }
   catch(EAborted&) {
@@ -192,7 +192,9 @@ void WorkerSkeleton::do_work_profile(
     m_has_stopped = true;
     m_finished_successfully = finished_successfully;
     m_error_message = error_message;
-    *m_mesh = mesh;
+    m_meshes.resize(meshes.size());
+    for (size_t i=0; i<meshes.size(); ++i)
+      m_meshes[i] = make_shared<Mesh>(meshes[i]);
     *m_mesh_giv_string = giv_string;
 
 #if 0

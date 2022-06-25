@@ -3,6 +3,7 @@ engine_sources = ['textrusion.cc',
                   'svgpath-to-cairo.cc',
                   'pango-to-cairo.cc',
                   'profile.cc',
+                  'bezier-intersect.cc'
                  ]
 
 sources = ['pomelo-main.cc',
@@ -138,7 +139,8 @@ executable('test-pango-to-cairo',
 executable('test-profile-editor',
            ['test-profile-editor.cc',
             'profile-editor.cc',
-            'profile.cc'
+            'profile.cc',
+            'bezier-intersect.cc',
            ],
            resources,
            cpp_args : cpp_args,
@@ -148,7 +150,8 @@ executable('test-profile-editor-window',
            ['test-profile-editor-window.cc',
             'profile-editor-window.cc',
             'profile-editor.cc',
-            'profile.cc'
+            'profile.cc',
+            'bezier-intersect.cc',
            ],
            resources,
            cpp_args : cpp_args,

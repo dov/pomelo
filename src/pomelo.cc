@@ -234,11 +234,25 @@ void Pomelo::on_action_file_export_stl()
   case Gtk::RESPONSE_ACCEPT:
   {
     mesh_filename = dialog->get_filename();
-    auto mesh = m_worker_skeleton.get_mesh();
-    save_stl(mesh, mesh_filename);
-    set_status(format("Saved mesh with {} vertices to {}\n",
-                      mesh->vertices.size(),
-                      mesh_filename));
+
+    auto meshes = m_worker_skeleton.get_meshes();
+    for (size_t i=0; i<meshes.size(); i++)
+      {
+        string mesh_fn = mesh_filename;
+
+        if (meshes.size()>1)
+          {
+            size_t found = mesh_filename.rfind('.');
+            if (found==std::string::npos)
+              found = mesh_filename.size();
+            mesh_fn = mesh_filename.substr(0,found) + format("-{:02d}", i) + mesh_filename.substr(found);
+          }
+
+       save_stl(meshes[i], mesh_fn);
+       set_status(format("Saved mesh with {} vertices to {}",
+                         meshes[i]->vertices.size(),
+                         mesh_fn));
+      }
 
     break;
   }
@@ -270,11 +284,17 @@ void Pomelo::on_action_file_export_gltf()
   case Gtk::RESPONSE_ACCEPT:
   {
     mesh_filename = dialog->get_filename();
-    auto mesh = m_worker_skeleton.get_mesh();
-    save_gltf(mesh, mesh_filename);
-    set_status(format("Saved mesh with {} vertices to {}\n",
-                      mesh->vertices.size(),
-                      mesh_filename));
+    auto meshes = m_worker_skeleton.get_meshes();
+    for (size_t i=0; i<meshes.size(); i++)
+      {
+        auto& mesh = meshes[i];
+        auto msh_fn = format("mesh-{:02d}.gltf", i);
+        // TBD - create a multi mesh gltf file
+        save_gltf(meshes[i], mesh_filename);
+        set_status(format("Saved mesh with {} vertices to {}",
+                          mesh->vertices.size(),
+                          mesh_filename));
+      }
 
     break;
   }
@@ -552,8 +572,8 @@ void Pomelo::on_notification_from_skeleton_worker_thread()
               m_main_input.set_profile_ready_state(true);
 
               // Set the mesh!
-              auto mesh = m_worker_skeleton.get_mesh();
-              m_mesh_viewer.set_mesh(mesh);
+              auto meshes = m_worker_skeleton.get_meshes();
+              m_mesh_viewer.set_meshes(meshes);
               m_mesh_viewer.redraw();
             }
 

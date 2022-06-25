@@ -187,10 +187,10 @@ class TeXtrusion {
                                        // output
                                        std::string& giv_string);
 
-    // Turn the skeleton into a mesh
-    Mesh skeleton_to_mesh(const std::vector<PHoleInfo>& phole_infos,
-                          // output
-                          std::string& giv_string);
+    // Turn the skeleton into by the layers
+    std::vector<Mesh> skeleton_to_mesh(const std::vector<PHoleInfo>& phole_infos,
+                                     // output
+                                     std::string& giv_string);
 
     // configuration
     bool do_rtl = false;

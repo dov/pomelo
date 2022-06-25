@@ -7,6 +7,7 @@
 #include <cairo.h>
 #include <cairomm/cairomm.h>
 #include <fmt/core.h>
+#include "bezier-intersect.h"
 
 using json = nlohmann::json;
 
@@ -129,9 +130,46 @@ void LayerData::set_linear_limit(double linear_limit)
   }
 }
 
-vector<Vec2> LayerData::get_flat_list()
+vector<Vec2> LayerData::get_flat_list(double x_start, double x_end)
 {
-  return this->flat_list;
+  if (x_start < this->flat_list[0].x
+      && x_end >  this->flat_list.back().x)
+    return this->flat_list;
+
+  vector<Vec2> flattened;
+  bool inside=false; // flip flop for when we are in the interval
+  for (size_t i=0; i<this->size(); i++)
+  {
+    const Vec2& this_v = this->flat_list[i];
+    if (!inside && this->flat_list[i].x > x_start)
+    {
+      // interpolate between the previous pos
+      if (i>0)
+      {
+        const Vec2& prev_v = this->flat_list[i-1];
+        double xi = (x_start - prev_v.x)/(this_v.x-prev_v.x);
+        flattened.push_back(
+          {x_start, prev_v.y + xi * (this->flat_list[i].y-prev_v.y)});
+      }
+      inside=true;
+    }
+    if (inside && this->flat_list[i].x > x_end)
+    {
+      if (i>0)
+      {
+        const Vec2& prev_v = this->flat_list[i-1];
+        double xi = (x_end - prev_v.x)/(this_v.x-prev_v.x);
+        flattened.push_back(
+          {x_end, prev_v.y + xi * (this->flat_list[i].y-prev_v.y)});
+      }
+      inside=false;
+      break;
+    }
+    if (inside)
+      flattened.push_back(this_v);
+  }
+
+  return flattened;
 }
 
 // for debugging
@@ -158,3 +196,25 @@ void ProfileData::save_flat_to_giv(const std::string& filename)
   }
 }
 
+// Get the intersection
+bool LayerData::get_intersect_coord(double x,
+                                    // output
+                                    double& y)
+{
+  int ret = false;
+
+  bezier_intersect::Line ln {{x,-1},{x,1}};
+
+  for (int i=0; i<(int)this->size()-1; i++)
+  {
+    bezier_intersect::Bezier bz {
+      { (*this)[i].xy.x,(*this)[i].xy.y},
+      { (*this)[i].control_after_xy.x,(*this)[i].control_after_xy.y},
+      { (*this)[i+1].control_before_xy.x,(*this)[1+i].control_before_xy.y},
+      { (*this)[i+1].xy.x,(*this)[i+1].xy.y}};
+
+    auto intersections = bezier_intersect::find_bezier_line_intersection(bz, ln);
+  }
+
+  return ret;
+}

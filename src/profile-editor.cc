@@ -490,6 +490,11 @@ void ProfileEditor::on_add_layer_clicked()
 
 void ProfileEditor::on_remove_layer_clicked()
 {
+  // remove the top layer unless it is the base layer
+  if (m_layers.size()>1)
+    m_layers.pop_back();
+  populate_canvas_items();
+  draw_layers();
 }
 
 void ProfileEditor::clear_all_selected(Layer *except_layer)
@@ -782,7 +787,8 @@ void ProfileEditor::set_profile(const ProfileData& prof)
 
     // Initialize the new layer
     m_layers[i]->pe = this;
-    
+    m_layers[i]->is_baselayer = i==0;
+
     m_layers[i]->clear();
     for (auto& node_data : layer_data)
     {

@@ -96,19 +96,16 @@ int PomeloSettings::get_double_default(const string& key, double default_value)
 
 void PomeloSettings::set_int(const string& key, int value)
 {
-  print("Setting {} to {}\n", key, value);
   set_integer(m_group_name, key, value);
 }
 
 void PomeloSettings::set_double(const string& key, double value)
 {
-  print("Setting {} to {}\n", key, value);
   KeyFile::set_double(m_group_name, key, value);
 }
 
 void PomeloSettings::set_string(const string& key, const string& value)
 {
-  print("Setting {} to {}\n", key, value);
   KeyFile::set_string(m_group_name, key, value);
 }
 

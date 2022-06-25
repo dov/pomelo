@@ -12,6 +12,9 @@
 #include <string>
 #include <glm/vec2.hpp>
 #include <nlohmann/json.hpp>
+#include <cmath>
+#include <limits>
+
 
 
 using Vec2 = glm::dvec2;
@@ -48,13 +51,22 @@ class LayerData : public std::vector<NodeData> {
   public:
 
   // Set the linear limit and calculate cache
-  void set_linear_limit(double linear_limit=0.1);
+  void set_linear_limit(double linear_limit=0.01);
 
-  // Get a copy of the flat list. 
-  std::vector<Vec2> get_flat_list();
+  // Get a copy of the flat list. if the x_start and x end
+  // are specified, then only return a list between these two
+  // values.
+  std::vector<Vec2> get_flat_list(double x_start = -INFINITY,
+                                  double x_end = INFINITY);
 
   // Get the direction beyond the flattened version
   Vec2 get_end_dir() { return Vec2(0,0); } // TBD
+
+  // Get the intersection of the LayerData at the given x. Returns
+  // whether the LayerData intersects.
+  bool get_intersect_coord(double x,
+                           // output
+                           double& y);
 
   // Export to json
   nlohmann::json as_json() {

@@ -627,49 +627,52 @@ void MeshViewer::redraw()
   get_window()->invalidate_rect(rect, true);
 }
 
-void MeshViewer::set_mesh(shared_ptr<Mesh> mesh)
+void MeshViewer::set_meshes(vector<shared_ptr<Mesh>> meshes)
 {
-  m_mesh = mesh;
-  if (!mesh)
+  m_meshes = meshes;
+  if (!m_meshes.size())
     return;
-  vector<vec3>& vertices = mesh->vertices; // shortcut
   auto& bbox = m_hw_mesh.bbox; // shortcut
   m_hw_mesh.vertices.clear();
-  if (vertices.size() % 3 != 0)
-    throw runtime_error("Expected number of vertices to a multiple of 3!");
-
-  for (int k=0; k<3; k++) {
-    bbox[k] = numeric_limits<float>::infinity();
-    bbox[k+3] = -1 * numeric_limits<float>::infinity();
-  }
-
-  for (size_t i=0; i<vertices.size(); i+= 3)
+    for (int k=0; k<3; k++) {
+        bbox[k] = numeric_limits<float>::infinity();
+        bbox[k+3] = -1 * numeric_limits<float>::infinity();
+      }
+    
+  for (size_t mesh_idx=0; mesh_idx<meshes.size(); mesh_idx++)
     {
-      const vec3& v1 {vertices[i]};
-      const vec3& v2 {vertices[i+1]};
-      const vec3& v3 {vertices[i+2]};
-
-      vec3 normal = glm::normalize(cross(v2-v1,v3-v1));
-      for (int j=0; j<3; j++)
+      vector<vec3>& vertices = meshes[mesh_idx]->vertices; // shortcut
+      if (vertices.size() % 3 != 0)
+        throw runtime_error("Expected number of vertices to a multiple of 3!");
+    
+      for (size_t i=0; i<vertices.size(); i+= 3)
         {
-          // Calculate the bounding box
-          for (int k=0; k<3; k++) {
-            float vv = vertices[i+j][k];
-            if (vv<bbox[k])
-              bbox[k] =vv;
-            if (vv>bbox[k+3])
-              bbox[k+3] = vv;
-          }
-          m_hw_mesh.vertices.push_back({
-              vertices[i+j],
-              //vec3(1.0,fmod(1.0*i/(20*3),1.0),fmod(1.0*i/10,1.0)), // Color red
-              m_mesh_color,
-              normal,
-              vec3(j==0,j==1,j==2) // bary
-            });
-        }
-  }
-
+          const vec3& v1 {vertices[i]};
+          const vec3& v2 {vertices[i+1]};
+          const vec3& v3 {vertices[i+2]};
+    
+          vec3 normal = glm::normalize(cross(v2-v1,v3-v1));
+          for (int j=0; j<3; j++)
+            {
+              // Calculate the bounding box
+              for (int k=0; k<3; k++) {
+                float vv = vertices[i+j][k];
+                if (vv<bbox[k])
+                  bbox[k] =vv;
+                if (vv>bbox[k+3])
+                  bbox[k+3] = vv;
+              }
+              m_hw_mesh.vertices.push_back({
+                  vertices[i+j],
+                  //vec3(1.0,fmod(1.0*i/(20*3),1.0),fmod(1.0*i/10,1.0)), // Color red
+                  m_mesh_color[mesh_idx],
+                  normal,
+                  vec3(j==0,j==1,j==2) // bary
+                });
+            }
+      }
+    }
+    
   print("Loaded {} triangles\n", m_hw_mesh.vertices.size()/3);
 
   // setup the scaling
@@ -703,7 +706,8 @@ void MeshViewer::set_mesh(shared_ptr<Mesh> mesh)
 void MeshViewer::set_mesh_file(const std::string& mesh_filename)
 {
   shared_ptr<Mesh> mesh = read_stl(mesh_filename);
-  set_mesh(mesh);
+  vector<shared_ptr<Mesh>> meshes = {mesh};
+  set_meshes(meshes);
 }
 
 // Setup the world view
@@ -774,11 +778,13 @@ void MeshViewer::refresh_from_settings()
   Gdk::RGBA mesh_color(
     m_pomelo_settings->get_string_default("mesh_color",
                                           "#c0c0c0"));
-  m_mesh_color = {mesh_color.get_red(),
+  // TBD - a list of colors for each mesh
+  m_mesh_color[0] = {
+    mesh_color.get_red(),
     mesh_color.get_green(),
     mesh_color.get_blue()};
 
   update_matcap();
-  set_mesh(m_mesh);
+  set_meshes(m_meshes);
   queue_render();
 }
