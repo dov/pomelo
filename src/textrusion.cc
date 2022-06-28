@@ -537,19 +537,6 @@ void TeXtrusion::add_region_contribution_to_mesh(
             float(z) };
           ss << format("{} {}\n", p.x(), p.y());
 
-          // TBD - If the layer index > 0, then this
-          // is an insert, and we should go "down" (negative
-          // z) to the previous layer.
-          double zback = -zdepth;
-          if (layer_idx > 0)
-            zback = -1; // TBD - see above
-
-          // Back side
-          tri_back[i] = glm::vec3 {
-            float(p.x()),
-            -float(p.y()), 
-            float(zback) };
-
           // If this is the first or last index in the insert
           // then we should also add a tube quad.
           if (d_idx == 0)
@@ -561,11 +548,94 @@ void TeXtrusion::add_region_contribution_to_mesh(
         // Add triangles to mesh
         for (int i=0; i<3; i++)
           mesh.vertices.push_back(tri[i]);
+      }
+    }
+
+  // Same for back
+  for (size_t d_idx=0; d_idx<prev_flat_list.size(); d_idx++)
+    {
+      // Connect a connection between the previous and this point
+      double offs_start = prev_flat_list[d_idx].x;
+      double z_start = prev_flat_list[d_idx].y;
+      if (offs_start > depth)
+        break;
+    
+      double offs_end,z_end;
+
+      // Extrapolate for the last point
+      if (d_idx == prev_flat_list.size()-1)
+        {
+          if (layer_idx > 0)
+            continue; // No extrapolation except for the first layer
+
+          // The "next" point is the depth
+          offs_end = depth+epsilon;
+    
+          // Get the slope of the last point and extrapolate
+          auto dxy = prev_flat_list[d_idx-1]-prev_flat_list[d_idx-2];
+          auto slope = dxy.y/dxy.x;
+    
+          z_end = z_start + (depth-offs_start) * slope;
+        }
+      else
+        {
+          // The next point is the depth, unless it is
+          // larger than the depth
+          offs_end = prev_flat_list[d_idx+1].x;
+          z_end = prev_flat_list[d_idx+1].y;
+    
+          if (offs_end > depth)
+            {
+              z_end = z_start + (depth-offs_start)/(offs_end-offs_start)*(z_end-z_start);
+              offs_end = depth+epsilon;
+            }
+        }
+                    
+      auto pp = region.get_offset_curve_and_triangulate(offs_start,offs_end);
+      int poly_idx = 0;
+      for (const auto &poly : pp) {
+        ss << format("$color green\n"
+                     "$line\n"
+                     "$marks fcircle\n"
+                     "$path offset curves/ph {}/region {}/{}/{}\n"
+                     ,
+                     ph_idx+1,
+                     r_idx+1,
+                     d_idx+1,
+                     poly_idx+1
+                     );
+        poly_idx++;
+        if (poly.size()!=3)
+          throw std::runtime_error("Expected 3 vertices!");
+        glm::vec3 tri[3], tri_back[3];
+        for (int i=0; i<3; i++) {
+          const auto &p = poly[i];
+      
+          double offs = p.z(); // This is the distance of the vertex from the boundary
+                            
+          // Transform z by interpolating
+          double z = z_start + (offs-offs_start)/(offs_end-offs_start)*(z_end-z_start);
+                              
+          // Back side
+          tri_back[i] = glm::vec3 {
+            float(p.x()),
+            -float(p.y()), 
+            float(z) };
+
+          // If this is the first or last index in the insert
+          // then we should also add a tube quad.
+          if (d_idx == 0)
+            ;
+        }
+        ss << "z\n";
+        ss << "\n";
+      
         if (layer_idx==0)
           for (int i=0; i<3; i++)
             mesh.vertices.push_back(tri_back[i]);
       }
     }
+
 }
 
 // Turn the skeleton into a 3D mesh
