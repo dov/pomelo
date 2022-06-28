@@ -41,6 +41,7 @@ class MeshViewer : public Gtk::GLArea
   void set_show_matcap(bool show_matcap);
   void refresh_from_settings();
   void setup_projection_matrix();
+  void set_show_layer(int layer_id, bool show_layer);
 
   private:
 
@@ -120,6 +121,7 @@ class MeshViewer : public Gtk::GLArea
   bool m_show_edge = false;
   bool m_show_matcap = false;
   bool m_orthonormal = false;
+  std::array<bool,3> m_show_layer = {true,true,true};
 
   // world description
   glm::mat4 m_proj_matrix;

@@ -66,6 +66,9 @@ private:
   void on_action_reset_3d_view();
   void on_action_view_settings();
   void on_action_load_svg();
+  void on_action_view_layer0();
+  void on_action_view_layer1();
+  void on_action_view_layer2();
 
   // If the svg_filename is non-nil, use the svg filename,
   // otherwise use the text_string with the given font
@@ -111,6 +114,9 @@ private:
   Glib::RefPtr<Gio::SimpleAction> m_ref_show_edge_toggle;
   Glib::RefPtr<Gio::SimpleAction> m_ref_show_matcap_toggle;
   Glib::RefPtr<Gio::SimpleAction> m_ref_orthonormal_toggle;
+  Glib::RefPtr<Gio::SimpleAction> m_ref_layer0_toggle;
+  Glib::RefPtr<Gio::SimpleAction> m_ref_layer1_toggle;
+  Glib::RefPtr<Gio::SimpleAction> m_ref_layer2_toggle;
 };
 
 #endif /* HELLO-WORLD */

@@ -92,6 +92,13 @@ Pomelo::Pomelo(shared_ptr<PomeloSettings> pomelo_settings)
   m_ref_show_matcap_toggle = m_refActionGroup->add_action_bool("show_matcap",
     sigc::mem_fun(*this, &Pomelo::on_action_show_matcap), init_show_matcap );
 
+  m_ref_layer0_toggle = m_refActionGroup->add_action_bool("layer0",
+    sigc::mem_fun(*this, &Pomelo::on_action_view_layer0), true );
+  m_ref_layer1_toggle = m_refActionGroup->add_action_bool("layer1",
+    sigc::mem_fun(*this, &Pomelo::on_action_view_layer1), true );
+  m_ref_layer2_toggle = m_refActionGroup->add_action_bool("layer2",
+    sigc::mem_fun(*this, &Pomelo::on_action_view_layer2), true );
+
   m_refActionGroup->add_action("settings",
     sigc::mem_fun(*this, &Pomelo::on_action_view_settings) );
 
@@ -144,6 +151,21 @@ Pomelo::Pomelo(shared_ptr<PomeloSettings> pomelo_settings)
     "        <attribute name='label'>Show mesh matcap</attribute>"
     "        <attribute name='action'>pomelo.show_matcap</attribute>"
     "      </item>"
+    "      <submenu>"
+    "        <attribute name='label'>_Levels</attribute>"
+    "      <item>"
+    "        <attribute name='label'>BaseLayer</attribute>"
+    "        <attribute name='action'>pomelo.layer0</attribute>"
+    "      </item>"
+    "      <item>"
+    "        <attribute name='label'>Layer 1</attribute>"
+    "        <attribute name='action'>pomelo.layer1</attribute>"
+    "      </item>"
+    "      <item>"
+    "        <attribute name='label'>Layer 2</attribute>"
+    "        <attribute name='action'>pomelo.layer2</attribute>"
+    "      </item>"
+    "      </submenu>"
     "    </submenu>"
     "    <submenu>"
     "      <attribute name='label'>_Tools</attribute>"
@@ -611,4 +633,52 @@ void Pomelo::on_notification_from_skeleton_worker_thread()
   
       set_status(format("Progress {:.0f}%: {}", fraction_done*100, message.c_str()));
     }
+}
+
+void Pomelo::on_action_view_layer0()
+{
+  bool active = false;
+  m_ref_layer0_toggle->get_state(active);
+
+  //The toggle action's state does not change automatically:
+  active = !active;
+  m_ref_layer0_toggle->change_state(active);
+
+  // Store the new state
+  m_pomelo_settings->set_int("show_layer0", int(active));
+  m_pomelo_settings->save();
+
+  m_mesh_viewer.set_show_layer(0, active);
+}
+
+void Pomelo::on_action_view_layer1()
+{
+  bool active = false;
+  m_ref_layer1_toggle->get_state(active);
+
+  //The toggle action's state does not change automatically:
+  active = !active;
+  m_ref_layer1_toggle->change_state(active);
+
+  // Store the new state
+  m_pomelo_settings->set_int("show_layer1", int(active));
+  m_pomelo_settings->save();
+
+  m_mesh_viewer.set_show_layer(1, active);
+}
+
+void Pomelo::on_action_view_layer2()
+{
+  bool active = false;
+  m_ref_layer2_toggle->get_state(active);
+
+  //The toggle action's state does not change automatically:
+  active = !active;
+  m_ref_layer2_toggle->change_state(active);
+
+  // Store the new state
+  m_pomelo_settings->set_int("show_layer2", int(active));
+  m_pomelo_settings->save();
+
+  m_mesh_viewer.set_show_layer(2, active);
 }

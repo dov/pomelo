@@ -641,6 +641,9 @@ void MeshViewer::set_meshes(vector<shared_ptr<Mesh>> meshes)
     
   for (size_t mesh_idx=0; mesh_idx<meshes.size(); mesh_idx++)
     {
+      if (mesh_idx < m_show_layer.size() && !m_show_layer[mesh_idx])
+        continue;
+
       vector<vec3>& vertices = meshes[mesh_idx]->vertices; // shortcut
       if (vertices.size() % 3 != 0)
         throw runtime_error("Expected number of vertices to a multiple of 3!");
@@ -751,6 +754,15 @@ void MeshViewer::set_show_edge(bool show_edge)
 {
   m_show_edge = show_edge;
   queue_render();
+}
+
+void MeshViewer::set_show_layer(int layer_id, bool show_layer)
+{
+  if (layer_id < (int)m_show_layer.size())
+    {
+      m_show_layer[layer_id] = show_layer;
+      refresh_from_settings();
+    }
 }
 
 void MeshViewer::set_orthonormal(bool orthonormal)
