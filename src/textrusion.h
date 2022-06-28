@@ -207,6 +207,18 @@ class TeXtrusion {
 
     // Used to update and abort progress
     std::shared_ptr<Updater> updater;
+
+  private:
+    void add_region_contribution_to_mesh(
+      Mesh& mesh,
+      std::stringstream& ss,
+      int layer_idx,
+      int ph_idx,
+      int r_idx,
+      const std::vector<Vec2>& prev_flat_list,
+      const std::vector<Vec2>& flat_list,
+      const SkeletonPolygonRegion& region);
+  
 };
 
 #endif /* TEXTRUSION */
