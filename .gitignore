@@ -6,3 +6,4 @@ build_mingw64/
 *.stl
 /src/giv-widget/gtk-image-viewer/gtk-image-viewer-fixed.*
 *.svg
+*.o
