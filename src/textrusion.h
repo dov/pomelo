@@ -120,7 +120,7 @@ class SkeletonPolygonRegion {
     std::vector<Polygon3D> get_offset_curve(double d1, double d2) const;
 
     // Get offset curve and triangulate it. Each return Polygon3D
-    // should contain exactly 3 polygons.
+    // should contain exactly 3 vertices.
     std::vector<Polygon3D> get_offset_curve_and_triangulate(double d1, double d2) const;
     
     // The polygon region. The first edge lies on he associated PHoleInfo
@@ -209,6 +209,20 @@ class TeXtrusion {
     std::shared_ptr<Updater> updater;
 
   private:
+    // Add an upper or a lower cap contribution to a mesh.
+    void add_region_contribution_cap_to_mesh(
+      Mesh& mesh,
+      std::stringstream& ss,
+      int layer_idx,
+      int ph_idx,
+      int r_idx,
+      bool is_lower,
+      const std::vector<Vec2>& flat_list,
+      const SkeletonPolygonRegion& region,
+      // output connection rings
+      std::vector<std::vector<Vec3>>& connection_rings
+      );
+
     void add_region_contribution_to_mesh(
       Mesh& mesh,
       std::stringstream& ss,
@@ -217,7 +231,8 @@ class TeXtrusion {
       int r_idx,
       const std::vector<Vec2>& prev_flat_list,
       const std::vector<Vec2>& flat_list,
-      const SkeletonPolygonRegion& region);
+      const SkeletonPolygonRegion& region
+      );
   
 };
 

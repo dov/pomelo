@@ -301,7 +301,6 @@ void MeshViewer::init_buffers (guint *vao_out)
 void MeshViewer::update_geometry()
 {
   glBindBuffer (GL_ARRAY_BUFFER, m_buffer_id);
-  print("glBufferData()\n");
   glBufferData (GL_ARRAY_BUFFER,
                 m_hw_mesh.vertices.size() * sizeof(MeshViewer::VertexInfo),
                 &m_hw_mesh.vertices[0].position[0], GL_DYNAMIC_DRAW);
@@ -627,24 +626,26 @@ void MeshViewer::redraw()
   get_window()->invalidate_rect(rect, true);
 }
 
-void MeshViewer::set_meshes(vector<shared_ptr<Mesh>> meshes)
+void MeshViewer::set_meshes(vector<shared_ptr<Mesh>> meshes,
+                            bool update_view)
 {
   m_meshes = meshes;
   if (!m_meshes.size())
     return;
   auto& bbox = m_hw_mesh.bbox; // shortcut
   m_hw_mesh.vertices.clear();
-    for (int k=0; k<3; k++) {
-        bbox[k] = numeric_limits<float>::infinity();
-        bbox[k+3] = -1 * numeric_limits<float>::infinity();
-      }
+  for (int k=0; k<3; k++)
+    {
+      bbox[k] = numeric_limits<float>::infinity();
+      bbox[k+3] = -1 * numeric_limits<float>::infinity();
+    }
     
   for (size_t mesh_idx=0; mesh_idx<meshes.size(); mesh_idx++)
     {
       if (mesh_idx < m_show_layer.size() && !m_show_layer[mesh_idx])
         continue;
 
-      vector<vec3>& vertices = meshes[mesh_idx]->vertices; // shortcut
+      vector<dvec3>& vertices = meshes[mesh_idx]->vertices; // shortcut
       if (vertices.size() % 3 != 0)
         throw runtime_error("Expected number of vertices to a multiple of 3!");
     
@@ -678,28 +679,31 @@ void MeshViewer::set_meshes(vector<shared_ptr<Mesh>> meshes)
     
   print("Loaded {} triangles\n", m_hw_mesh.vertices.size()/3);
 
-  // setup the scaling
-  double dim_max = 0;
-  for (int i=0; i<3; i++){
-    double dim = bbox[i+3]-bbox[i];
-    if (dim >dim_max)
-        dim_max = dim;
-  }
-  m_size_scale = 2.0/dim_max; // Not sure why I need the two here...
+  if (update_view)
+    {
+      // setup the scaling
+      double dim_max = 0;
+      for (int i=0; i<3; i++){
+        double dim = bbox[i+3]-bbox[i];
+        if (dim >dim_max)
+          dim_max = dim;
+      }
+      m_size_scale = 2.0/dim_max; // Not sure why I need the two here...
+    
+      // Pivot point for rotating around the center of the object.
+      m_pivot = vec3 {
+        0.5*(bbox[0]+bbox[3]),
+        0.5*(bbox[1]+bbox[4]),
+        0.5*(bbox[2]+bbox[5])};
   
-  // Pivot point for rotating around the center of the object.
-  m_pivot = vec3 {
-    0.5*(bbox[0]+bbox[3]),
-    0.5*(bbox[1]+bbox[4]),
-    0.5*(bbox[2]+bbox[5])};
-
-  print("bbox = {} {} {} {} {} {}\n",
-        bbox[0],
-        bbox[1],
-        bbox[2],
-        bbox[3],
-        bbox[4],
-        bbox[5]);
+      print("bbox = {} {} {} {} {} {}\n",
+            bbox[0],
+            bbox[1],
+            bbox[2],
+            bbox[3],
+            bbox[4],
+            bbox[5]);
+    }
 
   //  redraw();
   if (m_vao)
@@ -761,7 +765,7 @@ void MeshViewer::set_show_layer(int layer_id, bool show_layer)
   if (layer_id < (int)m_show_layer.size())
     {
       m_show_layer[layer_id] = show_layer;
-      refresh_from_settings();
+      refresh_from_settings(false);
     }
 }
 
@@ -778,7 +782,7 @@ void MeshViewer::set_show_matcap(bool show_matcap)
   queue_render();
 }
 
-void MeshViewer::refresh_from_settings()
+void MeshViewer::refresh_from_settings(bool update_view)
 {
   Gdk::RGBA background_color(
     m_pomelo_settings->get_string_default("background_color",
@@ -797,6 +801,6 @@ void MeshViewer::refresh_from_settings()
     mesh_color.get_blue()};
 
   update_matcap();
-  set_meshes(m_meshes);
+  set_meshes(m_meshes, update_view);
   queue_render();
 }

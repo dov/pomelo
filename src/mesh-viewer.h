@@ -28,7 +28,8 @@ class MeshViewer : public Gtk::GLArea
   MeshViewer(std::shared_ptr<PomeloSettings> pomelo_settings);
 
   // Create a mesh 
-  void set_meshes(std::vector<std::shared_ptr<Mesh>> meshes);
+  void set_meshes(std::vector<std::shared_ptr<Mesh>> meshes,
+                  bool update_view=true);
   void set_mesh_file(const std::string& mesh_filename);
   void redraw();
 
@@ -39,7 +40,7 @@ class MeshViewer : public Gtk::GLArea
   void set_show_edge(bool show_edge);
   void set_orthonormal(bool orthonormal);
   void set_show_matcap(bool show_matcap);
-  void refresh_from_settings();
+  void refresh_from_settings(bool update_view=true);
   void setup_projection_matrix();
   void set_show_layer(int layer_id, bool show_layer);
 

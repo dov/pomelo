@@ -11,6 +11,7 @@
 #include <vector>
 #include <string>
 #include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
 #include <nlohmann/json.hpp>
 #include <cmath>
 #include <limits>
@@ -18,6 +19,7 @@
 
 
 using Vec2 = glm::dvec2;
+using Vec3 = glm::dvec3;
 
 // use for import and output vec2 as json
 nlohmann::json as_json(const Vec2& v);

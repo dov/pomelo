@@ -138,10 +138,10 @@ vector<Vec2> LayerData::get_flat_list(double x_start, double x_end)
 
   vector<Vec2> flattened;
   bool inside=false; // flip flop for when we are in the interval
-  for (size_t i=0; i<this->size(); i++)
+  for (size_t i=0; i<this->flat_list.size(); i++)
   {
     const Vec2& this_v = this->flat_list[i];
-    if (!inside && this->flat_list[i].x > x_start)
+    if (!inside && this_v.x > x_start)
     {
       // interpolate between the previous pos
       if (i>0)

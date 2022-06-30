@@ -402,6 +402,149 @@ vector<PHoleInfo> TeXtrusion::skeletonize(const std::vector<Polygon_with_holes>&
     return phole_infos;
 }
 
+
+// Add an upper or a lower cap of a region contribution
+void TeXtrusion::add_region_contribution_cap_to_mesh(
+  Mesh& mesh,
+  stringstream& ss,
+  int layer_idx,
+  int ph_idx,
+  int r_idx,
+  bool is_lower,
+  const vector<Vec2>& flat_list,
+  const SkeletonPolygonRegion& region,
+
+  // output connection rings
+  vector<vector<Vec3>>& connection_rings
+  )
+{
+  double depth = region.get_depth();
+  string color = "blue";
+  string path_modifier;
+
+  // Here is where the edge profile is applied. 
+
+  // The upper surface Loop over the offsets
+  double epsilon = 1e-5;
+
+  for (size_t d_idx=0; d_idx<flat_list.size(); d_idx++)
+    {
+      // Connect a connection between the previous and this point
+      double offs_start = flat_list[d_idx].x;
+      double z_start = flat_list[d_idx].y;
+      if (offs_start > depth)
+        break;
+    
+      double offs_end,z_end;
+
+      // Extrapolate for the last point
+      if (d_idx == flat_list.size()-1)
+        {
+          if (layer_idx > 0)
+            continue; // No extrapolation except for the first layer
+
+          // The "next" point is the depth
+          offs_end = depth+epsilon;
+    
+          // Get the slope of the last point and extrapolate
+          auto dxy = flat_list[d_idx-1]-flat_list[d_idx-2];
+          auto slope = dxy.y/dxy.x;
+    
+          z_end = z_start + (depth-offs_start) * slope;
+        }
+      else
+        {
+          // The next point is the depth, unless it is
+          // larger than the depth
+          offs_end = flat_list[d_idx+1].x;
+          z_end = flat_list[d_idx+1].y;
+    
+          if (offs_end > depth)
+            {
+              z_end = z_start + (depth-offs_start)/(offs_end-offs_start)*(z_end-z_start);
+              offs_end = depth+epsilon;
+            }
+        }
+                    
+      // This returns a list of quads where each quad has been
+      // triangulated
+      auto pp = region.get_offset_curve_and_triangulate(offs_start,offs_end);
+
+      // The tube
+      if (d_idx==0)
+        {
+          double epsilon = 1e-6;
+
+          // Look for all line segments that are exactly offs_start
+          // from the boundary.
+          for (const auto &poly : pp)
+            {
+              for (int i=0; i<3; i++)
+                {
+                  auto this_p = poly[i];
+                  auto next_p = poly[(i+1)%3];
+                  if (fabs(this_p.z() - offs_start) < epsilon
+                      && fabs(this_p.z() - offs_start) < epsilon)
+                    {
+                      vector<Vec3> seg;
+                      seg.push_back({this_p.x(),-this_p.y(),flat_list[0].y});
+                      seg.push_back({next_p.x(),-next_p.y(),flat_list[0].y});
+                      connection_rings.push_back(seg);
+                    }
+                }
+            }
+        }
+
+      int poly_idx = 0;
+      for (const auto &poly : pp) {
+        ss << format("$color green\n"
+                     "$line\n"
+                     "$marks fcircle\n"
+                     "$path offset curves/ph {}/region {}/{}/{}\n"
+                     ,
+                     ph_idx+1,
+                     r_idx+1,
+                     d_idx+1,
+                     poly_idx+1
+                     );
+        poly_idx++;
+        if (poly.size()!=3)
+          throw std::runtime_error("Expected 3 vertices!");
+        glm::vec3 tri[3];
+        for (int i=0; i<3; i++)
+          {
+            const auto &p = poly[i];
+      
+            double offs = p.z(); // This is the distance of the vertex from the boundary
+                            
+            // Transform z by interpolating
+            double z = z_start + (offs-offs_start)/(offs_end-offs_start)*(z_end-z_start);
+                              
+            // Do the 2-i to get the correct direction
+            // for light from the upper side
+            int index = is_lower ? i : 2-i;
+
+            tri[index] = glm::vec3 {
+              float(p.x()),
+              -float(p.y()), 
+              float(z) };
+            ss << format("{} {}\n", p.x(), p.y());
+
+            // If this is the first or last index in the insert
+            // then we should also add a tube quad.
+            if (d_idx == 0)
+              ;
+          }
+        ss << "z\n";
+        ss << "\n";
+      
+        // Add triangles to mesh
+        for (int i=0; i<3; i++)
+          mesh.vertices.push_back(tri[i]);
+      }
+    }
+}
+
 // Add the "tube" contribution from region. This is like a
 // "ring" that is extruded from one side of the region to the other.
 void TeXtrusion::add_region_contribution_to_mesh(
@@ -410,8 +553,8 @@ void TeXtrusion::add_region_contribution_to_mesh(
   int layer_idx,
   int ph_idx,
   int r_idx,
-  const std::vector<Vec2>& prev_flat_list,
-  const std::vector<Vec2>& flat_list,
+  const vector<Vec2>& prev_flat_list,
+  const vector<Vec2>& flat_list,
   const SkeletonPolygonRegion& region
   )
 {
@@ -457,183 +600,52 @@ void TeXtrusion::add_region_contribution_to_mesh(
     return;
   }
 
-  // Here is where the edge profile is applied. We either do
-  // a simple round profile or we apply the profiler curve.
+  // upper side
+  vector<vector<Vec3>> upper_connection_rings, lower_connection_rings;
+  add_region_contribution_cap_to_mesh(mesh,
+                                      ss,
+                                      layer_idx,
+                                      ph_idx,
+                                      r_idx,
+                                      false,
+                                      flat_list,
+                                      region,
+                                      // output
+                                      upper_connection_rings);
+                                      
+  // lower side
+  add_region_contribution_cap_to_mesh(mesh,
+                                      ss,
+                                      layer_idx,
+                                      ph_idx,
+                                      r_idx,
+                                      true,
+                                      prev_flat_list,
+                                      region,
+                                      // output
+                                      lower_connection_rings);
 
-  // The upper surface Loop over the offsets
-  double epsilon = 1e-5;
-
-  // Create for front and back
-  // TBD: place this is a different method
-  for (size_t d_idx=0; d_idx<flat_list.size(); d_idx++)
+  // Add a tube between upper and lower segment (quad)
+  for (int ring_idx=0; ring_idx<(int)upper_connection_rings.size(); ring_idx++)
     {
-      // Connect a connection between the previous and this point
-      double offs_start = flat_list[d_idx].x;
-      double z_start = flat_list[d_idx].y;
-      if (offs_start > depth)
-        break;
-    
-      double offs_end,z_end;
+      // Assume that the upper and lower rings have exactly two
+      // coordinates...
+      auto& ur = upper_connection_rings[ring_idx];
+      auto& lr = lower_connection_rings[ring_idx];
 
-      // Extrapolate for the last point
-      if (d_idx == flat_list.size()-1)
-        {
-          if (layer_idx > 0)
-            continue; // No extrapolation except for the first layer
+      if (ur.size()<2 || lr.size()<2)
+        continue;
 
-          // The "next" point is the depth
-          offs_end = depth+epsilon;
-    
-          // Get the slope of the last point and extrapolate
-          auto dxy = flat_list[d_idx-1]-flat_list[d_idx-2];
-          auto slope = dxy.y/dxy.x;
-    
-          z_end = z_start + (depth-offs_start) * slope;
-        }
-      else
-        {
-          // The next point is the depth, unless it is
-          // larger than the depth
-          offs_end = flat_list[d_idx+1].x;
-          z_end = flat_list[d_idx+1].y;
-    
-          if (offs_end > depth)
-            {
-              z_end = z_start + (depth-offs_start)/(offs_end-offs_start)*(z_end-z_start);
-              offs_end = depth+epsilon;
-            }
-        }
-                    
-      auto pp = region.get_offset_curve_and_triangulate(offs_start,offs_end);
-      int poly_idx = 0;
-      for (const auto &poly : pp) {
-        ss << format("$color green\n"
-                     "$line\n"
-                     "$marks fcircle\n"
-                     "$path offset curves/ph {}/region {}/{}/{}\n"
-                     ,
-                     ph_idx+1,
-                     r_idx+1,
-                     d_idx+1,
-                     poly_idx+1
-                     );
-        poly_idx++;
-        if (poly.size()!=3)
-          throw std::runtime_error("Expected 3 vertices!");
-        glm::vec3 tri[3], tri_back[3];
-        for (int i=0; i<3; i++) {
-          const auto &p = poly[i];
       
-          double offs = p.z(); // This is the distance of the vertex from the boundary
-                            
-          // Transform z by interpolating
-          double z = z_start + (offs-offs_start)/(offs_end-offs_start)*(z_end-z_start);
-                              
-          // Do the 2-i to get the correct direction
-          // for light from the upper side
-          tri[2-i] = glm::vec3 {
-            float(p.x()),
-            -float(p.y()), 
-            float(z) };
-          ss << format("{} {}\n", p.x(), p.y());
+      double z0 = flat_list[0].y;
+      double z1 = prev_flat_list[0].y;
 
-          // If this is the first or last index in the insert
-          // then we should also add a tube quad.
-          if (d_idx == 0)
-            ;
-        }
-        ss << "z\n";
-        ss << "\n";
-      
-        // Add triangles to mesh
-        for (int i=0; i<3; i++)
-          mesh.vertices.push_back(tri[i]);
-      }
-    }
-
-  // Same for back
-  for (size_t d_idx=0; d_idx<prev_flat_list.size(); d_idx++)
-    {
-      // Connect a connection between the previous and this point
-      double offs_start = prev_flat_list[d_idx].x;
-      double z_start = prev_flat_list[d_idx].y;
-      if (offs_start > depth)
-        break;
-    
-      double offs_end,z_end;
-
-      // Extrapolate for the last point
-      if (d_idx == prev_flat_list.size()-1)
-        {
-          if (layer_idx > 0)
-            continue; // No extrapolation except for the first layer
-
-          // The "next" point is the depth
-          offs_end = depth+epsilon;
-    
-          // Get the slope of the last point and extrapolate
-          auto dxy = prev_flat_list[d_idx-1]-prev_flat_list[d_idx-2];
-          auto slope = dxy.y/dxy.x;
-    
-          z_end = z_start + (depth-offs_start) * slope;
-        }
-      else
-        {
-          // The next point is the depth, unless it is
-          // larger than the depth
-          offs_end = prev_flat_list[d_idx+1].x;
-          z_end = prev_flat_list[d_idx+1].y;
-    
-          if (offs_end > depth)
-            {
-              z_end = z_start + (depth-offs_start)/(offs_end-offs_start)*(z_end-z_start);
-              offs_end = depth+epsilon;
-            }
-        }
-                    
-      auto pp = region.get_offset_curve_and_triangulate(offs_start,offs_end);
-      int poly_idx = 0;
-      for (const auto &poly : pp) {
-        ss << format("$color green\n"
-                     "$line\n"
-                     "$marks fcircle\n"
-                     "$path offset curves/ph {}/region {}/{}/{}\n"
-                     ,
-                     ph_idx+1,
-                     r_idx+1,
-                     d_idx+1,
-                     poly_idx+1
-                     );
-        poly_idx++;
-        if (poly.size()!=3)
-          throw std::runtime_error("Expected 3 vertices!");
-        glm::vec3 tri[3], tri_back[3];
-        for (int i=0; i<3; i++) {
-          const auto &p = poly[i];
-      
-          double offs = p.z(); // This is the distance of the vertex from the boundary
-                            
-          // Transform z by interpolating
-          double z = z_start + (offs-offs_start)/(offs_end-offs_start)*(z_end-z_start);
-                              
-          // Back side
-          tri_back[i] = glm::vec3 {
-            float(p.x()),
-            -float(p.y()), 
-            float(z) };
-
-          // If this is the first or last index in the insert
-          // then we should also add a tube quad.
-          if (d_idx == 0)
-            ;
-        }
-        ss << "z\n";
-        ss << "\n";
-      
-        if (layer_idx==0)
-          for (int i=0; i<3; i++)
-            mesh.vertices.push_back(tri_back[i]);
-      }
+      mesh.vertices.push_back(ur[0]);
+      mesh.vertices.push_back(ur[1]);
+      mesh.vertices.push_back(lr[0]);
+      mesh.vertices.push_back(ur[1]);
+      mesh.vertices.push_back(lr[1]);
+      mesh.vertices.push_back(lr[0]);
     }
 
 }
@@ -659,22 +671,25 @@ vector<Mesh> TeXtrusion::skeleton_to_mesh(const vector<PHoleInfo>& phole_infos,
     // The upper surface and lower surfaces. The upper surface
     // is bumped, and the lower is flat, but we are using the same
     // triangulation for both.
-    for (int ph_idx=0; ph_idx < (int)phole_infos.size(); ph_idx++) {
+    for (int ph_idx=0; ph_idx < (int)phole_infos.size(); ph_idx++)
+      {
         if (updater && updater->info("profile", 1.0*ph_idx/phole_infos.size()))
             throw EAborted("Aborted!");
 
         auto& phi = phole_infos[ph_idx];
         int r_idx = -1;
-        for (auto &r : phi.regions) {
+        for (auto &r : phi.regions)
+          {
             r_idx++;
             double depth = r.get_depth();
             string color = "blue";
             string path_modifier;
 
-            if (!r.polygon.is_simple()) {
+            if (!r.polygon.is_simple())
+              {
                 path_modifier += " (not_simple)";
                 color = "orange";
-            }
+              }
 
             ss << format("$color {}\n"
                          "$line\n"
@@ -703,10 +718,11 @@ vector<Mesh> TeXtrusion::skeleton_to_mesh(const vector<PHoleInfo>& phole_infos,
                 ss << format("{} {}\n", r.polygon[i%n].x(), r.polygon[i%n].y());
             ss << ("\n");
 
-            if (!r.polygon.is_simple()) {
+            if (!r.polygon.is_simple())
+              {
                 cerr << format("Oops! The polygon isn't simple. Skipping!\n");
                 continue;
-            }
+              }
 
             // Here is where the edge profile is applied. We either do
             // a simple round profile or we apply the profiler curve.
@@ -727,19 +743,28 @@ vector<Mesh> TeXtrusion::skeleton_to_mesh(const vector<PHoleInfo>& phole_infos,
 
                     auto& layer = this->profile_data[layer_idx];
                     LayerData *prev_layer = nullptr;
-                    if (layer_idx>1)
+                    if (layer_idx>0)
                       prev_layer = &this->profile_data[layer_idx-1];
 
                     layer.set_linear_limit(); // TBD use linear limit parameter
                     auto flat_list = layer.get_flat_list();
 
                     // Get the flat list for the insert
-                    if (layer_idx > 1)
+                    if (layer_idx > 0)
                       prev_flat_list = prev_layer->get_flat_list(
                         flat_list[0].x,
                         flat_list.back().x);
                     else
-                      prev_flat_list = flat_list;
+                      {
+                        // This should perhaps be optional if we want
+                        // to mirror the front size on the back side
+                        prev_flat_list = flat_list;
+
+                        // Make the first layer z-flat at -zdepth
+                        for (auto& v : prev_flat_list)
+                          v.y = -zdepth;
+                      }
+
 
                     // Todo:
                     //   Given a prev_flat_list and a flat_list,
@@ -755,6 +780,7 @@ vector<Mesh> TeXtrusion::skeleton_to_mesh(const vector<PHoleInfo>& phole_infos,
                                                     flat_list,
                                                     r);
                   }
+
               }
             else
               {
@@ -790,6 +816,7 @@ vector<Mesh> TeXtrusion::skeleton_to_mesh(const vector<PHoleInfo>& phole_infos,
                                                 flat_list,
                                                 r);
 
+#if 0
                 // Add a tube between upper and lower segment (quad)
                 {
                   double z0 = 0;
@@ -811,6 +838,7 @@ vector<Mesh> TeXtrusion::skeleton_to_mesh(const vector<PHoleInfo>& phole_infos,
                   mesh.vertices.push_back( { float(p[1].x()),float(-p[1].y()),float(-zdepth)});
                   mesh.vertices.push_back( { float(p[0].x()),float(-p[0].y()),float(-zdepth)});
                 }
+#endif
               }
         }
     }

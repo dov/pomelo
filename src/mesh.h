@@ -14,7 +14,7 @@
 
 class Mesh {
   public:
-  std::vector<glm::vec3> vertices;  // 3 at a time for triangles
+  std::vector<glm::dvec3> vertices;  // 3 at a time for triangles
 };
 
 std::shared_ptr<Mesh> read_stl(const std::string& filename);
