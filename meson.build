@@ -7,7 +7,7 @@ gnome = import('gnome')
 
 name='pomelo'
 name_cap = 'Pomelo'
-version = '0.0.6'
+version = '0.0.7'
 
 r = run_command('git', 'rev-parse', 'HEAD')
 if r.returncode() != 0

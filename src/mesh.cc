@@ -15,7 +15,7 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 
 // #define TINYGLTF_NOEXCEPTION // optional. disable exception handling.
-#include "tinygltf/tiny_gltf.h"
+#include "tiny_gltf.h"
 
 using namespace fmt;
 using namespace std;
@@ -117,13 +117,15 @@ void save_stl(std::shared_ptr<Mesh> mesh, const std::string& filename)
   std::fill_n(header, header_size, 0);
   ofstream fh(filename,ofstream::binary|ofstream::out);
   
+  char header_string[] = "* Created by Pomelo *";
+  memcpy(header, header_string, sizeof(header_string));
+
   fh.write(header, header_size);
 
   // Make use of the fact that all the vertices are ordered in
   // groups of three composing the contained triangles.
   const  auto& vertices = mesh->vertices; // shortcut
   size_t size = (size_t)vertices.size()/3;
-  cout << fmt::format("mesh.size={}\n", size);
   fh.write((const char*)&size, 4);
 
   uint16_t color=0;
@@ -134,7 +136,13 @@ void save_stl(std::shared_ptr<Mesh> mesh, const std::string& filename)
         fh.write((const char*)&fzero,4);
 
       for (int i=0; i<3; i++)
-        fh.write((char*)(&vertices[tr_idx*3+i][0]), 3*4);
+        {
+          for (int j=0; j<3; j++)
+            {
+              float f = (float)vertices[tr_idx*3+i][j];
+              fh.write((char*)&f, 4);
+            }
+        }
       fh.write((char*)&color, 2);
     }
   fh.close();
@@ -182,9 +190,9 @@ void save_gltf(std::shared_ptr<Mesh> mesh, const std::string& filename)
       float *pvp = vp; // Keep for min and max
 
       // Swap y and z
-      *vp++ = v[0];
-      *vp++ = v[2]; 
-      *vp++ = -v[1];
+      *vp++ = float(v[0]);
+      *vp++ = float(v[2]); 
+      *vp++ = float(-v[1]);
       for (int i=0; i<3; i++)
         {
           if (*pvp < minValues[i])

@@ -32,12 +32,12 @@ class Node {
       layer(layer) {}
   NodeType type = NODE_CORNER;
   bool selected = false;
-  Vec2 dxym,xy,dxyp; // Distance to control points and coordinate
+  Vec2 dxym {0.,0.},xy {0.,0.},dxyp{0.,0.}; // Distance to control points and coordinate
 
   // The following are used for moving nodes. This can really be made
   // global as only one node can be dragged at a time.
   bool dragging = false;
-  Vec2 drag_xy;
+  Vec2 drag_xy { 0,0 };
 
   // The group containing the item and the controls
   Glib::RefPtr<Goocanvas::Group> item_group;
