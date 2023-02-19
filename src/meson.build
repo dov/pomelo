@@ -3,7 +3,9 @@ engine_sources = ['textrusion.cc',
                   'svgpath-to-cairo.cc',
                   'pango-to-cairo.cc',
                   'profile.cc',
-                  'bezier-intersect.cc'
+                  'bezier-intersect.cc',
+                  'cairo-flatten-by-bitmap.cc'
+
                  ]
 
 sources = ['pomelo-main.cc',
@@ -118,7 +120,8 @@ exe = executable(name_cap,
 
 # An example for converting an svg path to cairo
 executable('test-svgpath-to-cairo',
-           ['test-svgpath-to-cairo.cc'],
+           ['test-svgpath-to-cairo.cc',
+           ],
            cpp_args : cpp_args,
            link_with : [lib_engine],
            dependencies : deps)

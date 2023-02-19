@@ -9,6 +9,8 @@
 #include <fmt/core.h>
 #include <pangomm/init.h>
 #include <fstream>
+#include "cairo-flatten-by-bitmap.h"
+
 
 using namespace std;
 using namespace fmt;
@@ -61,26 +63,45 @@ int main(int argc, char **argv)
     die("Need markup!\n");
   const char *markup = argv[argp++];
 
-  cairo_surface_t *surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
-                                                        5000,500);
-  cairo_t *cr = cairo_create(surface);
+  cairo_surface_t *rec_surface = cairo_recording_surface_create(
+    CAIRO_CONTENT_ALPHA,
+    nullptr // unlimited extens
+  );
 
-  cairo_set_source_rgb(cr,1,1,1);
-  cairo_paint (cr);
+  cairo_t *rec_cr = cairo_create(rec_surface);
 
-  cairo_set_source_rgb(cr, 0.75, 0.34, 0.0);
+#if 0
+  cairo_set_source_rgb(rec_cr,1,1,1);
+  cairo_paint (rec_cr);
+#endif
+
+  cairo_set_source_rgb(rec_cr, 0.75, 0.34, 0.0);
 
   PangoFontDescription *desc = pango_font_description_from_string("DejaVu Sans Bold 48");
-  pangomarkup_to_cairo(cr, markup, desc);
+  pangomarkup_to_cairo(rec_cr, markup, desc);
   pango_font_description_free(desc);
-  cairo_set_tolerance(cr, 0.1); 
+  cairo_set_tolerance(rec_cr, 0.1); 
 
-  cairo_path_t *path = cairo_copy_path_flat(cr);
+  cairo_path_t *path = cairo_copy_path_flat(rec_cr);
   print("num paths={}\n", path->num_data);
 
   path_to_giv(path, "/tmp/path.giv");
   cairo_path_destroy(path);
+
+  double resolution = 1.0;
+  cairo_fill(rec_cr);
+  cairo_t *cr_by_bitmap = cairo_flatten_by_bitmap(rec_surface,
+                                                  resolution);
+
+
+  cairo_surface_t *surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
+                                                        5000,500);
+  cairo_t *cr = cairo_create(surface);
+  cairo_set_source_surface (cr, rec_surface, 0.0, 0.0);
+  cairo_paint (cr);
   cairo_fill(cr);
+  cairo_destroy (cr);
+  
 
   // Use this for the pangacairo example
   //  draw_text(cr);
