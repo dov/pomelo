@@ -29,6 +29,7 @@ void pangomarkup_to_cairo(cairo_t *cr,
   //  cr->scale(0.1,0.1); // This scaling is done to prevent clipping in the
                       // cairo layout. The linear limit is changed in
                       // in correspondance.
+  cairo_scale(cr, 2,2);
   cairo_move_to(cr,0,0);
   cairo_set_source_rgb(cr, 0,0,0);
   pango_cairo_update_layout(cr, layout);

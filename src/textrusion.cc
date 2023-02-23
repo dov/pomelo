@@ -21,26 +21,24 @@ using namespace Glib;
 using namespace fmt;
 
 // Create a pango context from a svg filename
-Cairo::RefPtr<Cairo::Context> TeXtrusion::svg_filename_to_context(const string& filename)
+void TeXtrusion::svg_filename_to_context(Cairo::RefPtr<Cairo::Surface> surface, const string& filename)
 {
-  auto surface = Cairo::ImageSurface::create (Cairo::FORMAT_ARGB32, 5000, 5000);
   auto cr = Cairo::Context::create(surface);
 
   svgpaths_to_cairo(cr->cobj(), filename.c_str(), true);
-
-  return cr;
+  cr->fill();
 }
 
 // Take a pango markup and turn it into a cairo context that is returned
-Cairo::RefPtr<Cairo::Context> TeXtrusion::markup_to_context(const string& markup)
+void TeXtrusion::markup_to_context(Cairo::RefPtr<Cairo::Surface> surface, const string& markup)
 {
-  auto surface = Cairo::ImageSurface::create (Cairo::FORMAT_ARGB32, 5000, 500);
   auto cr = Cairo::Context::create(surface);
 
   pangomarkup_to_cairo(cr->cobj(),       
                        markup.c_str(),
                        font_description.gobj());
-  return cr;
+  cr->fill();
+
 #if 0
   PangoFontMap *fm;
   fm = pango_ft2_font_map_new();
@@ -132,7 +130,7 @@ TeXtrusion::cairo_path_to_polygons(Cairo::RefPtr<Cairo::Context>& cr)
 {
   vector<Polygon_2> polys;
   Polygon_2 poly;
-  
+
   cr->set_tolerance(linear_limit*1e-2); 
   Cairo::Path *path = cr->copy_path_flat();
   cairo_path_t *cpath = path->cobj();
@@ -250,6 +248,7 @@ TeXtrusion::polys_to_polys_with_holes(vector<Polygon_2> polys)
 
     // Optionally save the cairo paths colored by the direction.
     if (do_save_cairo_paths) {
+      print("Saving to cairo_paths.giv\n");
         ofstream fh("cairo_paths.giv");
         array<string,2> color = {"red","green"};
   
@@ -276,17 +275,34 @@ TeXtrusion::polys_to_polys_with_holes(vector<Polygon_2> polys)
     // This again checks inclusion from the previous steps. This should
     // be cached so that we don't need to redo it.
     int hole_idx=0; // This is increasing
+    int poly_idx = 0;
     for (const Polygon_2& poly : polys_outer) {
         Polygon_with_holes polygon_with_holes(poly);
 
         // This assumes ordering. Not sure this always holds.
         // A worst case scenario is testing for inclusion of
         // all paths.
-        while(hole_idx < (int)polys_holes.size()
-              && poly.bounded_side(polys_holes[hole_idx][0]) == CGAL::ON_BOUNDED_SIDE) {
-            polygon_with_holes.add_hole(polys_holes[hole_idx]);
-            hole_idx++;
+        // 
+        while(polys_holes.size())
+        {
+          bool added = false;
+          for (int hole_idx=0; hole_idx<(int)polys_holes.size(); hole_idx++)
+          {
+            if (poly.bounded_side(polys_holes[hole_idx][0]) == CGAL::ON_BOUNDED_SIDE)
+            {
+              //              print("Adding hole {} to poly {}\n", hole_idx, poly_idx);
+              polygon_with_holes.add_hole(polys_holes[hole_idx]);
+              polys_holes.erase(polys_holes.begin() + hole_idx);
+              added=true;
+              break;
+            }
+          }
+          if (!added)
+            break;
         }
+
+#if 0
+        // This should not be needed when doing tracing!
 
         // Check if there is an overlap with the previous glyph (a ligature)
         if (polys_with_holes.size()) {
@@ -328,8 +344,10 @@ TeXtrusion::polys_to_polys_with_holes(vector<Polygon_2> polys)
 
             }
         }
+#endif
             
         polys_with_holes.push_back(polygon_with_holes);
+        poly_idx++;
     }
 
     return polys_with_holes;

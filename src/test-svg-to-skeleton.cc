@@ -1,3 +1,4 @@
+  
 //======================================================================
 //  test-svg-to-skeleton.cpp - A test program for the generating
 //  the skeleton.
@@ -15,6 +16,8 @@
 #include <textrusion.h>
 #include <smooth-sharp-angles.h>
 #include <fmt/core.h>
+#include "cairo-flatten-by-bitmap.h"
+
 
 using namespace std;
 using namespace Glib;
@@ -111,7 +114,17 @@ int main(int argc, char **argv)
 
   TeXtrusion textrusion;
   textrusion.linear_limit = linear_limit;
-  auto cr = textrusion.svg_filename_to_context(filename);
+  double resolution = 10;
+  
+  Cairo::RefPtr<Cairo::Surface> surface = Cairo::RecordingSurface::create();
+  textrusion.svg_filename_to_context(surface, filename);
+
+  Cairo::RefPtr<Cairo::Context> cr = Cairo::Context::create(surface);
+  cairo_flatten_by_bitmap(surface->cobj(),
+                          resolution,
+                          // output
+                          cr->cobj());
+
   auto poly = textrusion.cairo_path_to_polygons(cr);
   auto hpolys = textrusion.polys_to_polys_with_holes(poly);
 
@@ -146,6 +159,7 @@ int main(int argc, char **argv)
   auto skel = textrusion.skeletonize(hpolys,
                                      // output
                                      giv_string);
+  print("Saving skeleton to {}\n", giv_filename);
   ofstream fh(giv_filename);
   fh << giv_string;
   fh.close();

@@ -170,10 +170,10 @@ class TeXtrusion {
     }
   
     // Create a pango context from a svg filename
-    Cairo::RefPtr<Cairo::Context> svg_filename_to_context(const std::string& filename);
+    void svg_filename_to_context(Cairo::RefPtr<Cairo::Surface> surface, const std::string& filename);
 
     // Create a pango context for pango markup
-    Cairo::RefPtr<Cairo::Context> markup_to_context(const std::string& markup);
+    void markup_to_context(Cairo::RefPtr<Cairo::Surface> surface,const std::string& markup);
 
     // Turn the pango markup into a vector of polygons
     std::vector<Polygon_2> cairo_path_to_polygons(Cairo::RefPtr<Cairo::Context>& cr);

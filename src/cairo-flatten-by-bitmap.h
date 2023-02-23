@@ -9,9 +9,13 @@
 
 #include <cairo/cairo.h>
 
-// Take the cairo context that may contain overlapping paths
+// Take the cairo surface that may contain overlapping paths
 // draw it to a bitmap and flatten it by tracing the bitmap.
-cairo_t *cairo_flatten_by_bitmap(cairo_surface_t *rec_surface,
-                                 double resolution);
+// Write the result to the cr object.
+void cairo_flatten_by_bitmap(cairo_surface_t *rec_surface,
+                             double resolution,
+                             // output
+                             cairo_t *cr
+                             );
 
 #endif /* CAIRO_FLATTEN_BY_BITMAP */

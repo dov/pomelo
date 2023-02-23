@@ -53,7 +53,7 @@ void path_to_giv(cairo_path_t *cpath,
 int main(int argc, char **argv)
 {
   int argp=1;
-  double resolution = 1; // Pixels per svg point
+  double resolution = 10; // Pixels per svg point
 
   if (argp >= argc)
     die("Need filename!\n");
@@ -74,9 +74,15 @@ int main(int argc, char **argv)
   path_to_giv(path, "/tmp/path.giv");
 
   cairo_fill(rec_cr);
-  cairo_t *cr_by_bitmap = cairo_flatten_by_bitmap(rec_surface,
-                                                  resolution);
 
+  // Clean the rec_cr as we will reuse it. Is there another way?
+  cairo_destroy(rec_cr);
+
+  rec_cr = cairo_create(rec_surface);
+  cairo_flatten_by_bitmap(rec_surface,
+                          resolution,
+                          // output
+                          rec_cr);
 
   cairo_surface_t *surface = cairo_image_surface_create(
     CAIRO_FORMAT_ARGB32,
@@ -87,6 +93,7 @@ int main(int argc, char **argv)
   cairo_set_source_rgb(rec_cr,1,1,1);
   cairo_paint (cr);
   cairo_destroy (cr);
+  cairo_destroy (rec_cr);
 
   cairo_surface_write_to_png(surface, "/tmp/cairotest.png");
 }

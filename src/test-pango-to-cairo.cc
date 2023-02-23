@@ -58,6 +58,29 @@ void path_to_giv(cairo_path_t *cpath,
 int main(int argc, char **argv)
 {
   int argp=1;
+  string font = "DejaVu Sans Bold 48";
+
+  while(argp < argc && argv[argp][0] == '-') {
+    char *S_ = argv[argp++];
+
+    CASE("--help")
+    {
+      printf("test-pango-to-cairo - Test converting a string to cairo (with tracing)\n\n"
+             "Syntax:\n"
+             "    test-pango-to-cairo [--font font] markup\n"
+             "\n"
+             "Options:\n"
+             "    --font font    The font\n");
+      exit(0);
+    }
+    CASE("--font")
+    {
+      font = argv[argp++];
+      continue;
+    }
+    die("Unknown option %s!\n", S_);
+  }
+  
 
   if (argp >= argc)
     die("Need markup!\n");
@@ -77,7 +100,7 @@ int main(int argc, char **argv)
 
   cairo_set_source_rgb(rec_cr, 0.75, 0.34, 0.0);
 
-  PangoFontDescription *desc = pango_font_description_from_string("DejaVu Sans Bold 48");
+  PangoFontDescription *desc = pango_font_description_from_string(font.c_str());
   pangomarkup_to_cairo(rec_cr, markup, desc);
   pango_font_description_free(desc);
   cairo_set_tolerance(rec_cr, 0.1); 
@@ -88,17 +111,27 @@ int main(int argc, char **argv)
   path_to_giv(path, "/tmp/path.giv");
   cairo_path_destroy(path);
 
-  double resolution = 1.0;
+  double resolution = 10;
   cairo_fill(rec_cr);
-  cairo_t *cr_by_bitmap = cairo_flatten_by_bitmap(rec_surface,
-                                                  resolution);
 
+  cairo_destroy(rec_cr);
+  rec_cr = cairo_create(rec_surface);
+  
+  cairo_flatten_by_bitmap(rec_surface,
+                          resolution,
+                          // output
+                          rec_cr);
 
   cairo_surface_t *surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
                                                         5000,500);
   cairo_t *cr = cairo_create(surface);
   cairo_set_source_surface (cr, rec_surface, 0.0, 0.0);
   cairo_paint (cr);
+
+  path = cairo_copy_path_flat(cr);
+  print("num paths after image={}\n", path->num_data);
+  path_to_giv(path, "/tmp/path-after-image.giv");
+
   cairo_fill(cr);
   cairo_destroy (cr);
   

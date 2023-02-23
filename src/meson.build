@@ -4,8 +4,8 @@ engine_sources = ['textrusion.cc',
                   'pango-to-cairo.cc',
                   'profile.cc',
                   'bezier-intersect.cc',
-                  'cairo-flatten-by-bitmap.cc'
-
+                  'cairo-flatten-by-bitmap.cc',
+                  'image-tracer-bw.cc'
                  ]
 
 sources = ['pomelo-main.cc',

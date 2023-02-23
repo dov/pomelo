@@ -22,7 +22,7 @@
 #include <chrono>
 #include <fmt/core.h>
 #include "smooth-sharp-angles.h"
-
+#include "cairo-flatten-by-bitmap.h"
 
 using namespace std;
 using namespace fmt;
@@ -103,14 +103,24 @@ void WorkerSkeleton::do_work_skeleton(
   bool finished_successfully = false;
   string error_message;
   string giv_string;
+  double resolution = 20;
 
   try {
-    Cairo::RefPtr<Cairo::Context> cr;
+    Cairo::RefPtr<Cairo::Surface> surface = Cairo::RecordingSurface::create();
+    Cairo::RefPtr<Cairo::Context> cr = Cairo::Context::create(surface);
     if (svg_filename.size()>0)
-      cr = m_textrusion->svg_filename_to_context(svg_filename);
+      m_textrusion->svg_filename_to_context(surface, svg_filename);
     else
-      cr = m_textrusion->markup_to_context(markup);
+      m_textrusion->markup_to_context(surface, markup);
+
+    // Flatten by a bitmap and store the result in cr
+    cairo_flatten_by_bitmap(surface->cobj(),
+                            resolution,
+                            // result
+                            cr->cobj());
+    
     auto polys = m_textrusion->cairo_path_to_polygons(cr);
+    print("{} polys found\n", polys.size());
     auto polys_with_holes = m_textrusion->polys_to_polys_with_holes(polys);
 
     if (m_pomelo_settings->get_int_default("smooth_sharp_angles",1))
