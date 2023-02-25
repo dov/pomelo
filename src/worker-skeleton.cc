@@ -23,6 +23,9 @@
 #include <fmt/core.h>
 #include "smooth-sharp-angles.h"
 #include "cairo-flatten-by-bitmap.h"
+#include <spdlog/spdlog.h>
+#include "utils.h"
+
 
 using namespace std;
 using namespace fmt;
@@ -114,10 +117,10 @@ void WorkerSkeleton::do_work_skeleton(
       m_textrusion->markup_to_context(surface, markup);
 
     // Flatten by a bitmap and store the result in cr
-    cairo_flatten_by_bitmap(surface->cobj(),
-                            resolution,
-                            // result
-                            cr->cobj());
+    FlattenByBitmap fb(cr->cobj());
+    fb.set_debug_dir(m_debug_dir);
+    fb.flatten_by_bitmap(surface->cobj(),
+                         resolution);
     
     auto polys = m_textrusion->cairo_path_to_polygons(cr);
     print("{} polys found\n", polys.size());
@@ -133,15 +136,29 @@ void WorkerSkeleton::do_work_skeleton(
     m_phole_infos = m_textrusion->skeletonize(polys_with_holes,
                                               // output
                                               giv_string);
+    if (m_debug_dir.size())
+    {
+      string giv_filename = format("{}/skeleton.giv", m_debug_dir);
+      print("Saving to {}\n", giv_filename);
+      spdlog::info("Saving to {}", giv_filename);
+      string_to_file(giv_string, giv_filename);
+    }
+
     finished_successfully=true;
   }
   catch(EAborted&) {
   }
-  catch(CGAL::Failure_exception&) {
+  catch(const CGAL::Failure_exception& exc) {
     // We should still show errors!
-    error_message = "Illegal geometry found! Try another font!";
+    error_message = format("CGAL failure: {}", exc.message());
+  }
+  catch(const std::runtime_error& exc) {
+    // We should still show errors!
+    error_message = exc.what();
   }
 
+  if (error_message.size())
+    spdlog::error("Failed skeleton to mesh: {}", error_message);
 
   {
     lock_guard<mutex> lock(m_mutex);
@@ -164,6 +181,8 @@ void WorkerSkeleton::do_work_profile(
   ProfileData profile_data
 )
 {
+  spdlog::info("do_work_profile use_profile_data={} radius={} round_max_angle={} num_radius_steps={} zdepth={}", use_profile_data, radius, round_max_angle, num_radius_steps, zdepth);
+
   {
     std::lock_guard<mutex> lock(m_mutex);
     m_has_stopped = false;
@@ -190,11 +209,17 @@ void WorkerSkeleton::do_work_profile(
                                             giv_string);
     finished_successfully=true;
   }
-  catch(EAborted&) {
+  catch(const EAborted&) {
   }
-  catch(CGAL::Failure_exception&) {
-    error_message = "Illegal geometry found! Try another font!";
+  catch(const CGAL::Failure_exception& exc) {
+    error_message = format("CGAL failure: {}", exc.message());
   }
+  catch(const std::runtime_error& exc)
+  {
+    error_message = exc.what();
+  }
+  if (error_message.size())
+    spdlog::error("Failed skeleton to mesh: {}", error_message);
 
   {
     lock_guard<mutex> lock(m_mutex);
@@ -207,11 +232,12 @@ void WorkerSkeleton::do_work_profile(
       m_meshes[i] = make_shared<Mesh>(meshes[i]);
     *m_mesh_giv_string = giv_string;
 
-#if 0
-    ofstream of("path.giv");
-    of << *m_mesh_giv_string;
-    of.close();
-#endif
+    if (m_debug_dir.size())
+    {
+      string giv_filename = format("{}/mesh_giv_file.giv", m_debug_dir);
+      spdlog::info("Saved {}", giv_filename);
+      string_to_file(giv_string, giv_filename);
+    }
   }
 
   m_caller->notify();
@@ -234,4 +260,10 @@ Updater::ContinueStatus SkeletonUpdater::info(const std::string& context, double
   m_worker_skeleton->notify_context_and_progress(context,progress);
   
   return Updater::UPDATER_OK;
+}
+
+void WorkerSkeleton::set_debug_dir(const std::string& debug_dir)
+{
+  m_debug_dir = debug_dir;
+  m_textrusion->set_debug_dir(debug_dir);
 }

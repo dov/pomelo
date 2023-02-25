@@ -8,6 +8,7 @@
 #include <cairomm/cairomm.h>
 #include <fmt/core.h>
 #include "bezier-intersect.h"
+#include "utils.h"
 
 using json = nlohmann::json;
 
@@ -26,21 +27,6 @@ Vec2 from_json(const nlohmann::json& j)
 {
   return Vec2(j.value("x", 0.0),
               j.value("y", 0.0));
-}
-
-static void string_to_file(const string& text,
-                           const string& filename)
-{
-  ofstream out(filename);
-  out << text;
-  out.close();
-}
-
-static string load_string_from_file(const string& filename)
-{
-  ifstream inf(filename);
-  return string(istreambuf_iterator<char>(inf),
-                istreambuf_iterator<char>());
 }
 
 void ProfileData::load_from_string(const string& profile_string)

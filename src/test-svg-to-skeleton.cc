@@ -120,10 +120,10 @@ int main(int argc, char **argv)
   textrusion.svg_filename_to_context(surface, filename);
 
   Cairo::RefPtr<Cairo::Context> cr = Cairo::Context::create(surface);
-  cairo_flatten_by_bitmap(surface->cobj(),
-                          resolution,
-                          // output
-                          cr->cobj());
+  FlattenByBitmap fb(cr->cobj());
+  fb.set_debug_dir("/tmp");
+  fb.flatten_by_bitmap(surface->cobj(),
+                       resolution);
 
   auto poly = textrusion.cairo_path_to_polygons(cr);
   auto hpolys = textrusion.polys_to_polys_with_holes(poly);

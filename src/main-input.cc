@@ -3,6 +3,7 @@
 #include "pomelo-widget-utils.h"
 #include <math.h>
 #include <fmt/core.h>
+#include <spdlog/spdlog.h>
 
 using namespace fmt;
 
@@ -80,9 +81,11 @@ MainInput::MainInput(Gtk::Window& window)
   w_grid->attach(*mmLabelRight("Text:"), 0,row);
   w_grid->attach(m_text,                 1,row,2);
   row++;
+#if 0
   w_grid->attach(*mmLabelRight("Linear limit:"), 0,row);
   w_grid->attach(m_linear_limit, 1,row,2);
   row++;
+#endif
   w_grid->attach(*mmLabelRight("Font:"), 0,row);
   w_grid->attach(m_font_picker,          1,row); 
   row++;
@@ -187,13 +190,15 @@ MainInput::MainInput(Gtk::Window& window)
     m_profile_editor_window.hide();
     m_signal_profile_edited();
 
-#if 0
-    // Debuging: Get the profile data and save it a json
-    ProfileData prof = m_profile_editor_window.get_profile();
-    prof.save_to_file("/tmp/prof.json");
-
-    prof.save_flat_to_giv("/tmp/prof.giv");
-#endif
+    if (m_debug_dir.size())
+    {
+      // Debuging: Get the profile data and save it a json
+      ProfileData prof = m_profile_editor_window.get_profile();
+      prof.save_to_file(format("{}/prof.json", m_debug_dir));
+  
+      prof.save_flat_to_giv(format("{}/prof.giv", m_debug_dir));
+      spdlog::info("Saved prof (profile data) to {}", m_debug_dir);
+    }
   });
   
 }

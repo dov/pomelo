@@ -151,7 +151,7 @@ class ProfileEditor : public Gtk::Box
   double m_canvas_width=800;
   double m_canvas_height=800;
 
-  double m_profile_maxx = 10;
+  double m_profile_maxx = 30;
   double m_profile_maxy = 10;
 };
 

@@ -5,7 +5,8 @@ engine_sources = ['textrusion.cc',
                   'profile.cc',
                   'bezier-intersect.cc',
                   'cairo-flatten-by-bitmap.cc',
-                  'image-tracer-bw.cc'
+                  'image-tracer-bw.cc',
+                  'utils.cc'
                  ]
 
 sources = ['pomelo-main.cc',
@@ -57,6 +58,7 @@ mpfr_dep = dependency('mpfr')
 nanosvg_dep = dependency('nanosvg')
 tinygltf_dep = dependency('tinygltf')
 nhlohmann_json_dep = dependency('nlohmann_json')
+spdlog_dep = dependency('spdlog')
 
 subdir('giv-widget')
 
@@ -81,7 +83,8 @@ deps = [gtkmm_dep,
         nanosvg_dep,
         tinygltf_dep,
         nhlohmann_json_dep,
-        goo_dep]
+        goo_dep,
+        spdlog_dep]
 
 if host_machine.system() == 'windows'
   lib_engine = shared_library('engine',
@@ -146,6 +149,7 @@ executable('test-profile-editor',
             'bezier-intersect.cc',
            ],
            resources,
+           link_with : [lib_engine],
            cpp_args : cpp_args,
            dependencies : deps)
 
@@ -157,6 +161,7 @@ executable('test-profile-editor-window',
             'bezier-intersect.cc',
            ],
            resources,
+           link_with : [lib_engine],
            cpp_args : cpp_args,
            dependencies : deps)
 

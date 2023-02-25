@@ -67,7 +67,8 @@ int main(int argc, char **argv)
   cairo_t *rec_cr = cairo_create(rec_surface);
 
   // Paint the path in white
-  svgpaths_to_cairo(rec_cr, filename, true);
+  SvgPathsToCairo p2c(rec_cr);
+  p2c.parse_file(filename, true);
 
   cairo_path_t *path = cairo_copy_path_flat(rec_cr);
   print("num paths={}\n", path->num_data);
@@ -79,10 +80,10 @@ int main(int argc, char **argv)
   cairo_destroy(rec_cr);
 
   rec_cr = cairo_create(rec_surface);
-  cairo_flatten_by_bitmap(rec_surface,
-                          resolution,
-                          // output
-                          rec_cr);
+  FlattenByBitmap fb(rec_cr);
+  fb.set_debug_dir("/tmp");
+  fb.flatten_by_bitmap(rec_surface,
+                       resolution);
 
   cairo_surface_t *surface = cairo_image_surface_create(
     CAIRO_FORMAT_ARGB32,

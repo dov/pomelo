@@ -24,6 +24,7 @@ Pomelo::Pomelo(shared_ptr<PomeloSettings> pomelo_settings)
     m_pomelo_settings(pomelo_settings)
 {
   set_title("Pomelo");
+
   //set_icon(Gdk::Pixbuf::create_from_resource("/about/pomelo_logo.png", -1, 80, true));
   set_default_size(800, 1000);
 
@@ -482,9 +483,16 @@ void Pomelo::on_button_clicked()
 }
 #endif
 
-void Pomelo::set_mesh(const std::string& mesh_filename)
+void Pomelo::set_mesh(const string& mesh_filename)
 {
   m_mesh_viewer.set_mesh_file(mesh_filename);
+}
+
+void Pomelo::set_debug_dir(const string& debug_dir)
+{
+  m_debug_dir = debug_dir;
+  m_worker_skeleton.set_debug_dir(debug_dir);
+  m_main_input.set_debug_dir(debug_dir);
 }
 
 void Pomelo::on_build_skeleton(Glib::ustring text_string,

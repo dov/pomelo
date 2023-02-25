@@ -15,17 +15,25 @@
 #include "textrusion.h"
 #include "svgpath-to-cairo.h"
 #include "pango-to-cairo.h"
+#include <spdlog/spdlog.h>
 
 using namespace std;
 using namespace Glib;
 using namespace fmt;
+
+static void poly_to_giv(ustring filename,
+                        ustring header,
+                        Polygon_2 poly,
+                        bool append);
 
 // Create a pango context from a svg filename
 void TeXtrusion::svg_filename_to_context(Cairo::RefPtr<Cairo::Surface> surface, const string& filename)
 {
   auto cr = Cairo::Context::create(surface);
 
-  svgpaths_to_cairo(cr->cobj(), filename.c_str(), true);
+  spdlog::info("svg_filename_to_context filename={}", filename);
+  SvgPathsToCairo p2c(cr->cobj());
+  p2c.parse_file(filename,true);
   cr->fill();
 }
 
@@ -373,6 +381,7 @@ vector<PHoleInfo> TeXtrusion::skeletonize(const std::vector<Polygon_with_holes>&
         PHoleInfo phi(ph);
         phi.skeletonize();
         phi.divide_into_regions();
+        phi.m_debug_dir = m_debug_dir;
         phole_infos.push_back(phi);
     }
     if (updater && updater->info("skeletonize", 1.0))
@@ -383,6 +392,7 @@ vector<PHoleInfo> TeXtrusion::skeletonize(const std::vector<Polygon_with_holes>&
     for (int ph_idx=0; ph_idx < (int)phole_infos.size(); ph_idx++) {
         auto& phi = phole_infos[ph_idx];
         for (auto &r : phi.regions) {
+            r.m_debug_dir = m_debug_dir;
             string path = "skeleton";
             string color = "blue";
 
@@ -429,6 +439,7 @@ void TeXtrusion::add_region_contribution_cap_to_mesh(
   int ph_idx,
   int r_idx,
   bool is_lower,
+  bool extrapolate, // whether to extrapolate the last point
   const vector<Vec2>& flat_list,
   const SkeletonPolygonRegion& region,
 
@@ -458,8 +469,10 @@ void TeXtrusion::add_region_contribution_cap_to_mesh(
       // Extrapolate for the last point
       if (d_idx == flat_list.size()-1)
         {
-          if (layer_idx > 0)
-            continue; // No extrapolation except for the first layer
+          // TBDov - This condition should be only if prevlist.back().x
+          // > back.list()
+          if (!extrapolate)
+            continue; // No extrapolation if explicitly requested
 
           // The "next" point is the depth
           offs_end = depth+epsilon;
@@ -518,8 +531,9 @@ void TeXtrusion::add_region_contribution_cap_to_mesh(
         ss << format("$color green\n"
                      "$line\n"
                      "$marks fcircle\n"
-                     "$path offset curves/ph {}/region {}/{}/{}\n"
+                     "$path offset curves/layer {}/ph {}/region {}/{}/{}\n"
                      ,
+                     layer_idx+1,
                      ph_idx+1,
                      r_idx+1,
                      d_idx+1,
@@ -571,6 +585,7 @@ void TeXtrusion::add_region_contribution_to_mesh(
   int layer_idx,
   int ph_idx,
   int r_idx,
+  bool do_extrapolate,
   const vector<Vec2>& prev_flat_list,
   const vector<Vec2>& flat_list,
   const SkeletonPolygonRegion& region
@@ -588,22 +603,24 @@ void TeXtrusion::add_region_contribution_to_mesh(
   ss << format("$color {}\n"
                "$line\n"
                "$marks fcircle\n"
-               "$path boundary{}/ph {}/region {}\n"
+               "$path boundary{}/layer {}/ph {}/region {}\n"
                "{} {}\n"
                "{} {}\n"
                "\n"
                "$color red\n"
                "$line\n"
                "$marks fcircle\n"
-               "$path skeleton{}/ph {}/region {}\n\n"
+               "$path skeleton{}/layer {}/ph {}/region {}\n\n"
                ,
                color,
                path_modifier,
+               layer_idx+1,
                ph_idx+1,
                r_idx+1,
                region.polygon[0].x(), region.polygon[0].y(),
                region.polygon[1].x(), region.polygon[1].y(),
                path_modifier,
+               layer_idx+1,
                ph_idx+1,
                r_idx+1);
 
@@ -626,6 +643,7 @@ void TeXtrusion::add_region_contribution_to_mesh(
                                       ph_idx,
                                       r_idx,
                                       false,
+                                      do_extrapolate,
                                       flat_list,
                                       region,
                                       // output
@@ -638,10 +656,15 @@ void TeXtrusion::add_region_contribution_to_mesh(
                                       ph_idx,
                                       r_idx,
                                       true,
+                                      do_extrapolate,
                                       prev_flat_list,
                                       region,
                                       // output
                                       lower_connection_rings);
+
+  if (upper_connection_rings.size() !=
+      lower_connection_rings.size())
+    throw std::runtime_error("Can't connect upper and lower rings with different sizes!");
 
   // Add a tube between upper and lower segment (quad)
   for (int ring_idx=0; ring_idx<(int)upper_connection_rings.size(); ring_idx++)
@@ -669,10 +692,11 @@ void TeXtrusion::add_region_contribution_to_mesh(
 }
 
 // Turn the skeleton into a 3D mesh
-vector<Mesh> TeXtrusion::skeleton_to_mesh(const vector<PHoleInfo>& phole_infos,
-                                          // output
-                                          string& giv_string
-                                          )
+vector<Mesh> TeXtrusion::skeleton_to_mesh(
+  const vector<PHoleInfo>& phole_infos,
+  // output
+  string& giv_string
+  )
 {
     // Always save the string stream and provide it to the skeleton
     // viewer!
@@ -682,10 +706,15 @@ vector<Mesh> TeXtrusion::skeleton_to_mesh(const vector<PHoleInfo>& phole_infos,
 
     // Create the meshes. Round only has one mesh.
     if (this->use_profile_data)
+    {
+      if (m_debug_dir.size())
+        this->profile_data.save_flat_to_giv(format("{}/prof.giv", m_debug_dir));
+
       meshes.resize(this->profile_data.size());
+    }
     else
       meshes.resize(1);
-
+        
     // The upper surface and lower surfaces. The upper surface
     // is bumped, and the lower is flat, but we are using the same
     // triangulation for both.
@@ -712,14 +741,14 @@ vector<Mesh> TeXtrusion::skeleton_to_mesh(const vector<PHoleInfo>& phole_infos,
             ss << format("$color {}\n"
                          "$line\n"
                          "$marks fcircle\n"
-                         "$path boundary{}/ph {}/region {}\n"
+                         "$path boundary{}/layer1/ph {}/region {}\n"
                          "{} {}\n"
                          "{} {}\n"
                          "\n"
                          "$color red\n"
                          "$line\n"
                          "$marks fcircle\n"
-                         "$path skeleton{}/ph {}/region {}\n\n"
+                         "$path skeleton{}/layer1/ph {}/region {}\n\n"
                          ,
                          color,
                          path_modifier,
@@ -757,6 +786,7 @@ vector<Mesh> TeXtrusion::skeleton_to_mesh(const vector<PHoleInfo>& phole_infos,
 
                 for (size_t layer_idx=0; layer_idx< this->profile_data.size(); layer_idx++)
                   {
+                    bool do_extrapolate = true; // whether to extrapolate the last point
                     Mesh& mesh = meshes[layer_idx];
 
                     auto& layer = this->profile_data[layer_idx];
@@ -769,9 +799,14 @@ vector<Mesh> TeXtrusion::skeleton_to_mesh(const vector<PHoleInfo>& phole_infos,
 
                     // Get the flat list for the insert
                     if (layer_idx > 0)
+                    {
                       prev_flat_list = prev_layer->get_flat_list(
                         flat_list[0].x,
                         flat_list.back().x);
+
+                      do_extrapolate = prev_flat_list.back().y < flat_list.back().y;
+                      do_extrapolate = true;
+                    }
                     else
                       {
                         // This should perhaps be optional if we want
@@ -786,7 +821,7 @@ vector<Mesh> TeXtrusion::skeleton_to_mesh(const vector<PHoleInfo>& phole_infos,
 
                     // Todo:
                     //   Given a prev_flat_list and a flat_list,
-                    //   add the triangles belowing to the region r
+                    //   add the triangles belonging to the region r
                     //   in the flatlist at its z position (y in the flat list)
                     //   and the prev_flat_list.
                     add_region_contribution_to_mesh(mesh,
@@ -794,6 +829,7 @@ vector<Mesh> TeXtrusion::skeleton_to_mesh(const vector<PHoleInfo>& phole_infos,
                                                     layer_idx,
                                                     ph_idx,
                                                     r_idx,
+                                                    do_extrapolate,
                                                     prev_flat_list,
                                                     flat_list,
                                                     r);
@@ -810,18 +846,32 @@ vector<Mesh> TeXtrusion::skeleton_to_mesh(const vector<PHoleInfo>& phole_infos,
                   {
                     double r = profile_radius;
                     double th = angle_span * d_idx/this->profile_num_radius_steps;
+                    // TBDov: The following calculation is wrong e.g. for
+                    // profile_num_radius_steps==2.
+                    //
+                    // To fix it for two we need to add a at x=r
                     double x = profile_radius*(1-cos(th));
+#if 0
                     if (d_idx == this->profile_num_radius_steps)
                       x = depth+epsilon;
+#endif
 
                     double z = profile_radius*sin(th);
-                    if (z > r - r * cos(angle_span))
+
+                    if (z > r - r * cos(angle_span)-epsilon)
                       z = r * sin(angle_span);
                     else 
                       z = sqrt(r*r-(z-r)*(z-r));
 
                     flat_list.push_back({x,z});
                     prev_flat_list.push_back({x,-zdepth});
+
+                    if (d_idx==this->profile_num_radius_steps
+                        && x<depth-epsilon)
+                    {
+                      flat_list.push_back({depth,z});
+                      prev_flat_list.push_back({depth,-zdepth});
+                    }
                   }
 
                 Mesh& mesh = meshes[0];
@@ -830,6 +880,7 @@ vector<Mesh> TeXtrusion::skeleton_to_mesh(const vector<PHoleInfo>& phole_infos,
                                                 0,
                                                 ph_idx,
                                                 r_idx,
+                                                false, // do_extrapolate is always true for a single layer
                                                 prev_flat_list,
                                                 flat_list,
                                                 r);
@@ -994,6 +1045,7 @@ void PHoleInfo::divide_into_regions()
         if (poly.size()>2) { // Why do I get smaller lines??
             // Drop duplicate last point
             SkeletonPolygonRegion region(poly);
+            region.m_debug_dir = m_debug_dir;
             regions.push_back(region);
         }
     }
@@ -1153,7 +1205,44 @@ vector<Polygon3D> SkeletonPolygonRegion::get_offset_curve(double d1, double d2) 
     Line_2 line2 = Line_2(polygon[0] + vec*d2, polygon[1] + vec*d2).opposite();
 
     vector<Polygon3D> ret;
-    auto polys = cut_polygon_by_line_pair(polygon, line1, line2);
+    vector<Polygon_2> polys;
+    try {
+      polys = cut_polygon_by_line_pair(polygon, line1, line2);
+    }
+    catch(const CGAL::Failure_exception& exc) {
+      spdlog::error("Failed cutting polygon!");
+      if (m_debug_dir.size())
+      {
+        string polygon_filename = format("{}/failed_polygon.giv", m_debug_dir);
+        spdlog::info("Saved failed polygon to {}", polygon_filename);
+        poly_to_giv(polygon_filename,
+                    "$color red\n",
+                    polygon,
+                    false);
+
+        Polygon_2 pp;
+        pp.push_back(line1.point(0));
+        pp.push_back(line1.point(1));
+
+        poly_to_giv(polygon_filename,
+                    "$color green\n"
+                    "$path line1\n"
+                    ,
+                    pp,
+                    true);
+        pp.clear();
+        pp.push_back(line2.point(0));
+        pp.push_back(line2.point(1));
+        poly_to_giv(polygon_filename,
+                    "$color green\n"
+                    "$path line2\n"
+                    ,
+                    pp,
+                    true);
+
+      }
+      throw;
+    }
 
     for (auto& poly : polys) {
         Polygon3D poly3;
@@ -1206,10 +1295,10 @@ vector<Polygon3D> SkeletonPolygonRegion::get_offset_curve_and_triangulate(double
     return tris3;
 }
   
-void poly_to_giv(ustring filename,
-                  ustring header,
-                  Polygon_2 poly,
-                  bool append)
+static void poly_to_giv(ustring filename,
+                        ustring header,
+                        Polygon_2 poly,
+                        bool append)
 {
     auto flags = ofstream::out;
     if (append)
@@ -1222,4 +1311,4 @@ void poly_to_giv(ustring filename,
     of << "z\n\n";
     of.close();
 }
-                     
+

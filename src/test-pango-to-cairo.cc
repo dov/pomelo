@@ -116,11 +116,11 @@ int main(int argc, char **argv)
 
   cairo_destroy(rec_cr);
   rec_cr = cairo_create(rec_surface);
-  
-  cairo_flatten_by_bitmap(rec_surface,
-                          resolution,
-                          // output
-                          rec_cr);
+
+  FlattenByBitmap fb(rec_cr);
+  fb.set_debug_dir("/tmp");
+  fb.flatten_by_bitmap(rec_surface,
+                       resolution);
 
   cairo_surface_t *surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
                                                         5000,500);

@@ -83,6 +83,8 @@ public:
     return m_giv_string;
   }
 
+  void set_debug_dir(const std::string& debug_dir);
+
 private:
   // Synchronizes access to member data.
   mutable std::mutex m_mutex;
@@ -102,6 +104,7 @@ private:
   std::string m_error_message;
   Pomelo* m_caller; // Used for notifications
   std::shared_ptr<PomeloSettings> m_pomelo_settings;
+  std::string m_debug_dir;
 };
 
 

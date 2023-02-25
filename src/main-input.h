@@ -55,6 +55,10 @@ class MainInput : public Gtk::Box
   // set the profile
   void set_profile(const Glib::ustring& profile_string);
 
+  void set_debug_dir(const std::string& debug_dir) {
+    m_debug_dir = debug_dir;
+  }
+
   private:
   Gtk::TextView m_text;
   Glib::RefPtr<Gtk::TextBuffer> m_text_buffer;
@@ -72,6 +76,7 @@ class MainInput : public Gtk::Box
   Gtk::ComboBoxText m_type_chooser;
   Gtk::Notebook m_profile_type_notebook;
   ProfileEditorWindow m_profile_editor_window;
+  std::string m_debug_dir;
 
   // If the text was set externally then this flag tells the
   // widget that on the next edit, we should clean and send a signal

@@ -5,8 +5,10 @@
 #include "nanosvg.h"
 #include "cairo/cairo.h"
 #include <fmt/core.h>
+#include "svgpath-to-cairo.h"
 
 using namespace fmt;
+using namespace std;
 
 // For pomelo we don't need to set the color, but it is nice for
 // debugging.
@@ -23,9 +25,9 @@ static void set_ncolor(cairo_t *ctx, unsigned int c)
 }
 
 // to the cairo path.
-void svgpaths_to_cairo(cairo_t *cr,
-                       const char *filename,
-                       bool keep_paths)
+static void svgpaths_to_cairo(cairo_t *cr,
+                              const char *filename,
+                              bool keep_paths)
 {
   struct NSVGimage* image;
   image = nsvgParseFromFile(filename, "px", 96);
@@ -73,5 +75,13 @@ void svgpaths_to_cairo(cairo_t *cr,
 
   // Delete
   nsvgDelete(image);
+}
 
+// c++ front end
+void SvgPathsToCairo::parse_file(const string& filename,
+                                 bool keep_paths)
+{
+  svgpaths_to_cairo(m_ctx,       
+                    filename.c_str(),
+                    keep_paths);
 }

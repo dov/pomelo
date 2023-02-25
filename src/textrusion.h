@@ -126,6 +126,7 @@ class SkeletonPolygonRegion {
     // The polygon region. The first edge lies on he associated PHoleInfo
     // boundary.
     Polygon_2 polygon;
+    std::string m_debug_dir;
 };
     
 // A PHoleInfo contain all the information belong to a polygon with holes
@@ -151,6 +152,7 @@ class PHoleInfo {
     Polygon_with_holes polygon_with_holes;
     boost::shared_ptr<StraightSkeleton> skeleton;
     std::vector<SkeletonPolygonRegion> regions;
+    std::string m_debug_dir;
 };
 
 
@@ -192,6 +194,11 @@ class TeXtrusion {
                                      // output
                                      std::string& giv_string);
 
+    // Set the debug dir, when set debug algo files will be written to it
+    void set_debug_dir(const std::string& debug_dir) {
+      m_debug_dir = debug_dir;
+    }
+
     // configuration
     bool do_rtl = false;
     double linear_limit = 500;
@@ -204,6 +211,7 @@ class TeXtrusion {
     std::string giv_filename;
     double zdepth = 2;
     bool do_save_cairo_paths = true; // used for debugging
+    std::string m_debug_dir;
 
     // Used to update and abort progress
     std::shared_ptr<Updater> updater;
@@ -217,6 +225,7 @@ class TeXtrusion {
       int ph_idx,
       int r_idx,
       bool is_lower,
+      bool extrapolate, // whether to extrapolate for the last point
       const std::vector<Vec2>& flat_list,
       const SkeletonPolygonRegion& region,
       // output connection rings
@@ -229,6 +238,7 @@ class TeXtrusion {
       int layer_idx,
       int ph_idx,
       int r_idx,
+      bool do_extrapolate,
       const std::vector<Vec2>& prev_flat_list,
       const std::vector<Vec2>& flat_list,
       const SkeletonPolygonRegion& region

@@ -9,6 +9,7 @@
 #include <fstream>
 #include "cairo-flatten-by-bitmap.h"
 #include "image-tracer-bw.h"
+#include <spdlog/spdlog.h>
 
 using namespace fmt;
 using namespace std;
@@ -42,13 +43,11 @@ static void path_to_giv(cairo_path_t *cpath,
     }
 }
 
-// Take the cairo context that may contain overlapping paths
+// Take the cairo surface that may contain overlapping paths
 // draw it to a bitmap and flatten it by tracing the bitmap.
-void cairo_flatten_by_bitmap(cairo_surface_t *rec_surface,
-                             double resolution,
-                             // output
-                             cairo_t *res
-                             )
+// Write the result to the ctx object.
+void FlattenByBitmap::flatten_by_bitmap(cairo_surface_t *rec_surface,
+                                        double resolution)
 {
   // Get bounding box
   double width=0, height=0, x0=0, y0=0;
@@ -56,8 +55,8 @@ void cairo_flatten_by_bitmap(cairo_surface_t *rec_surface,
                                        &x0, &y0,
                                        &width, &height);
 
-  print("Without margins: x0 y0 width height={} {} {} {}\n",
-        x0, y0, width, height);
+  spdlog::info("flatten image: rec_surface size: x0 y0 width height={} {} {} {}\n",
+               x0, y0, width, height);
 
   // Modify x0 y0 width and height to add a bit of margin
   double margin = 10.0/resolution;
@@ -66,13 +65,23 @@ void cairo_flatten_by_bitmap(cairo_surface_t *rec_surface,
   x0 -= margin;
   y0 -= margin;
 
-  print("With margins: x0 y0 width height={} {} {} {}\n",
-        x0, y0, width, height);
-    
   // Create an image with the above extents with resolution=resolution
-  cairo_surface_t *surface = cairo_image_surface_create(
-    CAIRO_FORMAT_A8,
-    int(width*resolution),int(height*resolution));
+  cairo_surface_t *surface = nullptr;
+  while(1)
+  {
+    if (surface)
+      cairo_surface_destroy(surface);
+    surface = cairo_image_surface_create(
+      CAIRO_FORMAT_A8,
+      int(width*resolution),int(height*resolution));
+    if (cairo_image_surface_get_width(surface))
+      break;
+    resolution/=2.0;
+  }
+  spdlog::info("surface size={}x{}", 
+               cairo_image_surface_get_width(surface),
+               cairo_image_surface_get_height(surface));
+
   cairo_t *cr = cairo_create(surface);
   cairo_scale(cr, resolution, resolution);
 
@@ -81,7 +90,12 @@ void cairo_flatten_by_bitmap(cairo_surface_t *rec_surface,
   // The surface is always painted in black. Not sure why...
   cairo_set_source_surface (cr, rec_surface, -x0, -y0);
   cairo_paint (cr);
-  cairo_surface_write_to_png(surface, "/tmp/flat-by-image.png");
+  if (m_debug_dir.size())
+  {
+    string image_filename = format("{}/trace_input.png", m_debug_dir);
+    cairo_surface_write_to_png(surface, image_filename.c_str());
+    spdlog::info("saving to {}", image_filename);
+  }
   cairo_destroy (cr);
 
   // Get surface to my own structure in preparation of tracing
@@ -103,6 +117,7 @@ void cairo_flatten_by_bitmap(cairo_surface_t *rec_surface,
     data[i] = int(data[i]>128)*255;
 
 
+#if 0
   ofstream fh("/tmp/flat-before-trace.pgm", ios::binary);
   fh << format("P5\n"
                "{} {}\n"
@@ -110,32 +125,39 @@ void cairo_flatten_by_bitmap(cairo_surface_t *rec_surface,
                surface_stride, surface_height);
   fh.write((const char*)data, surface_height * surface_stride);
   fh.close();
-
-  cairo_surface_write_to_png(surface, "/tmp/flat-by-image.png");
+#endif
 
   // And trace it and record the data in cr
   cairo_set_source_rgba(cr, 1,0,0,1);
-  print("trace image size={} {}\n", surface_width, surface_height);
+  spdlog::info("trace image size={} {}\n", surface_width, surface_height);
   trace_image(surface_width,
               surface_height,
               surface_stride,
               data,
               resolution,
               // output
-              res);
+              m_ctx);
   //  cairo_fill(cr);
 
+  if (m_debug_dir.size())
   {
-    cairo_path_t *path = cairo_copy_path_flat(res);
+    // trace input
+    string image_filename = format("{}/trace_input_bin.png", m_debug_dir);
+    cairo_surface_write_to_png(surface, image_filename.c_str());
+    spdlog::info("saving to {}", image_filename);
+    print("saving to {}\n", image_filename);
+
+    // the resulting traced image
+    cairo_path_t *path = cairo_copy_path_flat(m_ctx);
     print("num paths in cairo-flatten-by-bitmap ={}\n", path->num_data);
-  
-    print("saving to /tmp/path-by-bitmap.giv\n");
-    path_to_giv(path, "/tmp/path-by-bitmap.giv");
+    string giv_filename = format("{}/{}", m_debug_dir, "path-by-bitmap.giv");
+    spdlog::info("saving to {}", giv_filename);
+    print("saving to {}\n", giv_filename);
+    path_to_giv(path, giv_filename.c_str());
+    cairo_path_destroy(path);
   }
 
-  //  cairo_surface_write_to_png(traced_surface, "/tmp/flat-repainted.png");
   cairo_destroy (cr);
   cairo_surface_destroy(surface);
   cairo_surface_destroy(traced_surface);
 }
-

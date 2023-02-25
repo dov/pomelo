@@ -42,6 +42,7 @@ public:
 
   void set_mesh(const std::string& mesh_filename);
   void set_status(const std::string& message);
+  void set_debug_dir(const std::string& debug_dir);
 
   // Called from the worker thread.
   void notify();
@@ -117,6 +118,7 @@ private:
   Glib::RefPtr<Gio::SimpleAction> m_ref_layer0_toggle;
   Glib::RefPtr<Gio::SimpleAction> m_ref_layer1_toggle;
   Glib::RefPtr<Gio::SimpleAction> m_ref_layer2_toggle;
+  std::string m_debug_dir;
 };
 
 #endif /* HELLO-WORLD */

@@ -9,7 +9,7 @@ name='pomelo'
 name_cap = 'Pomelo'
 version = '0.0.7'
 
-r = run_command('git', 'rev-parse', 'HEAD')
+r = run_command('git', 'rev-parse', 'HEAD', check: true)
 if r.returncode() != 0
   # it failed
 endif
@@ -17,7 +17,7 @@ sha1 = r.stdout().strip()
 # meson version 0.56 will have substr()
 sha1_short = sha1[0]+sha1[1]+sha1[2]+sha1[3]+sha1[4]+sha1[5]
 
-r = run_command('git', 'log', '--pretty=%ci', '-n1')
+r = run_command('git', 'log', '--pretty=%ci', '-n1', check: true)
 if r.returncode() != 0
   # it failed
 endif
