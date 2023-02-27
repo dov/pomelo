@@ -8,10 +8,9 @@
 #define DOV_MM_MACROS_H
 
 // Convenient shortcuts
-#define mm Gtk::make_managed
-#define mmVBox mm<Gtk::Box>(Gtk::ORIENTATION_VERTICAL)
-#define mmHBox mm<Gtk::Box>(Gtk::ORIENTATION_HORIZONTAL)
-#define mmLabel(label) mm<Gtk::Label>(label)
+#define mmVBox Gtk::make_managed<Gtk::Box>(Gtk::ORIENTATION_VERTICAL)
+#define mmHBox Gtk::make_managed<Gtk::Box>(Gtk::ORIENTATION_HORIZONTAL)
+#define mmLabel(label) Gtk::make_managed<Gtk::Label>(label)
 
 
 #endif /* DOV-MM-MACROS */

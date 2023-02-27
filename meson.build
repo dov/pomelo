@@ -2,6 +2,7 @@ project('pomelo','cpp','c')
 subproject('nanosvg')
 subproject('tinygltf')
 subproject('nlohmann_json')
+subproject('spdlog')
 
 gnome = import('gnome')
 
@@ -26,6 +27,8 @@ commit_time=r.stdout().strip()
 cpp_args = ['-DCOMMIT_ID="'+sha1+'"',
             '-DCOMMIT_TIME="'+commit_time+'"',
             '-DVERSION="'+version+'"',
+            '-DSPDLOG_FMT_EXTERNAL',
+            '-DFMT_HEADER_ONLY'
            ]
 
 subdir('src')

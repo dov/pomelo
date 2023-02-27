@@ -15,7 +15,7 @@ SettingsDialog::SettingsDialog(Gtk::Window& parent,
 {
   set_default_size(800, 600);
 
-  m_notebook = mm<Gtk::Notebook>();
+  m_notebook = Gtk::make_managed<Gtk::Notebook>();
   get_content_area()->pack_start(*m_notebook);
 
   // Build the skeleton page
@@ -27,19 +27,19 @@ SettingsDialog::SettingsDialog(Gtk::Window& parent,
 
     auto w_frame = mmFrameWithBoldLabel("Skeleton settings");
     m_skeleton_page->pack_start(*w_frame, true,true);
-    auto w_grid = mm<Gtk::Grid>();
+    auto w_grid = Gtk::make_managed<Gtk::Grid>();
     auto w_vbox = mmVBox; // Main window vbox
     w_vbox->pack_start(*w_grid, Gtk::PACK_SHRINK);
     w_frame->add(*w_vbox);
   
     // The smooth angle max setup
-    m_smooth_angle_max = mm<Gtk::SpinButton>();
+    m_smooth_angle_max = Gtk::make_managed<Gtk::SpinButton>();
     m_smooth_angle_max->set_digits(0);
     m_smooth_angle_max->set_range(0,360);
     m_smooth_angle_max->set_increments(1,10);
     m_smooth_angle_max->set_value(135);
   
-    m_sharp_angles_checkbutton = mm<Gtk::CheckButton>();
+    m_sharp_angles_checkbutton = Gtk::make_managed<Gtk::CheckButton>();
   
     int row=0;
     w_grid->attach(*mmLabelRight("Smooth sharp angles: "), 0,row);
@@ -60,14 +60,14 @@ SettingsDialog::SettingsDialog(Gtk::Window& parent,
 
     auto w_frame = mmFrameWithBoldLabel("OpenGL settings");
     m_skeleton_page->pack_start(*w_frame, true,true);
-    auto w_grid = mm<Gtk::Grid>();
+    auto w_grid = Gtk::make_managed<Gtk::Grid>();
     auto w_vbox = mmVBox; // Main window vbox
     w_vbox->pack_start(*w_grid, Gtk::PACK_SHRINK);
     w_frame->add(*w_vbox);
   
-    m_background_chooser = mm<Gtk::ColorButton>();
-    m_mesh_color_chooser = mm<Gtk::ColorButton>();
-    m_matcap_chooser = mm<Gtk::FileChooserButton>();
+    m_background_chooser = Gtk::make_managed<Gtk::ColorButton>();
+    m_mesh_color_chooser = Gtk::make_managed<Gtk::ColorButton>();
+    m_matcap_chooser = Gtk::make_managed<Gtk::FileChooserButton>();
   
     int row=0;
     w_grid->attach(*mmLabelRight("Mathcap image: "), 0,row);

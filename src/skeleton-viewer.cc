@@ -10,7 +10,7 @@ SkeletonViewer::SkeletonViewer(Gtk::Window& parent)
 {
     set_default_size(800, 600);
 
-    auto w_scrolled_win = mm<Gtk::ScrolledWindow>();
+    auto w_scrolled_win = Gtk::make_managed<Gtk::ScrolledWindow>();
     w_giv_widget = giv_widget_new(NULL);
     giv_widget_add_giv_from_string(GIV_WIDGET(w_giv_widget),
                                    "$color red\n"

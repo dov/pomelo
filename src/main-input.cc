@@ -16,7 +16,7 @@ MainInput::MainInput(Gtk::Window& window)
   auto w_frame = mmFrameWithBoldLabel("Skeleton");
   this->pack_start(*w_frame, true,true);
   auto w_vbox = mmVBox; // Main window vbox
-  auto w_grid = mm<Gtk::Grid>();
+  auto w_grid = Gtk::make_managed<Gtk::Grid>();
 
   // Configure the widgets
   m_text.set_hexpand(true);
@@ -124,7 +124,7 @@ MainInput::MainInput(Gtk::Window& window)
   m_profile_type_notebook.set_show_tabs(false); // Will be controlled by the type chooser
   w_vbox->pack_start(m_profile_type_notebook, true,true);
 
-  w_grid = mm<Gtk::Grid>();
+  w_grid = Gtk::make_managed<Gtk::Grid>();
   row = 0;
 
   w_grid->attach(*mmLabelRight("Radius:"), 0,row);
@@ -139,7 +139,7 @@ MainInput::MainInput(Gtk::Window& window)
   row++;
   m_profile_type_notebook.append_page(*w_grid, "");
 
-  w_grid = mm<Gtk::Grid>();
+  w_grid = Gtk::make_managed<Gtk::Grid>();
   row = 0;
 
   m_profile_edit_button.set_label("Edit");
@@ -147,7 +147,7 @@ MainInput::MainInput(Gtk::Window& window)
      &MainInput::on_button_profile_edit_clicked) );
 
   w_grid->attach(*mmLabelRight("Profile:"), 0,row);
-  auto w_prof_chooser = mm<Gtk::ComboBoxText>();
+  auto w_prof_chooser = Gtk::make_managed<Gtk::ComboBoxText>();
   w_prof_chooser->append("Prof1");
   w_prof_chooser->append("Prof2");
   w_prof_chooser->set_active(0);
@@ -157,7 +157,7 @@ MainInput::MainInput(Gtk::Window& window)
   row++;
   
   // Common options
-  w_grid = mm<Gtk::Grid>();
+  w_grid = Gtk::make_managed<Gtk::Grid>();
   row = 0;
   w_grid->attach(*mmLabelRight("Z-depth:"), 0,row);
   w_grid->attach(m_zdepth,               1,row);

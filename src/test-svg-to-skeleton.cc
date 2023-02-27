@@ -116,7 +116,12 @@ int main(int argc, char **argv)
   textrusion.linear_limit = linear_limit;
   double resolution = 10;
   
-  Cairo::RefPtr<Cairo::Surface> surface = Cairo::RecordingSurface::create();
+  cairo_surface_t *rec_surface = cairo_recording_surface_create(
+    CAIRO_CONTENT_ALPHA,
+    nullptr // unlimited extens
+  );
+
+  Cairo::RefPtr<Cairo::Surface> surface = Cairo::RefPtr<Cairo::Surface>(new Cairo::Surface(rec_surface));
   textrusion.svg_filename_to_context(surface, filename);
 
   Cairo::RefPtr<Cairo::Context> cr = Cairo::Context::create(surface);

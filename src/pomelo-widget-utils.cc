@@ -5,7 +5,7 @@
 
 Gtk::Widget* mmLabelAligned(const gchar *markup, double xAlign)
 {
-  auto w_label = mm<Gtk::Label>();
+  auto w_label = Gtk::make_managed<Gtk::Label>();
   w_label->set_markup(markup);
   w_label->set_alignment(xAlign,0.5);
   return w_label;
@@ -25,8 +25,8 @@ Gtk::Widget* mmLabelRight(const gchar *markup)
 
 Gtk::Frame* mmFrameWithBoldLabel(const gchar *label)
 {
-  auto w_frame = mm<Gtk::Frame>();
-  auto w_frame_label = mm<Gtk::Label>();
+  auto w_frame = Gtk::make_managed<Gtk::Frame>();
+  auto w_frame_label = Gtk::make_managed<Gtk::Label>();
   w_frame_label->set_markup(Glib::ustring("<b>") + Glib::ustring(label) + "</b>");
   w_frame->set_label_widget(*w_frame_label);
   return w_frame;

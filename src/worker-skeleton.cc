@@ -109,7 +109,13 @@ void WorkerSkeleton::do_work_skeleton(
   double resolution = 20;
 
   try {
-    Cairo::RefPtr<Cairo::Surface> surface = Cairo::RecordingSurface::create();
+    cairo_surface_t *rec_surface = cairo_recording_surface_create(
+      CAIRO_CONTENT_ALPHA,
+      nullptr // unlimited extens
+    );
+  
+    Cairo::RefPtr<Cairo::Surface> surface = Cairo::RefPtr<Cairo::Surface>(new Cairo::Surface(rec_surface));
+    // Cairo::RefPtr<Cairo::Surface> surface = Cairo::RecordingSurface::create();
     Cairo::RefPtr<Cairo::Context> cr = Cairo::Context::create(surface);
     if (svg_filename.size()>0)
       m_textrusion->svg_filename_to_context(surface, svg_filename);

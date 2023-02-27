@@ -18,7 +18,7 @@ Gtk::Button *mmSvgButton(const std::string& filename)
 {
   auto pixbuf = Gdk::Pixbuf::create_from_resource("/icons/" + filename,48,48);
   auto image = new Gtk::Image(pixbuf);
-  auto button = mm<Gtk::Button>();
+  auto button = Gtk::make_managed<Gtk::Button>();
   button->set_image(*image);
   return button;
 }
@@ -58,7 +58,7 @@ ProfileEditor::ProfileEditor()
     w_button->signal_clicked().connect(sigc::mem_fun(*this,
       &ProfileEditor::on_round_symmetric_node_clicked));
     
-    w_hbox->pack_start(*mm<Gtk::Separator>(), Gtk::PACK_SHRINK, 15);
+    w_hbox->pack_start(*Gtk::make_managed<Gtk::Separator>(), Gtk::PACK_SHRINK, 15);
 
     w_button = mmSvgButton("add-node-icon.svg");
     w_button->signal_clicked().connect(sigc::mem_fun(*this,
@@ -70,7 +70,7 @@ ProfileEditor::ProfileEditor()
       &ProfileEditor::on_remove_node_clicked));
 
 
-    w_hbox->pack_start(*mm<Gtk::Separator>(), Gtk::PACK_SHRINK, 15);
+    w_hbox->pack_start(*Gtk::make_managed<Gtk::Separator>(), Gtk::PACK_SHRINK, 15);
 
     w_button = mmSvgButton("add-layer-icon.svg");
     w_hbox->pack_start(*w_button, Gtk::PACK_SHRINK);
@@ -85,7 +85,7 @@ ProfileEditor::ProfileEditor()
   // Canvas
   w_hbox = mmHBox;
   this->pack_start(*w_hbox, Gtk::PACK_SHRINK);
-  auto w_canvas = mm<Goocanvas::Canvas>();
+  auto w_canvas = Gtk::make_managed<Goocanvas::Canvas>();
   w_hbox->pack_start(*w_canvas, Gtk::PACK_SHRINK);
   w_canvas->set_size_request(m_canvas_width,m_canvas_height);
 
@@ -161,11 +161,11 @@ ProfileEditor::ProfileEditor()
   w_hbox = mmHBox;
   this->pack_start(*w_hbox, Gtk::PACK_SHRINK);
   {
-    auto w_button = mm<Gtk::Button>("Save");
+    auto w_button = Gtk::make_managed<Gtk::Button>("Save");
     w_hbox->pack_start(*w_button, Gtk::PACK_SHRINK);
-    w_button = mm<Gtk::Button>("Load");
+    w_button = Gtk::make_managed<Gtk::Button>("Load");
     w_hbox->pack_start(*w_button, Gtk::PACK_SHRINK);
-    w_button = mm<Gtk::Button>("Close");
+    w_button = Gtk::make_managed<Gtk::Button>("Close");
     w_hbox->pack_start(*w_button, Gtk::PACK_SHRINK);
   }
 #endif
