@@ -11,6 +11,8 @@
 #include "pomelo.h"
 #include <iostream>
 #include "dov-mm-macros.h"
+#include <spdlog/spdlog.h>
+
 
 using namespace std;
 using namespace fmt;
@@ -23,6 +25,8 @@ Pomelo::Pomelo(shared_ptr<PomeloSettings> pomelo_settings)
     m_worker_skeleton(this, pomelo_settings),
     m_pomelo_settings(pomelo_settings)
 {
+  spdlog::info("Creating pomelo");
+
   set_title("Pomelo");
 
   //set_icon(Gdk::Pixbuf::create_from_resource("/about/pomelo_logo.png", -1, 80, true));
@@ -233,10 +237,12 @@ Pomelo::Pomelo(shared_ptr<PomeloSettings> pomelo_settings)
     });
 
   m_updator = make_shared<PomeloUpdater>(this);
+  spdlog::info("Done creating the pomelo interface");
 }
 
 Pomelo::~Pomelo()
 {
+  spdlog::info("Destroying pomelo");
 }
 
 //Signal handlers:
@@ -375,11 +381,13 @@ void Pomelo::on_action_file_quit()
 {
   // hide(); // Close the main window to stop app->run(). Does not work!
 
+  spdlog::info("on_action_file_quit");
   exit(0);
 }
 
 void Pomelo::on_action_help_about()
 {
+  spdlog::info("on_action_help_about");
   Gtk::AboutDialog Dialog;
   Dialog.set_logo(Gdk::Pixbuf::create_from_resource("/about/pomelo_logo.png", -1, 80, true));
 
@@ -412,11 +420,13 @@ void Pomelo::on_action_help_about()
 
 void Pomelo::on_action_view_skeleton()
 {
+  spdlog::info("on_action_view_skeleton");
   m_skeleton_viewer->show();
 }
 
 void Pomelo::on_action_orthonormal()
 {
+  spdlog::info("on_action_orthonormal");
   bool active = false;
   m_ref_orthonormal_toggle->get_state(active);
 
@@ -433,6 +443,7 @@ void Pomelo::on_action_orthonormal()
 
 void Pomelo::on_action_show_edge()
 {
+  spdlog::info("on_action_show_edge");
   bool active = false;
   m_ref_show_edge_toggle->get_state(active);
 
@@ -449,6 +460,7 @@ void Pomelo::on_action_show_edge()
 
 void Pomelo::on_action_show_matcap()
 {
+  spdlog::info("on_action_show_matcap");
   bool active = false;
   m_ref_show_matcap_toggle->get_state(active);
 

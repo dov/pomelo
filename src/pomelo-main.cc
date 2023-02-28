@@ -25,6 +25,7 @@ static void die(const char *fmt, ...)
   va_list ap;
   va_start(ap,fmt); 
     
+  spdlog::error("Dieing: {}", fmt); // tbd format this properly!
   vfprintf(stderr, fmt, ap);
   exit(-1);
 }
@@ -75,7 +76,8 @@ int main(int argc, char *argv[])
             "   --debug_dir debug_dir  Set debug dir for temporary files\n"
             "   --log-stdout           Log to stdout\n"
             );
-      exit(0);
+      do_log_stdout=true;
+      break;
     }
     CASE("--log-file")
     {

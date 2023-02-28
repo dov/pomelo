@@ -49,6 +49,7 @@ if host_machine.system() == 'windows'
     '-DNAME_CAP='+name_cap,
     '-DICON_NAME='+name + '_logo',
     '-DARCH='+arch,
+    '-DSYSROOT=/usr/' + arch + '/sys-root/mingw',
     '-DHOST='+host,
     '-DVERSION='+'v'+ version,
     '-DLIBGCCDLL=libgcc_s_seh-1.dll',

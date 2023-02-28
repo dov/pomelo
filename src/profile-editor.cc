@@ -7,8 +7,8 @@
 #include <gtkmm.h>
 #include <goocanvasmm.h>
 #include <fmt/core.h>
-
 #include <string>
+#include <spdlog/spdlog.h>
 
 using namespace std;
 using namespace fmt;
@@ -16,10 +16,17 @@ static constexpr double MY_TWO_PI = 2*3.141592653589793;
 
 Gtk::Button *mmSvgButton(const std::string& filename)
 {
-  auto pixbuf = Gdk::Pixbuf::create_from_resource("/icons/" + filename,48,48);
-  auto image = new Gtk::Image(pixbuf);
   auto button = Gtk::make_managed<Gtk::Button>();
-  button->set_image(*image);
+  try {
+    auto pixbuf = Gdk::Pixbuf::create_from_resource("/icons/" + filename,48,48);
+    auto image = new Gtk::Image(pixbuf);
+    button->set_image(*image);
+  }
+  catch(const Gdk::PixbufError& exc)
+  {
+    spdlog::error("Failed setting resource /icons/{}", filename);
+    button->set_label(filename);
+  }
   return button;
 }
 
@@ -28,6 +35,8 @@ Gtk::Button *mmSvgButton(const std::string& filename)
 ProfileEditor::ProfileEditor()
   : Gtk::Box(Gtk::ORIENTATION_VERTICAL)
 {
+  spdlog::info("Creating the profile editor");
+
   this->set_can_focus(true);
   this->set_focus_on_click(true);
   this->add_events(

@@ -162,9 +162,11 @@ void trace_image(int width,
 
   IndexedImage ii = imagedataToTracedata(imgd,options);
 
+#if 0
   savestring("/tmp/trace.giv",
              saveLayersToGiv("/tmp/flat-by-image.png",
                              ii.layers));
+#endif
   return layersToCairo(cr, ii.layers, resolution);
 }
 

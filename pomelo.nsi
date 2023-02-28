@@ -34,71 +34,74 @@ File /oname=COPYING.txt COPYING
 File README.md
 
 SetOutPath $INSTDIR\bin
-File \usr\${ARCH}\sys-root\mingw\bin\libintl-8.dll
-File \usr\${ARCH}\sys-root\mingw\bin\iconv.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libpcre-1.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libgtk-3-0.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libgdk-3-0.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libssp-0.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libgdk-win32-2.0-0.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libgdk_pixbuf-2.0-0.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libgtk-win32-2.0-0.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libpixman-1-0.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libffi-6.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libgio-2.0-0.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libcairo-2.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libcairo-gobject-2.dll
-File \usr\${ARCH}\sys-root\mingw\bin\zlib1.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libglib-2.0-0.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libatk-1.0-0.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libgobject-2.0-0.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libgmodule-2.0-0.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libgthread-2.0-0.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libpango-1.0-0.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libfribidi-0.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libpangocairo-1.0-0.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libpangoft2-1.0-0.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libpangowin32-1.0-0.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libpng16-16.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libtiff-5.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libjpeg-62.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libfontconfig-1.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libxml2-2.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libfreetype-6.dll
-File \usr\${ARCH}\sys-root\mingw\bin\gdk-pixbuf-query-loaders.exe
-File \usr\${ARCH}\sys-root\mingw\bin\${LIBGCCDLL}
-File \usr\${ARCH}\sys-root\mingw\bin\libstdc++-6.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libwinpthread-1.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libgfortran-*.dll
-File \usr\${ARCH}\sys-root\mingw\bin\librsvg-2-2.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libcroco-0.6-3.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libxml2-2.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libquadmath-0.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libopenjp2.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libsqlite3-0.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libexpat-1.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libbz2-1.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libgdkglext-win32-1.0-0.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libgtkglext-win32-1.0-0.dll
-File \usr\${ARCH}\sys-root\mingw\bin\glew32.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libzip-5.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libharfbuzz-0.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libharfbuzz-icu-0.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libharfbuzz-subset-0.dll
-File \usr\${ARCH}\sys-root\mingw\bin\gspawn-win64-helper.exe
-File \usr\${ARCH}\sys-root\mingw\bin\libglibmm-2.4-1.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libatkmm-1.6-1.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libpangomm-1.4-1.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libcairomm-1.0-1.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libgtkmm-3.0-1.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libgdkmm-3.0-1.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libgiomm-2.4-1.dll
-File \usr\${ARCH}\sys-root\mingw\bin\gdbus.exe
-File \usr\${ARCH}\sys-root\mingw\bin\libsigc-2.0-0.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libmpfr-6.dll
-File \usr\${ARCH}\sys-root\mingw\bin\libepoxy-0.dll
+File ${SYSROOT}\bin\libintl-8.dll
+File ${SYSROOT}\bin\iconv.dll
+File ${SYSROOT}\bin\libpcre-1.dll
+File ${SYSROOT}\bin\libpcre2-8-0.dll
+File ${SYSROOT}\bin\libgtk-3-0.dll
+File ${SYSROOT}\bin\libgdk-3-0.dll
+File ${SYSROOT}\bin\libssp-0.dll
+File ${SYSROOT}\bin\libgdk-win32-2.0-0.dll
+File ${SYSROOT}\bin\libgdk_pixbuf-2.0-0.dll
+File ${SYSROOT}\bin\libgtk-win32-2.0-0.dll
+File ${SYSROOT}\bin\libpixman-1-0.dll
+File ${SYSROOT}\bin\libffi-8.dll
+File ${SYSROOT}\bin\libgio-2.0-0.dll
+File ${SYSROOT}\bin\libcairo-2.dll
+File ${SYSROOT}\bin\libcairo-gobject-2.dll
+File ${SYSROOT}\bin\zlib1.dll
+File ${SYSROOT}\bin\libglib-2.0-0.dll
+File ${SYSROOT}\bin\libatk-1.0-0.dll
+File ${SYSROOT}\bin\libgobject-2.0-0.dll
+File ${SYSROOT}\bin\libgmodule-2.0-0.dll
+File ${SYSROOT}\bin\libgthread-2.0-0.dll
+File ${SYSROOT}\bin\libpango-1.0-0.dll
+File ${SYSROOT}\bin\libfribidi-0.dll
+File ${SYSROOT}\bin\libpangocairo-1.0-0.dll
+File ${SYSROOT}\bin\libpangoft2-1.0-0.dll
+File ${SYSROOT}\bin\libpangowin32-1.0-0.dll
+File ${SYSROOT}\bin\libpng16-16.dll
+File ${SYSROOT}\bin\libtiff-5.dll
+File ${SYSROOT}\bin\libjpeg-62.dll
+File ${SYSROOT}\bin\libfontconfig-1.dll
+File ${SYSROOT}\bin\libxml2-2.dll
+File ${SYSROOT}\bin\libfreetype-6.dll
+File ${SYSROOT}\bin\gdk-pixbuf-query-loaders.exe
+File ${SYSROOT}\bin\${LIBGCCDLL}
+File ${SYSROOT}\bin\libstdc++-6.dll
+File ${SYSROOT}\bin\libwinpthread-1.dll
+File ${SYSROOT}\bin\libgfortran-*.dll
+File ${SYSROOT}\bin\librsvg-2-2.dll
+File ${SYSROOT}\bin\libcroco-0.6-3.dll
+File ${SYSROOT}\bin\libxml2-2.dll
+File ${SYSROOT}\bin\libquadmath-0.dll
+File ${SYSROOT}\bin\libopenjp2.dll
+File ${SYSROOT}\bin\libsqlite3-0.dll
+File ${SYSROOT}\bin\libexpat-1.dll
+File ${SYSROOT}\bin\libbz2-1.dll
+File ${SYSROOT}\bin\libgdkglext-win32-1.0-0.dll
+File ${SYSROOT}\bin\libgtkglext-win32-1.0-0.dll
+File ${SYSROOT}\bin\glew32.dll
+File ${SYSROOT}\bin\libzip-5.dll
+File ${SYSROOT}\bin\libharfbuzz-0.dll
+File ${SYSROOT}\bin\libharfbuzz-icu-0.dll
+File ${SYSROOT}\bin\libharfbuzz-subset-0.dll
+File ${SYSROOT}\bin\gspawn-win64-helper.exe
+File ${SYSROOT}\bin\libglibmm-2.4-1.dll
+File ${SYSROOT}\bin\libatkmm-1.6-1.dll
+File ${SYSROOT}\bin\libpangomm-1.4-1.dll
+File ${SYSROOT}\bin\libcairomm-1.0-1.dll
+File ${SYSROOT}\bin\libgtkmm-3.0-1.dll
+File ${SYSROOT}\bin\libgdkmm-3.0-1.dll
+File ${SYSROOT}\bin\libgiomm-2.4-1.dll
+File ${SYSROOT}\bin\libgoocanvas-2.0-9.dll
+File ${SYSROOT}\bin\gdbus.exe
+File ${SYSROOT}\bin\libsigc-2.0-0.dll
+File ${SYSROOT}\bin\libmpfr-6.dll
+File ${SYSROOT}\bin\libepoxy-0.dll
 File \usr\local\mingw64\bin\libfmt.dll
 File \usr\local\mingw64\bin\libgmp-10.dll
+File \usr\local\mingw64\bin\libgoocanvasmm-2.0-6.dll
 File ${OUTDIR}\src\${NAME}.exe
 File ${OUTDIR}\src\libengine.dll
 File ${OUTDIR}\src\giv-widget\libgiv-widget.dll
@@ -108,19 +111,28 @@ File ${OUTDIR}\src\giv-widget\plis\libplis.dll
 
 
 SetOutPath "$INSTDIR"
-File /r \usr\${ARCH}\sys-root\mingw\etc
+File /r ${SYSROOT}\etc
 SetOutPath $INSTDIR\lib\gdk-pixbuf-2.0\2.10.0\loaders
-File \usr\${ARCH}\sys-root\mingw\lib\gdk-pixbuf-2.0\2.10.0\loaders\*
+File ${SYSROOT}\lib\gdk-pixbuf-2.0\2.10.0\loaders\*
 SetOutPath $INSTDIR\lib\gdk-pixbuf-2.0\2.10.0
-File \usr\${ARCH}\sys-root\mingw\lib\gdk-pixbuf-2.0\2.10.0\loaders.cache
+File ${SYSROOT}\lib\gdk-pixbuf-2.0\2.10.0\loaders.cache
 SetOutPath $INSTDIR\lib\gtk-2.0\2.10.0\engines
-File \usr\${ARCH}\sys-root\mingw\lib\gtk-2.0\2.10.0\engines\*
+File ${SYSROOT}\lib\gtk-2.0\2.10.0\engines\*
+
 SetOutPath $INSTDIR\share
-File /r \usr\${ARCH}\sys-root\mingw\share\themes
-SetOutPath $INSTDIR\share
-File /r \usr\${ARCH}\sys-root\mingw\share\icons
+File /r ${SYSROOT}\share\themes
+SetOutPath $INSTDIR\share\icons
+File /r ${SYSROOT}\share\icons\Adwaita
+
 SetOutPath $INSTDIR\share\glib-2.0
-File /r \usr\${ARCH}\sys-root\mingw\share\glib-2.0\schemas
+File /r ${SYSROOT}\share\glib-2.0\schemas
+
+# SetOutPath $INSTDIR\share
+# File /r ${SYSROOT}\share\themes
+# SetOutPath $INSTDIR\share
+# File /r ${SYSROOT}\share\icons
+# SetOutPath $INSTDIR\share\glib-2.0
+# File /r ${SYSROOT}\share\glib-2.0\schemas
 
 
 WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\${NAME_CAP}" "" "$INSTDIR"

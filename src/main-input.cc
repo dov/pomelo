@@ -13,6 +13,7 @@ MainInput::MainInput(Gtk::Window& window)
   : Gtk::Box(Gtk::ORIENTATION_VERTICAL),
     m_profile_editor_window(window)
 {
+  spdlog::info("Creating the main info window");
   auto w_frame = mmFrameWithBoldLabel("Skeleton");
   this->pack_start(*w_frame, true,true);
   auto w_vbox = mmVBox; // Main window vbox
@@ -201,6 +202,7 @@ MainInput::MainInput(Gtk::Window& window)
     }
   });
   
+  spdlog::info("Done creating the main info window");
 }
 
 void MainInput::on_button_skeleton_clicked()
@@ -208,7 +210,7 @@ void MainInput::on_button_skeleton_clicked()
   auto text = m_text_buffer->get_text();
   double linear_limit = m_linear_limit.get_value();
   auto font_name = m_font_picker.get_font_name();
-  print("font_name = {}\n", font_name.c_str());
+  spdlog::info("Chosen font: {}", font_name.c_str());
   Pango::FontDescription font_description(font_name);
   m_signal_build_skeleton(text,linear_limit,font_description);
 }
