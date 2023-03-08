@@ -9,6 +9,7 @@
 #include "progress-dialog.h"
 #include "dov-mm-macros.h"
 #include <fmt/core.h>
+#include <spdlog/spdlog.h>
 
 using namespace fmt;
 
@@ -20,6 +21,8 @@ ProgressDialog::ProgressDialog(Gtk::Window& parent,
                 true // model
                 )
 {
+  spdlog::info("Creating the ProgressDialog");
+
   set_border_width(0);
   m_progress_bar.set_show_text(true);
   m_label.set_text("Message");
@@ -28,6 +31,7 @@ ProgressDialog::ProgressDialog(Gtk::Window& parent,
   get_content_area()->show_all();
   add_button("Cancel",0);
 
+  spdlog::info("Done creating the ProgressDialog");
 }
 
 ProgressDialog::type_signal_cancel ProgressDialog::signal_cancel()

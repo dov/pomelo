@@ -13,7 +13,7 @@ MainInput::MainInput(Gtk::Window& window)
   : Gtk::Box(Gtk::ORIENTATION_VERTICAL),
     m_profile_editor_window(window)
 {
-  spdlog::info("Creating the main info window");
+  spdlog::info("Creating the main input window");
   auto w_frame = mmFrameWithBoldLabel("Skeleton");
   this->pack_start(*w_frame, true,true);
   auto w_vbox = mmVBox; // Main window vbox
@@ -202,7 +202,7 @@ MainInput::MainInput(Gtk::Window& window)
     }
   });
   
-  spdlog::info("Done creating the main info window");
+  spdlog::info("Done creating the main input window");
 }
 
 void MainInput::on_button_skeleton_clicked()

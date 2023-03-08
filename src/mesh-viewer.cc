@@ -1,5 +1,6 @@
 // A basic viewer that shows a fixed triangular mesh.
 
+#include <spdlog/spdlog.h>
 #include "mesh-viewer.h"
 #include <iostream>
 #include <limits>
@@ -41,6 +42,8 @@ static void print_mat(float *m)
 MeshViewer::MeshViewer(std::shared_ptr<PomeloSettings> pomelo_settings)
   :  m_pomelo_settings(pomelo_settings)
 {
+  spdlog::info("Creating MeshViewer");
+
   this->add_events (
     Gdk::EventMask(GDK_POINTER_MOTION_MASK    |
                    GDK_BUTTON_PRESS_MASK      |
@@ -69,6 +72,7 @@ MeshViewer::MeshViewer(std::shared_ptr<PomeloSettings> pomelo_settings)
     m_hw_mesh.vertices.push_back(v);
 
   refresh_from_settings();
+  spdlog::info("Done creating MeshViewer");
 }
 
 // setup the projection matrix based on the current setting
@@ -76,14 +80,14 @@ void MeshViewer::setup_projection_matrix()
 {
   // Setup the project matrix. Currently static
   double thetaInDeg=8.0;
-  double near=1;
-  double far=20;
+  double d_near=1;
+  double d_far=20;
   double width = get_allocation().get_width();
   double height = get_allocation().get_height();
   double aspect = 1.0*width / height; // aspect ratio
   static double PI { 3.141592653589793 };
   float theta = thetaInDeg / 180.0 * PI;
-  float range = far - near;
+  float range = d_far - d_near;
   float invtan = 1./tan(theta/2.);
 
   m_proj_matrix = glm::mat4(1.0);
@@ -122,9 +126,9 @@ void MeshViewer::setup_projection_matrix()
     #endif
       m_proj_matrix[0][0] = invtan / aspect;
       m_proj_matrix[1][1] = invtan;
-      m_proj_matrix[2][2] = -(near + far) / range;
+      m_proj_matrix[2][2] = -(d_near + d_far) / range;
       m_proj_matrix[3][2] = -1;
-      m_proj_matrix[2][3] = -2 * near * far / range;
+      m_proj_matrix[2][3] = -2 * d_near * d_far / range;
       m_proj_matrix[3][3] = 1;
       //  m_proj_matrix = glm::transpose(m_proj_matrix);
     }

@@ -45,11 +45,15 @@ WorkerSkeleton::WorkerSkeleton(Pomelo *caller,
   m_caller(caller),
   m_pomelo_settings(pomelo_settings)
 {
+  spdlog::info("Creating the WorkerSkeleton");
+
   m_skeleton_updater = make_shared<SkeletonUpdater>(this);
   m_textrusion = make_shared<TeXtrusion>(m_skeleton_updater);
   m_meshes.clear();
   m_giv_string = make_shared<string>();
   m_mesh_giv_string = make_shared<string>();
+
+  spdlog::info("Done creating the WorkerSkeleton");
 }
 
 // Get current porgress

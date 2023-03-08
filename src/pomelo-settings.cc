@@ -3,6 +3,8 @@
 #include "pomelo-settings.h"
 #include <glib/gstdio.h>
 #include <fmt/core.h>
+#include <spdlog/spdlog.h>
+
 
 using namespace std;
 using namespace fmt;
@@ -24,6 +26,8 @@ static void rec_mkdir(std::string path)
 
 PomeloSettings::PomeloSettings()
 {
+  spdlog::info("Creating PomeloSettings");
+
   string config_dir;
   const char *s;
   if ((s = getenv("LOCALAPPDATA"))) // Really only for windows
@@ -43,6 +47,8 @@ PomeloSettings::PomeloSettings()
   }
   set_string("config_dir",config_dir);
   save();
+
+  spdlog::info("Done creating PomeloSettings");
 }
 
 void PomeloSettings::save()
@@ -53,7 +59,7 @@ void PomeloSettings::save()
     }
   catch(Glib::KeyFileError& err)
     {
-      print("Failed saving to file {}: code={}\n", m_settings_file, err.code());
+      spdlog::error("Failed saving to file {}: code={}\n", m_settings_file, err.code());
     }
 }
 
@@ -65,7 +71,7 @@ void PomeloSettings::load()
     }
   catch(Glib::KeyFileError& err)
     {
-      print("Failed saving to file {}: code={}\n", m_settings_file, err.code());
+      spdlog::error("Failed saving to file {}: code={}\n", m_settings_file, err.code());
     }
 }
 

@@ -55,6 +55,7 @@ int main(int argc, char *argv[])
   string debug_dir;
   vector<string> args;
   bool do_log_stdout = false;
+  bool do_log_and_exit = false;
 
   for (int i=0; i<argc; i++)
     args.push_back(argv[i]);
@@ -76,7 +77,7 @@ int main(int argc, char *argv[])
             "   --debug_dir debug_dir  Set debug dir for temporary files\n"
             "   --log-stdout           Log to stdout\n"
             );
-      do_log_stdout=true;
+      do_log_and_exit=true;
       break;
     }
     CASE("--log-file")
@@ -124,13 +125,19 @@ int main(int argc, char *argv[])
   spdlog::info("CommitTime: {}", COMMIT_TIME);
   spdlog::info("Version: {}", VERSION);
   spdlog::info("Command line: {}", join(args," "));
+  if (do_log_and_exit)
+  {
+    spdlog::info("exiting");
+    exit(0);
+  }
 
   auto app = Gtk::Application::create(); // argc, argv, "org.dov.pomelo");
   Pomelo pomelo(pomelo_settings);
   if (debug_dir.size())
     pomelo.set_debug_dir(debug_dir);
       
-
-  return app->run(pomelo);
+  app->run(pomelo);
+  spdlog::info("exiting main!");
+  exit(0);
 }
 

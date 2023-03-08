@@ -180,6 +180,7 @@ ProfileEditor::ProfileEditor()
 #endif
 
   show_all_children();
+  spdlog::info("Done creating the profile editor");
 }
 
 // Rebuild the canvas items corresponding to the current canvas coordinates
