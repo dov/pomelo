@@ -22,8 +22,10 @@ class SettingsDialog : public Gtk::Dialog
   private:
   Gtk::Notebook *m_notebook;
   Gtk::Box *m_skeleton_page;
+#if 0
   Gtk::CheckButton *m_sharp_angles_checkbutton;
   Gtk::SpinButton *m_smooth_angle_max;
+#endif
   std::shared_ptr<PomeloSettings> m_pomelo_settings;
   Gtk::ColorButton *m_background_chooser;
   Gtk::ColorButton *m_mesh_color_chooser;

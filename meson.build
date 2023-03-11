@@ -45,6 +45,8 @@ if host_machine.system() == 'windows'
     '-DOUTDIR='+builddir,
     '-DICON_DIR=.',
     '-DCOMMITID_SHORT='+sha1_short,
+    '-DCOMMIT_TIME='+commit_time,
+    '-DSHA1='+sha1,
     '-DNAME='+name,
     '-DNAME_CAP='+name_cap,
     '-DICON_NAME='+name + '_logo',

@@ -24,7 +24,7 @@ Gtk::Button *mmSvgButton(const std::string& filename)
   }
   catch(const Gdk::PixbufError& exc)
   {
-    spdlog::error("Failed setting resource /icons/{}", filename);
+    spdlog::error("Failed setting resource /icons/{}: {}", filename, exc.what().c_str());
     button->set_label(filename);
   }
   return button;

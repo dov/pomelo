@@ -131,13 +131,15 @@ int main(int argc, char *argv[])
     exit(0);
   }
 
-  auto app = Gtk::Application::create(); // argc, argv, "org.dov.pomelo");
-  Pomelo pomelo(pomelo_settings);
-  if (debug_dir.size())
-    pomelo.set_debug_dir(debug_dir);
-      
-  app->run(pomelo);
-  spdlog::info("exiting main!");
-  exit(0);
+  if (!do_log_and_exit)
+  {
+    auto app = Gtk::Application::create(); // argc, argv, "org.dov.pomelo");
+    Pomelo pomelo(pomelo_settings);
+    if (debug_dir.size())
+      pomelo.set_debug_dir(debug_dir);
+        
+    return app->run(pomelo);
+  }
+  spdlog::info("Exited application");
 }
 

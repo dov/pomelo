@@ -1,6 +1,7 @@
-// A basic viewer that shows a fixed triangular mesh.
+// A basic OpenGL viewer that shows the resulting mesh
 
 #include <spdlog/spdlog.h>
+#include <epoxy/gl.h>
 #include "mesh-viewer.h"
 #include <iostream>
 #include <limits>
@@ -12,6 +13,7 @@
 #include <glm/gtx/quaternion.hpp>
 #include <gdkmm/pixbuf.h>
 #include "trackball.h"
+#include <spdlog/spdlog.h>
 
 using namespace std;
 using namespace fmt;
@@ -43,7 +45,7 @@ MeshViewer::MeshViewer(std::shared_ptr<PomeloSettings> pomelo_settings)
   :  m_pomelo_settings(pomelo_settings)
 {
   spdlog::info("Creating MeshViewer");
-
+  spdlog::info("gl_version = {}", epoxy_gl_version());
   this->add_events (
     Gdk::EventMask(GDK_POINTER_MOTION_MASK    |
                    GDK_BUTTON_PRESS_MASK      |
@@ -71,8 +73,7 @@ MeshViewer::MeshViewer(std::shared_ptr<PomeloSettings> pomelo_settings)
   for (auto v : vertex_data)
     m_hw_mesh.vertices.push_back(v);
 
-  refresh_from_settings();
-  spdlog::info("Done creating MeshViewer");
+  spdlog::info("Done creating meshviewer");
 }
 
 // setup the projection matrix based on the current setting
@@ -80,14 +81,14 @@ void MeshViewer::setup_projection_matrix()
 {
   // Setup the project matrix. Currently static
   double thetaInDeg=8.0;
-  double d_near=1;
-  double d_far=20;
+  double znear=1;
+  double zfar=20;
   double width = get_allocation().get_width();
   double height = get_allocation().get_height();
   double aspect = 1.0*width / height; // aspect ratio
   static double PI { 3.141592653589793 };
   float theta = thetaInDeg / 180.0 * PI;
-  float range = d_far - d_near;
+  float range = zfar - znear;
   float invtan = 1./tan(theta/2.);
 
   m_proj_matrix = glm::mat4(1.0);
@@ -107,7 +108,7 @@ void MeshViewer::setup_projection_matrix()
 #if 0
       double rx = 0;
       double ry = 0;
-      double rz = 0; // -(far+near)/(far-near);
+      double rz = 0; // -(zfar+znear)/(zfar-znear);
 
       m_proj_matrix[3][0] = rx;
       m_proj_matrix[3][1] = ry;
@@ -118,7 +119,7 @@ void MeshViewer::setup_projection_matrix()
   else
     {
     #if 0
-      m_proj_matrix = glm::perspective(thetaInDeg,aspect,near,far);
+      m_proj_matrix = glm::perspective(thetaInDeg,aspect,znear,zfar);
       m_proj_matrix = glm::lookAt(glm::vec3(0,0,-10),
                                   glm::vec3(0,0,0),
                                   glm::vec3(0,1,0));
@@ -126,9 +127,9 @@ void MeshViewer::setup_projection_matrix()
     #endif
       m_proj_matrix[0][0] = invtan / aspect;
       m_proj_matrix[1][1] = invtan;
-      m_proj_matrix[2][2] = -(d_near + d_far) / range;
+      m_proj_matrix[2][2] = -(znear + zfar) / range;
       m_proj_matrix[3][2] = -1;
-      m_proj_matrix[2][3] = -2 * d_near * d_far / range;
+      m_proj_matrix[2][3] = -2 * znear * zfar / range;
       m_proj_matrix[3][3] = 1;
       //  m_proj_matrix = glm::transpose(m_proj_matrix);
     }
@@ -146,7 +147,10 @@ static guint
 create_shader (int shader_type,
                const Glib::RefPtr<const Glib::Bytes>& source)
 {
+  spdlog::info("create_shader(). type={}",
+               shader_type == GL_VERTEX_SHADER ? "vertex" : "fragment");
   guint shader = glCreateShader (shader_type);
+  spdlog::info("Ok. creating the shader");
   
   // Get pointer and size
   gsize len=0;
@@ -155,6 +159,7 @@ create_shader (int shader_type,
   // Turn into GL structure
   int lengths[] = { (int)len };
   glShaderSource (shader, 1, &src, lengths);
+  spdlog::info("Ok shader src");
   glCompileShader (shader);
 
   int status;
@@ -171,11 +176,12 @@ create_shader (int shader_type,
       glDeleteShader (shader);
       shader = 0;
 
-      throw runtime_error(
-        format(
+      auto error_str = format(
           "Compilation failure in {} shader: {}",
           shader_type == GL_VERTEX_SHADER ? "vertex" : "fragment",
-          error_string));
+          error_string);
+      spdlog::error("{}", error_str);
+      throw runtime_error(error_str);
     }
 
   return shader;
@@ -183,6 +189,7 @@ create_shader (int shader_type,
 
 void MeshViewer::init_shaders ()
 {
+  spdlog::info("init_shaders()");
   // TBD - init the shaders
   /* load the vertex shader */
   Glib::RefPtr<const Glib::Bytes> vertex_source = Gio::Resource::lookup_data_global("/shaders/vertex.glsl");
@@ -208,6 +215,8 @@ void MeshViewer::init_shaders ()
     create_shader(GL_FRAGMENT_SHADER, fragment_matcap_edge_source)
   };
   m_programs.clear();
+  spdlog::info("make_current");
+  this->make_current();
   for (int prog_idx=0; prog_idx<NUM_PROGRAMS; prog_idx++)
     {
       guint program = glCreateProgram();
@@ -250,6 +259,8 @@ void MeshViewer::init_shaders ()
 
   for (auto sh : shaders)
     glDeleteShader (sh);
+
+  spdlog::info("Done init_shaders()");
 }
 
 void MeshViewer::init_buffers (guint *vao_out)
@@ -263,7 +274,7 @@ void MeshViewer::init_buffers (guint *vao_out)
   /* this is the VBO that holds the vertex data */
   glGenBuffers (1, &m_buffer_id);
   glBindBuffer (GL_ARRAY_BUFFER, m_buffer_id);
-  print("glBufferData()\n");
+  spdlog::info("glBufferData()");
   glBufferData (GL_ARRAY_BUFFER,
                 m_hw_mesh.vertices.size() * sizeof(MeshViewer::VertexInfo),
                 &m_hw_mesh.vertices[0].position[0], GL_DYNAMIC_DRAW);
@@ -313,17 +324,22 @@ void MeshViewer::update_geometry()
 
 void MeshViewer::update_matcap()
 {
+  spdlog::info("update_matcap");
+
   // The texture for the matcap
+  spdlog::info("generating texture");
   glGenTextures(1, &m_matcap_texture);
 
+  spdlog::info("getting texture from settings");
   string filename = m_pomelo_settings->get_string_default("matcap_filename");
 
   try {
+    spdlog::info("creating pixbuf from {}", filename);
     m_img = Gdk::Pixbuf::create_from_file(filename);
     int width = m_img->get_width();
     int height = m_img->get_height();
     int n_channels = m_img->get_n_channels();
-    print("n_channels = {}\n", n_channels);
+    spdlog::info("n_channels = {}\n", n_channels);
     uint8_t *data = m_img->get_pixels();
     glBindTexture(GL_TEXTURE_2D, m_matcap_texture);
     GLenum input_format =  n_channels == 4 ? GL_RGBA : GL_RGB;
@@ -343,6 +359,7 @@ void MeshViewer::update_matcap()
     m_has_matcap = true;
   }
   catch(...) {
+    spdlog::error("Got unknown!");
     m_has_matcap= false;
   }
 }
@@ -350,18 +367,23 @@ void MeshViewer::update_matcap()
 void MeshViewer::on_realize()
 {
   m_realized = true;
-  printf("On realize...\n");
+  spdlog::info("On realize...");
   Gtk::GLArea::on_realize();
 
+  refresh_from_settings();
+
+  spdlog::info("make_current");
   this->make_current();
+  spdlog::info("set_has_depth_buffer");
   this->set_has_depth_buffer(true);
+  spdlog::info("done set_has_depth_buffer");
 
   init_shaders();
 
   // Init the buffer
   init_buffers (&m_vao);
 
-  update_matcap();
+  //  update_matcap();
 
   setup_quat();
 }
@@ -384,9 +406,10 @@ void MeshViewer::on_unrealize()
 
 bool MeshViewer::on_render (const Glib::RefPtr< Gdk::GLContext >& context)
 {
+  spdlog::info("on_render()");
   try
   {
-    throw_if_error();
+    throw_if_error(); // grom gle area
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
     glClearColor (m_background[0],
@@ -401,8 +424,8 @@ bool MeshViewer::on_render (const Glib::RefPtr< Gdk::GLContext >& context)
   }
   catch(const Gdk::GLError& gle)
   {
-    cerr << "An error occurred in the render callback of the GLArea" << endl;
-    cerr << gle.domain() << "-" << gle.code() << "-" << gle.what() << endl;
+    spdlog::error("An error occurred in the render callback of the GLArea: {} - {} - {}",
+                  gle.domain(), gle.code(), gle.what().c_str());
     return false;
   }
   
@@ -512,7 +535,7 @@ bool MeshViewer::on_button_press_event (GdkEventButton* button_event)
 
 bool MeshViewer::on_key_press_event (GdkEventKey* key_event)
 {
-  print("Got a key press = {}\n", key_event->string);
+  spdlog::info("Got a key press = {}", key_event->string);
   string key_string(key_event->string);
   if (key_string == "1"
       || key_string == "f")
@@ -569,7 +592,7 @@ bool MeshViewer::on_motion_notify_event (GdkEventMotion* motion_event)
     double dst_y = 1.0-2.0*y/h;
     glm::vec3 worldSrc, worldDst;
 
-    view_port_to_world(glm::vec3(src_x,src_y,0), // z=0.5*(near+far)
+    view_port_to_world(glm::vec3(src_x,src_y,0), // z=0.5*(znear+zfar)
                        // output
                        worldSrc);
     view_port_to_world(glm::vec3(dst_x,dst_y,0),
@@ -633,9 +656,14 @@ void MeshViewer::redraw()
 void MeshViewer::set_meshes(vector<shared_ptr<Mesh>> meshes,
                             bool update_view)
 {
+  spdlog::info("set_meshes update_view={}. mesh_size={}",
+               update_view, meshes.size());
   m_meshes = meshes;
   if (!m_meshes.size())
+  {
+    spdlog::info("No mesh to use!");
     return;
+  }
   auto& bbox = m_hw_mesh.bbox; // shortcut
   m_hw_mesh.vertices.clear();
   for (int k=0; k<3; k++)
@@ -651,7 +679,10 @@ void MeshViewer::set_meshes(vector<shared_ptr<Mesh>> meshes,
 
       vector<dvec3>& vertices = meshes[mesh_idx]->vertices; // shortcut
       if (vertices.size() % 3 != 0)
+      {
+        spdlog::error("Expected number of vertices to a multiple of 3!");
         throw runtime_error("Expected number of vertices to a multiple of 3!");
+      }
     
       for (size_t i=0; i<vertices.size(); i+= 3)
         {
@@ -681,7 +712,7 @@ void MeshViewer::set_meshes(vector<shared_ptr<Mesh>> meshes,
       }
     }
     
-  print("Loaded {} triangles\n", m_hw_mesh.vertices.size()/3);
+  spdlog::info("Loaded {} triangles", m_hw_mesh.vertices.size()/3);
 
   if (update_view)
     {
@@ -700,18 +731,19 @@ void MeshViewer::set_meshes(vector<shared_ptr<Mesh>> meshes,
         0.5*(bbox[1]+bbox[4]),
         0.5*(bbox[2]+bbox[5])};
   
-      print("bbox = {} {} {} {} {} {}\n",
-            bbox[0],
-            bbox[1],
-            bbox[2],
-            bbox[3],
-            bbox[4],
-            bbox[5]);
+      spdlog::info("bbox = {} {} {} {} {} {}\n",
+                   bbox[0],
+                   bbox[1],
+                   bbox[2],
+                   bbox[3],
+                   bbox[4],
+                   bbox[5]);
     }
 
   //  redraw();
   if (m_vao)
     update_geometry();
+  spdlog::info("Done set_meshes()!");
 }
 
 void MeshViewer::set_mesh_file(const std::string& mesh_filename)
@@ -788,6 +820,8 @@ void MeshViewer::set_show_matcap(bool show_matcap)
 
 void MeshViewer::refresh_from_settings(bool update_view)
 {
+  spdlog::info("refresh_from_settings");
+
   Gdk::RGBA background_color(
     m_pomelo_settings->get_string_default("background_color",
                                           "#606080"));
@@ -804,7 +838,12 @@ void MeshViewer::refresh_from_settings(bool update_view)
     mesh_color.get_green(),
     mesh_color.get_blue()};
 
-  update_matcap();
+  //spdlog::info("updating matcap");
+  //update_matcap();
+  spdlog::info("setting meshes");
   set_meshes(m_meshes, update_view);
+  spdlog::info("queue render");
   queue_render();
+
+  spdlog::info("done refresh_from_settings");
 }
