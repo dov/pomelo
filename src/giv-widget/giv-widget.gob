@@ -250,7 +250,7 @@ class Giv:Widget from Gtk:Image:Viewer
                               mark_set->path_name);
             else {
                 GString *balloon_string = g_string_new("");
-                g_string_sprintfa(balloon_string, "label = %d", label);
+                g_string_append_printf(balloon_string, "label = %d", label);
                 gtk_label_set_text(GTK_LABEL(selfp->w_balloon_label),
                               balloon_string->str);
                 g_string_free(balloon_string, TRUE);

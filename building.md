@@ -4,7 +4,7 @@
 
 The windows installer is build by meson cross compilation. The compilation is done as follows:
 
-      meson . build_mingw64 --cross-file cross_mingw64.txt -Ddefault_library=shared -Dbuildtype=release
+      meson setup build_mingw64 --cross-file cross_mingw64.txt -Ddefault_library=shared -Dbuildtype=release
       ninja -C build_mingw64
 
 To build the nsis installer do:

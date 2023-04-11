@@ -499,24 +499,40 @@ void TeXtrusion::add_region_contribution_cap_to_mesh(
                     
       // This returns a list of quads where each quad has been
       // triangulated
-      auto pp = region.get_offset_curve_and_triangulate(offs_start,offs_end);
+      vector<Polygon3D> pp = region.get_offset_curve_and_triangulate(offs_start,offs_end);
 
-      // The tube
+      // The "tube" is connecting the first "distance index" to the
+      // z-depth of the mesh. This connects the bridge between the
+      // upper and the lower part.
       if (d_idx==0)
         {
           double epsilon = 1e-6;
 
           // Look for all line segments that are exactly offs_start
-          // from the boundary.
+          // that are exactly are parallel to the distance offs_start.
           for (const auto &poly : pp)
             {
+              
+              // Loop over the triangle looking for the edge that
+              // is parallel to the region at offs_start. There is
+              // only one such edge in the triangle, but we don't know
+              // which one.
               for (int i=0; i<3; i++)
                 {
                   auto this_p = poly[i];
                   auto next_p = poly[(i+1)%3];
+
+                  // Reminder: the z() coordinate indicates the distance from
+                  // in sense of the straight skeleton.
+                  //
+
+                  // Check that both the vertices are at distance.
                   if (fabs(this_p.z() - offs_start) < epsilon
-                      && fabs(this_p.z() - offs_start) < epsilon)
+                      && fabs(next_p.z() - offs_start) < epsilon)
                     {
+                      // Create a segment of two vertices which will
+                      // later be augmented with the z coordinates and
+                      // then turned into a quad.
                       vector<Vec3> seg;
                       seg.push_back({this_p.x(),-this_p.y(),flat_list[0].y});
                       seg.push_back({next_p.x(),-next_p.y(),flat_list[0].y});
@@ -687,6 +703,7 @@ void TeXtrusion::add_region_contribution_to_mesh(
       mesh.vertices.push_back(ur[1]);
       mesh.vertices.push_back(lr[1]);
       mesh.vertices.push_back(lr[0]);
+      break;
     }
 
 }
@@ -808,15 +825,15 @@ vector<Mesh> TeXtrusion::skeleton_to_mesh(
                       do_extrapolate = true;
                     }
                     else
-                      {
-                        // This should perhaps be optional if we want
-                        // to mirror the front size on the back side
-                        prev_flat_list = flat_list;
-
-                        // Make the first layer z-flat at -zdepth
-                        for (auto& v : prev_flat_list)
-                          v.y = -zdepth;
-                      }
+                    {
+                      // This should perhaps be optional if we want
+                      // to mirror the front size on the back side
+                      prev_flat_list = flat_list;
+                      
+                      // Make the first layer z-flat at -zdepth
+                      for (auto& v : prev_flat_list)
+                        v.y = -zdepth;
+                    }
 
 
                     // Todo:

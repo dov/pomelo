@@ -129,6 +129,7 @@ void save_stl(std::shared_ptr<Mesh> mesh, const std::string& filename)
   fh.write((const char*)&size, 4);
 
   uint16_t color=0;
+  const float stl_scale = 0.01;
   for(size_t tr_idx=0; tr_idx<size; tr_idx++)
     {
       float fzero {0};
@@ -139,7 +140,7 @@ void save_stl(std::shared_ptr<Mesh> mesh, const std::string& filename)
         {
           for (int j=0; j<3; j++)
             {
-              float f = (float)vertices[tr_idx*3+i][j];
+              float f = (float)vertices[tr_idx*3+i][j] * stl_scale;
               fh.write((char*)&f, 4);
             }
         }
