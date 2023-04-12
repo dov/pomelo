@@ -245,6 +245,29 @@ Pomelo::~Pomelo()
   spdlog::info("Destroying pomelo");
 }
 
+// g++ still doesn't have std::ends_with...
+static bool ends_with(const string& subject, const string& query)
+{
+  // Check length
+  if (subject.length() < query.length())
+    return false;
+
+  return (subject.substr(subject.length() - query.length(),
+                         query.length()) == query);
+}
+
+// g++ still doesn't have std::ends_with...
+static string toupper(const string& subject)
+{
+  string ret;
+
+  for (const auto& ch : subject)
+    ret += toupper(ch);
+  
+  return ret;
+}
+
+
 //Signal handlers:
 void Pomelo::on_action_file_export_stl()
 {
@@ -265,9 +288,13 @@ void Pomelo::on_action_file_export_stl()
     mesh_filename = dialog->get_filename();
 
     auto meshes = m_worker_skeleton.get_meshes();
+    string filenames;
     for (size_t i=0; i<meshes.size(); i++)
       {
         string mesh_fn = mesh_filename;
+
+        if (!ends_with(toupper(mesh_filename), ".stl"))
+          mesh_filename += ".stl";
 
         if (meshes.size()>1)
           {
@@ -277,11 +304,15 @@ void Pomelo::on_action_file_export_stl()
             mesh_fn = mesh_filename.substr(0,found) + format("-{:02d}", i) + mesh_filename.substr(found);
           }
 
+       filenames += mesh_fn + " ";
+
        save_stl(meshes[i], mesh_fn);
-       set_status(format("Saved mesh with {} vertices to {}",
-                         meshes[i]->vertices.size(),
-                         mesh_fn));
+       spdlog::info("Saved mesh with {} vertices to {}",
+                    meshes[i]->vertices.size(),
+                    mesh_fn);
       }
+    set_status(format("Saved file(s): {}", filenames));
+  
 
     break;
   }

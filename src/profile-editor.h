@@ -153,6 +153,7 @@ class ProfileEditor : public Gtk::Box
 
   double m_profile_maxx = 30;
   double m_profile_maxy = 10;
+  const int m_max_layers = 3;
 };
 
 #endif /* PROFILE-EDITING */

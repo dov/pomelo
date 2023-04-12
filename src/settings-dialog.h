@@ -29,6 +29,8 @@ class SettingsDialog : public Gtk::Dialog
   std::shared_ptr<PomeloSettings> m_pomelo_settings;
   Gtk::ColorButton *m_background_chooser;
   Gtk::ColorButton *m_mesh_color_chooser;
+  Gtk::ColorButton *m_mesh_color_level1_chooser;
+  Gtk::ColorButton *m_mesh_color_level2_chooser;
   Gtk::FileChooserButton *m_matcap_chooser;
 };
 

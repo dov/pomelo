@@ -14,13 +14,15 @@ using namespace std;
 using namespace fmt;
 static constexpr double MY_TWO_PI = 2*3.141592653589793;
 
-Gtk::Button *mmSvgButton(const std::string& filename)
+Gtk::Button *mmSvgButton(const string& filename,
+                         const string& tooltip)
 {
   auto button = Gtk::make_managed<Gtk::Button>();
   try {
     auto pixbuf = Gdk::Pixbuf::create_from_resource("/icons/" + filename,48,48);
     auto image = new Gtk::Image(pixbuf);
     button->set_image(*image);
+    button->set_tooltip_text(tooltip);
   }
   catch(const Gdk::PixbufError& exc)
   {
@@ -52,28 +54,28 @@ ProfileEditor::ProfileEditor()
   this->pack_start(*w_hbox, Gtk::PACK_SHRINK);
   w_hbox->show();
   {
-    auto w_button = mmSvgButton("corner-icon.svg");
+    auto w_button = mmSvgButton("corner-icon.svg", "Make selected nodes corner");
     w_hbox->pack_start(*w_button, Gtk::PACK_SHRINK);
     w_button->signal_clicked().connect(sigc::mem_fun(*this,
       &ProfileEditor::on_corner_node_clicked));
 
-    w_button = mmSvgButton("round-icon.svg");
+    w_button = mmSvgButton("round-icon.svg", "Make selected nodes smooth");
     w_hbox->pack_start(*w_button, Gtk::PACK_SHRINK);
     w_button->signal_clicked().connect(sigc::mem_fun(*this,
       &ProfileEditor::on_round_node_clicked));
 
-    w_button = mmSvgButton("round-symmetric-icon.svg");
+    w_button = mmSvgButton("round-symmetric-icon.svg", "Make selected nodes symmetric");
     w_hbox->pack_start(*w_button, Gtk::PACK_SHRINK);
     w_button->signal_clicked().connect(sigc::mem_fun(*this,
       &ProfileEditor::on_round_symmetric_node_clicked));
     
     w_hbox->pack_start(*Gtk::make_managed<Gtk::Separator>(), Gtk::PACK_SHRINK, 15);
 
-    w_button = mmSvgButton("add-node-icon.svg");
+    w_button = mmSvgButton("add-node-icon.svg", "Insert new node");
     w_button->signal_clicked().connect(sigc::mem_fun(*this,
       &ProfileEditor::on_add_node_clicked));
     w_hbox->pack_start(*w_button, Gtk::PACK_SHRINK);
-    w_button = mmSvgButton("remove-node-icon.svg");
+    w_button = mmSvgButton("remove-node-icon.svg", "Remove node");
     w_hbox->pack_start(*w_button, Gtk::PACK_SHRINK);
     w_button->signal_clicked().connect(sigc::mem_fun(*this,
       &ProfileEditor::on_remove_node_clicked));
@@ -81,11 +83,11 @@ ProfileEditor::ProfileEditor()
 
     w_hbox->pack_start(*Gtk::make_managed<Gtk::Separator>(), Gtk::PACK_SHRINK, 15);
 
-    w_button = mmSvgButton("add-layer-icon.svg");
+    w_button = mmSvgButton("add-layer-icon.svg", "Add profile layer");
     w_hbox->pack_start(*w_button, Gtk::PACK_SHRINK);
     w_button->signal_clicked().connect(sigc::mem_fun(*this,
       &ProfileEditor::on_add_layer_clicked));
-    w_button = mmSvgButton("remove-layer-icon.svg");
+    w_button = mmSvgButton("remove-layer-icon.svg", "Remove profile layer");
     w_hbox->pack_start(*w_button, Gtk::PACK_SHRINK);
     w_button->signal_clicked().connect(sigc::mem_fun(*this,
       &ProfileEditor::on_remove_layer_clicked));
@@ -118,7 +120,7 @@ ProfileEditor::ProfileEditor()
   // clear all selected items on button click
   w_canvas->signal_button_press_event().connect(
     [=](GdkEventButton*) -> bool{
-      print("Got button press event\n");
+      spdlog::info("Got canvas button press event. Clear selected points");
       this->clear_all_selected();
       this->draw_layers();
       static_cast<Gtk::Widget*>(this)->grab_focus();
@@ -134,7 +136,7 @@ ProfileEditor::ProfileEditor()
   w_canvas->set_focus_on_click(true);
   w_canvas->signal_key_press_event().connect(
     [=](GdkEventKey*) -> bool{
-      print("Got key press\n");
+      spdlog::info("Got canvas key press event.");
       return true;
     });
 #if 0
@@ -480,6 +482,22 @@ void ProfileEditor::on_round_symmetric_node_clicked()
 
 void ProfileEditor::on_add_layer_clicked()
 {
+  spdlog::info("Got ProfileEditor::on_add_layer_clicked()");
+
+  if ((int)m_layers.size() == m_max_layers)
+  {
+    spdlog::error("In ProfileEditor: Too many dialogs!");
+    Gtk::MessageDialog dialog(
+      *static_cast<Gtk::Window*>(this->get_toplevel()),
+      "Too many levels!",
+      false, // use_markup
+      Gtk::MESSAGE_ERROR,
+      Gtk::BUTTONS_OK,
+      true); // modal
+    dialog.run();
+    return;
+  }
+
   // just a dummy layer
   m_layers.push_back(make_shared<Layer>());
   size_t num_layers = m_layers.size();

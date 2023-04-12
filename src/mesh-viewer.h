@@ -141,7 +141,7 @@ class MeshViewer : public Gtk::GLArea
   glm::vec3 m_background = {0.4,0.4,0.5};
   std::vector<glm::vec3> m_mesh_color = {
     {0.8,0.8,0.8},  // This is controllable
-    {0.8,0,0},      // This is currently not
+    {0.8,0,0},      
     {0,0.8,0},
     {0,0,0.8},
   };

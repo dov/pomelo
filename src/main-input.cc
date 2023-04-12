@@ -149,8 +149,8 @@ MainInput::MainInput(Gtk::Window& window)
 
   w_grid->attach(*mmLabelRight("Profile:"), 0,row);
   auto w_prof_chooser = Gtk::make_managed<Gtk::ComboBoxText>();
-  w_prof_chooser->append("Prof1");
-  w_prof_chooser->append("Prof2");
+  w_prof_chooser->append("Prof"); // Sorry only one supported for now!
+  //  w_prof_chooser->append("Prof2");
   w_prof_chooser->set_active(0);
   w_grid->attach(*w_prof_chooser,       1,row);
   w_grid->attach(m_profile_edit_button, 2,row);

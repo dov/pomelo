@@ -17,9 +17,14 @@ using namespace std;
 // Save a path to a giv file. This should perhaps be moved
 // to a utility function.
 static void path_to_giv(cairo_path_t *cpath,
-                        const char *filename)
+                        const string& filename,
+                        double resolution = 1.0,
+                        const string& ref_image = string())
 {
   ofstream fh(filename);
+  if (ref_image.size())
+    fh << format("$image {}\n", ref_image);
+
   print("num_data = {}\n", cpath->num_data);
   for (int i=0; i < cpath->num_data; i += cpath->data[i].header.length)
     {
@@ -31,7 +36,7 @@ static void path_to_giv(cairo_path_t *cpath,
           if (data->header.type==CAIRO_PATH_MOVE_TO)
             fh << "m ";
           fh << format("{} {}\n",
-                       data[1].point.x,data[1].point.y);
+                       data[1].point.x*resolution,data[1].point.y*resolution);
           break;
         case CAIRO_PATH_CURVE_TO:
           // No curve support. Just draw a line to last point
@@ -55,7 +60,7 @@ void FlattenByBitmap::flatten_by_bitmap(cairo_surface_t *rec_surface,
                                        &x0, &y0,
                                        &width, &height);
 
-  spdlog::info("flatten image: rec_surface size: x0 y0 width height={} {} {} {}\n",
+  spdlog::info("flatten image by bitmap: rec_surface size: x0 y0 width height={} {} {} {}",
                x0, y0, width, height);
 
   // Modify x0 y0 width and height to add a bit of margin
@@ -153,7 +158,7 @@ void FlattenByBitmap::flatten_by_bitmap(cairo_surface_t *rec_surface,
     string giv_filename = format("{}/{}", m_debug_dir, "path-by-bitmap.giv");
     spdlog::info("saving to {}", giv_filename);
     print("saving to {}\n", giv_filename);
-    path_to_giv(path, giv_filename.c_str());
+    path_to_giv(path, giv_filename, resolution, image_filename);
     cairo_path_destroy(path);
   }
 

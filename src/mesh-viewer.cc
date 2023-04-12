@@ -406,10 +406,9 @@ void MeshViewer::on_unrealize()
 
 bool MeshViewer::on_render (const Glib::RefPtr< Gdk::GLContext >& context)
 {
-  spdlog::info("on_render()");
   try
   {
-    throw_if_error(); // grom gle area
+    throw_if_error(); 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
     glClearColor (m_background[0],
@@ -731,7 +730,7 @@ void MeshViewer::set_meshes(vector<shared_ptr<Mesh>> meshes,
         0.5*(bbox[1]+bbox[4]),
         0.5*(bbox[2]+bbox[5])};
   
-      spdlog::info("bbox = {} {} {} {} {} {}\n",
+      spdlog::info("bbox = minx={:.3f} miny={:.3f} minz={:.3f} maxx={:.3f} maxy={:.3f} maxz={:.3f}",
                    bbox[0],
                    bbox[1],
                    bbox[2],
@@ -829,11 +828,27 @@ void MeshViewer::refresh_from_settings(bool update_view)
     background_color.get_green(),
     background_color.get_blue()};
 
+  // Get colors for each level
+
+  // Baselevel
   Gdk::RGBA mesh_color(
     m_pomelo_settings->get_string_default("mesh_color",
                                           "#c0c0c0"));
-  // TBD - a list of colors for each mesh
   m_mesh_color[0] = {
+    mesh_color.get_red(),
+    mesh_color.get_green(),
+    mesh_color.get_blue()};
+
+  mesh_color = Gdk::RGBA(m_pomelo_settings->get_string_default("mesh_level1_color",
+                                                               "#c0c0c0"));  
+  m_mesh_color[1] = {
+    mesh_color.get_red(),
+    mesh_color.get_green(),
+    mesh_color.get_blue()};
+
+  mesh_color = Gdk::RGBA(m_pomelo_settings->get_string_default("mesh_level2_color",
+                                                               "#c0c0c0"));  
+  m_mesh_color[2] = {
     mesh_color.get_red(),
     mesh_color.get_green(),
     mesh_color.get_blue()};

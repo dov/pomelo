@@ -71,6 +71,8 @@ SettingsDialog::SettingsDialog(Gtk::Window& parent,
   
     m_background_chooser = Gtk::make_managed<Gtk::ColorButton>();
     m_mesh_color_chooser = Gtk::make_managed<Gtk::ColorButton>();
+    m_mesh_color_level1_chooser = Gtk::make_managed<Gtk::ColorButton>();
+    m_mesh_color_level2_chooser = Gtk::make_managed<Gtk::ColorButton>();
     m_matcap_chooser = Gtk::make_managed<Gtk::FileChooserButton>();
   
     int row=0;
@@ -83,8 +85,16 @@ SettingsDialog::SettingsDialog(Gtk::Window& parent,
     w_grid->attach(*m_background_chooser,               1,row);
     row++;
   
-    w_grid->attach(*mmLabelRight("Mesh color: "), 0,row);
+    w_grid->attach(*mmLabelRight("Baselevel mesh color: "), 0,row);
     w_grid->attach(*m_mesh_color_chooser,         1,row);
+    row++;
+
+    w_grid->attach(*mmLabelRight("Level1 mesh color: "), 0,row);
+    w_grid->attach(*m_mesh_color_level1_chooser,         1,row);
+    row++;
+
+    w_grid->attach(*mmLabelRight("Level2 mesh color: "), 0,row);
+    w_grid->attach(*m_mesh_color_level2_chooser,         1,row);
     row++;
   }
     
@@ -107,6 +117,11 @@ void SettingsDialog::load_from_settings()
   m_background_chooser->set_rgba(color);
   color = Gdk::RGBA(m_pomelo_settings->get_string_default("mesh_color", "#ffffff"));
   m_mesh_color_chooser->set_rgba(color);
+  color = Gdk::RGBA(m_pomelo_settings->get_string_default("mesh_level1_color", "#ffffff"));
+  m_mesh_color_level1_chooser->set_rgba(color);
+  color = Gdk::RGBA(m_pomelo_settings->get_string_default("mesh_level2_color", "#ffffff"));
+  m_mesh_color_level2_chooser->set_rgba(color);
+
 
   m_matcap_chooser->set_filename(m_pomelo_settings->get_string_default("matcap_filename"));
 }
@@ -123,6 +138,10 @@ void SettingsDialog::save_to_settings()
                                 m_background_chooser->get_rgba().to_string());
   m_pomelo_settings->set_string("mesh_color",
                                 m_mesh_color_chooser->get_rgba().to_string());
+  m_pomelo_settings->set_string("mesh_level1_color",
+                                m_mesh_color_level1_chooser->get_rgba().to_string());
+  m_pomelo_settings->set_string("mesh_level2_color",
+                                m_mesh_color_level2_chooser->get_rgba().to_string());
 
   // Copy the matcap to the config dir if it exists. Currently
   // we never remove matcaps

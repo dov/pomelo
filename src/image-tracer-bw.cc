@@ -51,6 +51,7 @@ For more information, please refer to http://unlicense.org/
 #include <stdarg.h>
 #include <cairo/cairo.h>
 #include <chrono>
+#include <spdlog/spdlog.h>
 
 using namespace std;
 
@@ -152,6 +153,10 @@ void trace_image(int width,
                  cairo_t *cr
                  )
 {
+  spdlog::info("trace_image() width={} height={} resolution={:.3f}",
+               width, height, resolution);
+  print("Tracing image of size {}x{} pixels\n", width, height);
+
   // Assume 8-bit image
   ImageData imgd(stride,height,data);
   map<string,double> options;
@@ -159,6 +164,7 @@ void trace_image(int width,
   options = checkoptions(options);
   options["ltres"]=2.5; // Do 200 for testing
   options["qtres"]=-1; // Turn off quadratic tracing for pomelo
+  // TBD - Do qthresh + linearization to see if it gives a smoother result.
 
   IndexedImage ii = imagedataToTracedata(imgd,options);
 
@@ -371,7 +377,7 @@ static IndexedImage imagedataToTracedata (const ImageData& imgd,
   
   // 5. Batch tracing
   ii.layers = batchtracelayers(bis,options.at("ltres"),options.at("qtres"));
-  print("bachtracelayers: {}ms\n", GetTimeInMillis()-time0);
+  print("batchtracelayers: {}ms\n", GetTimeInMillis()-time0);
   time0 = GetTimeInMillis();
 
 #if 0
@@ -387,7 +393,7 @@ static IndexedImage imagedataToTracedata (const ImageData& imgd,
 static map<string,double> checkoptions (map<string,double> options)
 {
   // Tracing
-  if(!options.count("ltres")){ options["ltres"]=5; }
+  if(!options.count("ltres")){ options["ltres"]=3; }
 
   // A negative qtres will omit cubic tracing
   if(!options.count("qtres")){ options["qtres"]=1; }

@@ -1,4 +1,5 @@
-project('pomelo','cpp','c')
+project('pomelo','cpp','c',
+       default_options : ['cpp_std=c++2a'])
 subproject('nanosvg')
 subproject('tinygltf')
 subproject('nlohmann_json')
