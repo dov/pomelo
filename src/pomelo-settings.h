@@ -7,7 +7,7 @@
 #ifndef POMELO_SETTINGS_H
 #define POMELO_SETTINGS_H
 
-#include <gtkmm.h>
+#include <glibmm/keyfile.h>
 #include <string>
 
 class PomeloSettings : public Glib::KeyFile

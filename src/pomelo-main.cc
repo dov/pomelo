@@ -8,7 +8,8 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include "pomelo.h"
-#include "fmt/core.h"
+#include <fmt/core.h>
+#include <fmt/chrono.h>
 #include "textrusion.h"
 #include "pomelo-settings.h"
 #include "spdlog/sinks/basic_file_sink.h"
@@ -16,9 +17,11 @@
 #include "spdlog/spdlog.h"
 #include "spdlog/async_logger.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
+#include <filesystem>
+
 
 using namespace std;
-using namespace fmt;
+namespace fs = std::filesystem;
 
 static void die(const char *fmt, ...)
 {
@@ -31,18 +34,6 @@ static void die(const char *fmt, ...)
 }
 
 
-static string join(const vector<string>& v, const string& glue)
-{
-  string ret;
-  for (int i=0; i<(int)v.size(); i++)
-  {
-    ret += v[i];
-    if (i < (int)v.size()-1)
-      ret += glue;
-  }
-  return ret;
-}
-
 #define CASE(s) if (s == S_)
 
 int main(int argc, char *argv[])
@@ -50,7 +41,6 @@ int main(int argc, char *argv[])
   int argp = 1;
   string mesh_filename;
   string config_dir;
-  auto pomelo_settings = make_shared<PomeloSettings>();
   string log_filename;
   string debug_dir;
   vector<string> args;
@@ -66,17 +56,17 @@ int main(int argc, char *argv[])
 
     CASE("--help")
     {
-      print("pomelo - A 3D text generator\n"
-            "\n"
-            "Syntax:\n"
-            "   pomelo [--mesh m]\n"
-            "\n"
-            "Options:\n"
-            "   --mesh m    Mesh for   testing\n"
-            "   --log-file log_file    Log pomelo debug to the given log file\n"
-            "   --debug_dir debug_dir  Set debug dir for temporary files\n"
-            "   --log-stdout           Log to stdout\n"
-            );
+      fmt::print("pomelo - A 3D text generator\n"
+                 "\n"
+                 "Syntax:\n"
+                 "   pomelo [--mesh m]\n"
+                 "\n"
+                 "Options:\n"
+                 "   --mesh m    Mesh for   testing\n"
+                 "   --log-file log_file    Log pomelo debug to the given log file\n"
+                 "   --debug_dir debug_dir  Set debug dir for temporary files\n"
+                 "   --log-stdout           Log to stdout\n"
+                 );
       do_log_and_exit=true;
       break;
     }
@@ -98,10 +88,16 @@ int main(int argc, char *argv[])
     die("Unknown option: %s\n", S_.c_str());
   }
 
+  // If we have another argument treat it as a project and load it
+  string project_filename;
+  if (argp < argc)
+    project_filename = argv[argp++];
+    
+  // Setup the logger
 #if _WIN32
-    auto color_sink = std::make_shared<spdlog::sinks::wincolor_stdout_sink_mt>();
+  auto color_sink = std::make_shared<spdlog::sinks::wincolor_stdout_sink_mt>();
 #else
-    auto color_sink = std::make_shared<spdlog::sinks::ansicolor_stdout_sink_mt>();
+  auto color_sink = std::make_shared<spdlog::sinks::ansicolor_stdout_sink_mt>();
 #endif
 
   vector<spdlog::sink_ptr> log_sinks;
@@ -116,15 +112,17 @@ int main(int argc, char *argv[])
 
   auto logger = std::make_shared<spdlog::logger>("pomelo logger", log_sinks.begin(), log_sinks.end());
   spdlog::set_default_logger(logger);
-  logger->set_pattern("[%H:%M:%S] [%l] %v");
+  logger->set_pattern("[%H:%M:%S.%e] [%l] %v");
   logger->flush_on(spdlog::level::info); 
 
   spdlog::info("======================================================");
-  spdlog::info("Starting pomelo");
+  spdlog::info("Starting Pomelo on {}",
+               fmt::format("{:%Y-%m-%d %H:%M:%S %z}",
+                           std::chrono::system_clock::now()));
   spdlog::info("CommitID: {}", COMMIT_ID);
   spdlog::info("CommitTime: {}", COMMIT_TIME);
   spdlog::info("Version: {}", VERSION);
-  spdlog::info("Command line: {}", join(args," "));
+  spdlog::info("Command line: {}", fmt::join(args," "));
   if (do_log_and_exit)
   {
     spdlog::info("exiting");
@@ -134,9 +132,13 @@ int main(int argc, char *argv[])
   if (!do_log_and_exit)
   {
     auto app = Gtk::Application::create(); // argc, argv, "org.dov.pomelo");
+    auto pomelo_settings = make_shared<PomeloSettings>();
     Pomelo pomelo(pomelo_settings);
     if (debug_dir.size())
       pomelo.set_debug_dir(debug_dir);
+
+    if (project_filename.size())
+      pomelo.load_project(project_filename);
         
     return app->run(pomelo);
   }

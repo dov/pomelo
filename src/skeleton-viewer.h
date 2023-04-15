@@ -7,7 +7,7 @@
 #ifndef SKELETON_VIEWER_H
 #define SKELETON_VIEWER_H
 
-#include <gtkmm.h>
+#include <gtkmm/dialog.h>
 #include "giv-widget.h"
 
 class SkeletonViewer : public Gtk::Dialog

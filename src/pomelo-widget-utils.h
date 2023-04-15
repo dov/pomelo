@@ -7,7 +7,8 @@
 #ifndef POMELO_WIDGET_UTILS_H
 #define POMELO_WIDGET_UTILS_H
 
-#include <gtkmm.h>
+#include <gtkmm/widget.h>
+#include <gtkmm/frame.h>
 
 Gtk::Widget* mmLabelAligned(const gchar *markup, double xAlign);
 

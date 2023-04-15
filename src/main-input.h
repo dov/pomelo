@@ -7,7 +7,14 @@
 #ifndef MAIN_INPUT_H
 #define MAIN_INPUT_H
 
-#include <gtkmm.h>
+#include <gtkmm/textview.h>
+#include <gtkmm/fontbutton.h>
+#include <gtkmm/spinbutton.h>
+#include <gtkmm/label.h>
+#include <gtkmm/combobox.h>
+#include <gtkmm/comboboxtext.h>
+#include <gtkmm/notebook.h>
+#include <gtkmm/grid.h>
 #include "profile-editor-window.h"
 
 class MainInput : public Gtk::Box
@@ -45,9 +52,23 @@ class MainInput : public Gtk::Box
   void set_skeleton_ready_state(bool is_ready);
   void set_profile_ready_state(bool is_ready);
 
-  // Change the text to a placeholder
-  void set_text_edit_info_string(const Glib::ustring& info_string);
-
+  // Populate from external sources
+  void set_text_edit_string(const Glib::ustring& info_string,
+                            bool is_info);
+  std::string get_text_edit_string();
+  void set_font_name(const Glib::ustring& font_string);
+  std::string get_font_name();
+  void set_profile_option(int profile_option); // 0 round, 1 is curve
+  int get_profile_option();
+  void set_round_profile(double radius,
+                         int num_radius_steps,
+                         double round_max_angle);
+  void get_round_profile_params(double& radius,
+                                int& num_radius_steps,
+                                double& round_max_angle);
+  void set_zdepth(double zdepth);
+  double get_zdepth();
+  
   // Get the profile for storing in a external storage
   // Get a string representation of the current profile
   Glib::ustring get_profile_string();

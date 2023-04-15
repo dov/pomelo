@@ -4,18 +4,24 @@
 // Dov Grobgeld <dov.grobgeld@gmail.com>
 // 2021-03-06 Sat
 //----------------------------------------------------------------------
-#include <gtkmm.h>
+#include <filesystem>
 #include <gtkmm/button.h>
 #include <gtkmm/window.h>
+#include <gtkmm/menubar.h>
+#include <gtkmm/filechoosernative.h>
+#include <gtkmm/messagedialog.h>
+#include <gtkmm/aboutdialog.h>
 #include "mesh-viewer.h"
 #include "pomelo.h"
 #include <iostream>
 #include "dov-mm-macros.h"
 #include <spdlog/spdlog.h>
-
+#include "utils.h"
 
 using namespace std;
+namespace fs = std::filesystem;
 using namespace fmt;
+using json = nlohmann::json;
 
 
 Pomelo::Pomelo(shared_ptr<PomeloSettings> pomelo_settings)
@@ -60,6 +66,21 @@ Pomelo::Pomelo(shared_ptr<PomeloSettings> pomelo_settings)
 
   //Define the actions:
   m_refActionGroup = Gio::SimpleActionGroup::create();
+
+  m_refActionGroup->add_action("open_project",
+    sigc::mem_fun(*this, &Pomelo::on_action_open_project) );
+
+  m_refActionGroup->add_action("save_project",
+    sigc::mem_fun(*this, &Pomelo::on_action_save_project) );
+
+  m_refActionGroup->add_action("save_project_as",
+    sigc::mem_fun(*this, &Pomelo::on_action_save_as_project) );
+
+  m_refActionGroup->add_action("import_profile",
+    sigc::mem_fun(*this, &Pomelo::on_action_import_profile) );
+
+  m_refActionGroup->add_action("export_profile",
+    sigc::mem_fun(*this, &Pomelo::on_action_export_profile) );
 
   m_refActionGroup->add_action("export_stl",
     sigc::mem_fun(*this, &Pomelo::on_action_file_export_stl) );
@@ -117,9 +138,34 @@ Pomelo::Pomelo(shared_ptr<PomeloSettings> pomelo_settings)
     "      <attribute name='label'>_File</attribute>"
     "      <section>"
     "        <item>"
+    "          <attribute name='label'>_Open project</attribute>"
+    "          <attribute name='action'>pomelo.open_project</attribute>"
+    "          <attribute name='accel'>&lt;Primary&gt;o</attribute>"
+    "        </item>"
+    "        <item>"
+    "          <attribute name='label'>_Save project</attribute>"
+    "          <attribute name='action'>pomelo.save_project</attribute>"
+    "          <attribute name='accel'>&lt;Primary&gt;s</attribute>"
+    "        </item>"
+    "        <item>"
+    "          <attribute name='label'>_Save project</attribute>"
+    "          <attribute name='action'>pomelo.save_as_project</attribute>"
+    "          <attribute name='accel'>&lt;Primary&gt;a</attribute>"
+    "        </item>"
+    "        <item>"
+    "          <attribute name='label'>_Import Profile</attribute>"
+    "          <attribute name='action'>pomelo.import_profile</attribute>"
+    "          <attribute name='accel'>&lt;Primary&gt;p</attribute>"
+    "        </item>"
+    "        <item>"
+    "          <attribute name='label'>_Export Profile</attribute>"
+    "          <attribute name='action'>pomelo.export_profile</attribute>"
+    "          <attribute name='accel'>&lt;Primary&gt;r</attribute>"
+    "        </item>"
+    "        <item>"
     "          <attribute name='label'>_Export STL</attribute>"
     "          <attribute name='action'>pomelo.export_stl</attribute>"
-    "          <attribute name='accel'>&lt;Primary&gt;s</attribute>"
+    "          <attribute name='accel'>&lt;Primary&gt;e</attribute>"
     "        </item>"
     "        <item>"
     "          <attribute name='label'>_Export GLTF</attribute>"
@@ -129,7 +175,7 @@ Pomelo::Pomelo(shared_ptr<PomeloSettings> pomelo_settings)
     "        <item>"
     "          <attribute name='label'>_Load SVG</attribute>"
     "          <attribute name='action'>pomelo.load_svg</attribute>"
-    "          <attribute name='accel'>&lt;Primary&gt;s</attribute>"
+    "          <attribute name='accel'>&lt;Primary&gt;v</attribute>"
     "        </item>"
     "        <item>"
     "          <attribute name='label'>_Quit</attribute>"
@@ -257,18 +303,102 @@ static bool ends_with(const string& subject, const string& query)
 }
 
 // g++ still doesn't have std::ends_with...
-static string toupper(const string& subject)
+static string tolower(const string& subject)
 {
   string ret;
 
   for (const auto& ch : subject)
-    ret += toupper(ch);
+    ret += tolower(ch);
   
   return ret;
 }
 
-
 //Signal handlers:
+void Pomelo::on_action_open_project()
+{
+  auto dialog = Gtk::FileChooserNative::create("Pomelo project",
+                                               *this,
+                                               Gtk::FILE_CHOOSER_ACTION_OPEN);
+  
+  if (m_last_save_as_filename.size())
+    dialog->select_filename(m_last_save_as_filename);
+
+  // Show the dialog and wait for a user response:
+  const int result = dialog->run();
+
+  // Handle the response:
+  switch (result)
+  {
+  case Gtk::RESPONSE_ACCEPT:
+  {
+    Glib::ustring filename = dialog->get_filename();
+    Glib::RefPtr<Gio::File> file = Gio::File::create_for_path(filename);
+    string basename = file->get_basename();
+    m_last_save_as_filename = filename;
+    m_last_selected_file = filename;
+
+    set_status(format("Loading project from file {}",basename));
+    load_project(filename);
+
+    break;
+  }
+
+  case Gtk::RESPONSE_CANCEL:
+    set_status("Canceled open project");
+    break;
+
+  default:
+    break;
+  }
+
+}
+
+void Pomelo::on_action_save_project()
+{
+  if (m_last_save_as_filename.size())
+    save_project(m_last_save_as_filename);
+  else
+    on_action_save_as_project();
+}
+
+void Pomelo::on_action_save_as_project()
+{
+  auto dialog = Gtk::FileChooserNative::create("Pomelo project",
+                                               *this,
+                                               Gtk::FILE_CHOOSER_ACTION_SAVE);
+  
+  if (m_last_selected_file.size())
+    dialog->select_filename(m_last_selected_file);
+
+  // Show the dialog and wait for a user response:
+  const int result = dialog->run();
+
+  // Handle the response:
+  switch (result)
+  {
+  case Gtk::RESPONSE_ACCEPT:
+  {
+    Glib::ustring filename = dialog->get_filename();
+    Glib::RefPtr<Gio::File> file = Gio::File::create_for_path(filename);
+    string basename = file->get_basename();
+    m_last_selected_file = filename;
+
+    set_status(format("Saving project to file {}",basename));
+    save_project(filename);
+
+    break;
+  }
+
+  case Gtk::RESPONSE_CANCEL:
+    spdlog::info("Canceled save project");
+    set_status("Canceled save project");
+    break;
+
+  default:
+    break;
+  }
+}
+
 void Pomelo::on_action_file_export_stl()
 {
   string mesh_filename;
@@ -293,7 +423,7 @@ void Pomelo::on_action_file_export_stl()
       {
         string mesh_fn = mesh_filename;
 
-        if (!ends_with(toupper(mesh_filename), ".stl"))
+        if (!ends_with(tolower(mesh_filename), ".stl"))
           mesh_filename += ".stl";
 
         if (meshes.size()>1)
@@ -319,6 +449,107 @@ void Pomelo::on_action_file_export_stl()
 
   case Gtk::RESPONSE_CANCEL:
     set_status("Canceled STL export");
+    break;
+
+  default:
+    break;
+  }
+}
+
+void Pomelo::on_action_import_profile()
+{
+  auto dialog = Gtk::FileChooserNative::create("Export profile",
+                                               *this,
+                                               Gtk::FILE_CHOOSER_ACTION_OPEN);
+  
+  if (m_last_selected_file.size())
+    dialog->select_filename(m_last_selected_file);
+
+  // Show the dialog and wait for a user response:
+  const int result = dialog->run();
+
+  // Handle the response:
+  switch (result)
+  {
+  case Gtk::RESPONSE_ACCEPT:
+  {
+    string filename = dialog->get_filename();
+    Glib::RefPtr<Gio::File> file = Gio::File::create_for_path(filename);
+    string basename = file->get_basename();
+    m_last_selected_file = filename;
+
+    spdlog::info("Importing profile from {}", filename);
+    set_status(format("Importing profile from file {}",basename));
+    string profile_string;
+
+    try {
+      profile_string = load_string_from_file(filename);
+    }
+    catch(...)
+    {
+      spdlog::error("Failed importing profile from file {}",basename);
+      set_status(format("Failed importing profile from file {}",basename));
+      break;
+    }
+
+    try {
+      m_main_input.set_profile(profile_string);
+    }
+    catch(...)
+    {
+      spdlog::error("Failed setting profile from file {}. json error?", filename);
+    }
+    break;
+  }
+
+  case Gtk::RESPONSE_CANCEL:
+    set_status("Canceled import profile");
+    break;
+
+  default:
+    break;
+  }
+
+}
+
+void Pomelo::on_action_export_profile()
+{
+  string filename;
+
+  auto dialog = Gtk::FileChooserNative::create("Profile name",
+                                               *this,
+                                               Gtk::FILE_CHOOSER_ACTION_SAVE);
+  
+  // Show the dialog and wait for a user response:
+  const int result = dialog->run();
+
+  // Handle the response:
+  switch (result)
+  {
+  case Gtk::RESPONSE_ACCEPT:
+  {
+    filename = dialog->get_filename();
+    spdlog::info("Exporting profile to {}", filename);
+
+    string profile = m_main_input.get_profile_string();
+
+    try {
+      string_to_file(profile, filename);
+    }
+    catch(...)
+    {
+      spdlog::error("Failed saving profile to {}", filename);
+      set_status("Failed saving profile!");
+      return;
+    }
+
+    set_status(format("Saved profile file to {}", filename));
+
+    break;
+  }
+
+  case Gtk::RESPONSE_CANCEL:
+    set_status("Canceled export profile");
     break;
 
   default:
@@ -393,7 +624,7 @@ void Pomelo::on_action_load_svg()
     m_last_selected_file = m_svg_filename;
     
     set_status(format("Loading path from svg file {}",basename));
-    m_main_input.set_text_edit_info_string(basename);
+    m_main_input.set_text_edit_string(basename, true);
     break;
   }
 
@@ -410,10 +641,40 @@ void Pomelo::on_action_load_svg()
 //Signal handlers:
 void Pomelo::on_action_file_quit()
 {
-  // hide(); // Close the main window to stop app->run(). Does not work!
+  // TBD - Check if the project has changed!
+  Gtk::MessageDialog dialog(
+    *static_cast<Gtk::Window*>(this->get_toplevel()),
+    "Save project?",
+    false, // use_markup
+    Gtk::MESSAGE_INFO,
+    Gtk::BUTTONS_NONE,
+    true); // modal
+  dialog.add_button("Yes", Gtk::RESPONSE_OK);
+  dialog.add_button("No", Gtk::RESPONSE_NO);
+  dialog.add_button("Cancel", Gtk::RESPONSE_CANCEL);
+  int res = dialog.run();
+  
+  // Handle the response:
+  switch (res)
+  {
+  case Gtk::RESPONSE_OK:
+  {
+    on_action_save_project();
+    exit(0);
+    break;
+  }
 
-  spdlog::info("on_action_file_quit");
-  exit(0);
+  case Gtk::RESPONSE_CANCEL:
+    spdlog::info("Quit canceled");
+    set_status("Canceled svg import");
+    break;
+
+  case Gtk::RESPONSE_NO:
+    exit(0);
+    break;
+  default:
+    break;
+  }
 }
 
 void Pomelo::on_action_help_about()
@@ -533,6 +794,9 @@ void Pomelo::set_mesh(const string& mesh_filename)
 
 void Pomelo::set_debug_dir(const string& debug_dir)
 {
+  if (!fs::exists(debug_dir))
+    fs::create_directory(debug_dir);
+
   m_debug_dir = debug_dir;
   m_worker_skeleton.set_debug_dir(debug_dir);
   m_main_input.set_debug_dir(debug_dir);
@@ -603,6 +867,7 @@ void Pomelo::on_input_profile_edited()
 
 void Pomelo::set_status(const string& message)
 {
+  spdlog::info("Set status: {}", message);
   m_statusbar.remove_all_messages();
   m_statusbar.push(message);
 }
@@ -732,4 +997,161 @@ void Pomelo::on_action_view_layer2()
   m_pomelo_settings->save();
 
   m_mesh_viewer.set_show_layer(2, active);
+}
+
+void Pomelo::load_project(const std::string& filename)
+{
+  spdlog::info("Loading project from {}", filename);
+
+  if (!fs::exists(filename))
+  {
+    spdlog::error("Project file {} does not exist!", filename);
+    return;
+  }
+
+  // Open filename as json file
+  string js = load_string_from_file(filename);
+
+  json j;
+
+  try {
+    j = json::parse(js);
+  }
+  catch(const json::parse_error& err)
+  {
+    spdlog::error("Failed parsing json from {}!", filename);
+    print("Failed parsing json\n");
+    return;
+  }
+
+  // Populate different fields
+  m_main_input.set_text_edit_string(j.value("text", "Pomelo").c_str(),
+                                    false);
+#ifdef WIN32
+  string default_font = "Arial Black Heavy 48";
+#else
+  string default_font = "Sans Bold 48";
+#endif
+
+  m_main_input.set_font_name(j.value("font_name", default_font).c_str());
+
+  // Should the project contain the mesh and the skeleton? Currently not...
+
+  // Rest of fields
+  m_main_input.set_profile_option(j.value("profile_option", 0));
+  m_main_input.set_round_profile(j.value("radius", 5),
+                                 j.value("num_radius_steps", 10),
+                                 j.value("round_max_angle", 90)
+                                 );
+  m_main_input.set_zdepth(j.value("zdepth", 5));
+
+  // Curve profile
+  string curve_profile = j.value("curve_profile", "");
+  if (curve_profile.size())
+    m_main_input.set_profile(curve_profile);
+
+  // Settings
+  
+  bool ortho_camera = j.value("ortho_camera", false);
+  m_ref_orthonormal_toggle->change_state(ortho_camera);
+  m_mesh_viewer.set_orthonormal(ortho_camera);
+  bool show_edges = j.value("show_edges", false);
+  m_ref_show_edge_toggle->change_state(show_edges);
+  m_mesh_viewer.set_show_edge(show_edges);
+  bool show_matcap = j.value("show_matcap", false);
+  m_ref_show_matcap_toggle->change_state(show_matcap);
+  m_mesh_viewer.set_show_matcap(show_matcap);
+
+  // Settings override
+  vector<string> settings = {
+    "background_color",
+    "mesh_color",
+    "mesh_level1_color",
+    "mesh_level2_color"
+  };
+  for (int i=0; i<(int)settings.size(); i++)
+  {
+    string key = settings[i];
+    if (!j.contains(key))
+      continue;
+    m_pomelo_settings->set_string(key, j.value(key,""));
+  }
+
+  // visible layers
+  vector<Glib::RefPtr<Gio::SimpleAction>> toggles = {
+    m_ref_layer0_toggle,
+    m_ref_layer1_toggle,
+    m_ref_layer2_toggle };
+  for (int i=0; i<3; i++)
+  {
+    string key = format("layer{}", i);
+    if (!j.contains(key))
+      continue;
+    bool show_layer = j.value(key, false);
+    toggles[i]->change_state(show_layer);
+    m_mesh_viewer.set_show_layer(i, show_layer);
+  }
+  m_last_save_as_filename = filename;
+}
+
+void Pomelo::save_project(const string& filename)
+{
+  spdlog::info("Saving project to {}", filename);
+  nlohmann::json j;
+  j["text"] = m_main_input.get_text_edit_string();
+  j["font_name"] = m_main_input.get_font_name();
+  j["profile_option"] = m_main_input.get_profile_option();
+  double radius, round_max_angle;
+  int num_radius_steps;
+  m_main_input.get_round_profile_params(radius,
+                                        num_radius_steps,
+                                        round_max_angle);
+  j["radius"] = radius;
+  j["num_radius_steps"] = num_radius_steps;
+  j["round_max_angle"] = round_max_angle;
+  j["zdepth"] = m_main_input.get_zdepth();
+  j["curve_profile"] = m_main_input.get_profile_string().c_str();
+  bool active;
+  m_ref_orthonormal_toggle->get_state(active);
+  j["ortho_camera" ] = active;
+  m_ref_show_edge_toggle->get_state(active);
+  j["show_edges" ] = active;
+  m_ref_show_matcap_toggle->get_state(active);
+  j["show_matcap" ] = active;
+  
+  // From settings override - This should be shared!
+  vector<string> settings = {
+    "background_color",
+    "mesh_color",
+    "mesh_level1_color",
+    "mesh_level2_color"
+  };
+  for (int i=0; i<(int)settings.size(); i++)
+  {
+    string key = settings[i];
+    j[key] = m_pomelo_settings->get_string_default(key,"");
+  }
+
+  try {
+    string_to_file(j.dump(2), filename);
+    spdlog::info("Successfully saved project to {}", filename);
+    set_status(format("Successfully saved project to {}", filename));
+  }
+  catch(...)
+  {
+    Gtk::MessageDialog dialog(
+      *static_cast<Gtk::Window*>(this->get_toplevel()),
+      fmt::format("Failed saving project to <b>{}</b>", filename),
+      true, // use_markup
+      Gtk::MESSAGE_ERROR,
+      Gtk::BUTTONS_OK,
+      true); // modal
+    dialog.run();
+    
+    spdlog::error("Failed saving project to {}!", filename);
+    set_status(fmt::format("Failed saving project to {}!", filename));
+    
+    return;
+  }
+  m_last_save_as_filename = filename;
 }

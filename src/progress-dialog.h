@@ -8,7 +8,9 @@
 #ifndef PROGRESS_DIALOG_H
 #define PROGRESS_DIALOG_H
 
-#include <gtkmm.h>
+#include <gtkmm/dialog.h>
+#include <gtkmm/label.h>
+#include <gtkmm/progressbar.h>
 
 class ProgressDialog : public Gtk::Dialog {
   public:

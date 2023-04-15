@@ -1,5 +1,7 @@
 // A basic OpenGL viewer that shows the resulting mesh
 
+#include <giomm/iostream.h>
+#include <giomm/resource.h>
 #include <spdlog/spdlog.h>
 #include <epoxy/gl.h>
 #include "mesh-viewer.h"
@@ -159,7 +161,6 @@ create_shader (int shader_type,
   // Turn into GL structure
   int lengths[] = { (int)len };
   glShaderSource (shader, 1, &src, lengths);
-  spdlog::info("Ok shader src");
   glCompileShader (shader);
 
   int status;

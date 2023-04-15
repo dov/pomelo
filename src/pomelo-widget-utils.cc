@@ -1,5 +1,5 @@
 // Some convenience widgets for pomelo
-
+#include <gtkmm/label.h>
 #include "dov-mm-macros.h"
 #include "pomelo-widget-utils.h"
 

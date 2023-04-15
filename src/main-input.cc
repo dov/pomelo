@@ -4,8 +4,9 @@
 #include <math.h>
 #include <fmt/core.h>
 #include <spdlog/spdlog.h>
+#include <string>
 
-using namespace fmt;
+using namespace std;
 
 constexpr double DEG2RAD = M_PI/180;
 
@@ -187,7 +188,7 @@ MainInput::MainInput(Gtk::Window& window)
   // Setup the callback for the profile editor window. TBD - do this properly
   m_profile_editor_window.signal_response().connect([&](int response_id)
   {
-    print("Got response {}\n", response_id);
+    fmt::print("Got response {}\n", response_id);
     m_profile_editor_window.hide();
     m_signal_profile_edited();
 
@@ -195,9 +196,9 @@ MainInput::MainInput(Gtk::Window& window)
     {
       // Debuging: Get the profile data and save it a json
       ProfileData prof = m_profile_editor_window.get_profile();
-      prof.save_to_file(format("{}/prof.json", m_debug_dir));
+      prof.save_to_file(fmt::format("{}/prof.json", m_debug_dir));
   
-      prof.save_flat_to_giv(format("{}/prof.giv", m_debug_dir));
+      prof.save_flat_to_giv(fmt::format("{}/prof.giv", m_debug_dir));
       spdlog::info("Saved prof (profile data) to {}", m_debug_dir);
     }
   });
@@ -232,7 +233,7 @@ void MainInput::on_button_profile_edit_clicked()
 #if 0
   m_profile_editor_window.set_profile(profile_row);
 #endif
-  print("TBD");
+  fmt::print("TBD");
 }
 
 void MainInput::set_skeleton_ready_state(bool is_ready)
@@ -303,14 +304,32 @@ MainInput::type_signal_profile_edited MainInput::signal_profile_edited()
   return m_signal_profile_edited;
 }
 
-void MainInput::set_text_edit_info_string(const Glib::ustring& info_string)
+void MainInput::set_text_edit_string(const Glib::ustring& info_string,
+                                     bool is_info)
 {
   m_skeleton_button.grab_focus();
   m_text_buffer->set_text("");
   auto iter = m_text_buffer->begin();
-  m_text_buffer->insert_with_tag(iter,info_string,"info");
+  if (is_info)
+    m_text_buffer->insert_with_tag(iter,info_string,"info");
+  else
+    m_text_buffer->insert(iter,info_string);
   m_clean_on_edit = true;
-  
+}
+
+string MainInput::get_text_edit_string()
+{
+  return m_text_buffer->get_text();
+}
+
+void MainInput::set_font_name(const Glib::ustring& font_name)
+{
+  m_font_picker.set_font_name(font_name);
+}
+
+string MainInput::get_font_name()
+{
+  return m_font_picker.get_font_name();
 }
 
 void MainInput::on_combo_type_chooser_changed()
@@ -338,5 +357,44 @@ void MainInput::set_profile(const Glib::ustring& profile_string)
   ProfileData prof;
   prof.load_from_string(profile_string);
   m_profile_editor_window.set_profile(prof);
+}
+
+// 0 round, 1 is curve
+void MainInput::set_profile_option(int profile_option)
+{
+  m_type_chooser.set_active(profile_option);
+}
+
+int MainInput::get_profile_option()
+{
+  return m_type_chooser.get_active_row_number();
+}
+
+void MainInput::set_round_profile(double radius,
+                                  int num_radius_steps,
+                                  double round_max_angle)
+{
+  m_radius.set_value(radius);
+  m_num_radius_steps.set_value(num_radius_steps);
+  m_round_max_angle_in_degrees.set_value(round_max_angle);
+}
+
+void MainInput::get_round_profile_params(double& radius,
+                                         int& num_radius_steps,
+                                         double& round_max_angle)
+{
+  radius = m_radius.get_value();
+  num_radius_steps = m_num_radius_steps.get_value();
+  round_max_angle = m_round_max_angle_in_degrees.get_value();
+}
+
+void MainInput::set_zdepth(double zdepth)
+{
+  m_zdepth.set_value(zdepth);
+}
+
+double MainInput::get_zdepth()
+{
+  return m_zdepth.get_value();
 }
 

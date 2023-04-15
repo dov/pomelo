@@ -7,7 +7,7 @@
 #ifndef MESH_VIEWER_H
 #define MESH_VIEWER_H
 
-#include <gtkmm.h>
+#include <gtkmm/glarea.h>
 #include <glm/mat4x4.hpp>
 #include <epoxy/gl.h>
 #include "pomelo-settings.h"

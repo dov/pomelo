@@ -23,7 +23,7 @@ ProfileEditorWindow::ProfileEditorWindow(Gtk::Window& parent)
   get_content_area()->pack_start(*profile_editor, true,true,0);
   get_content_area()->show_all();
   
-  add_button("Save",0);
+  add_button("Accept",0);
   add_button("Cancel",1);
 }
 

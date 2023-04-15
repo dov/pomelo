@@ -1,5 +1,7 @@
 // The pomelo settings dialog
 
+#include <glibmm/fileutils.h>
+#include <glibmm/miscutils.h>
 #include "settings-dialog.h"
 #include "pomelo-widget-utils.h"
 #include "dov-mm-macros.h"
@@ -167,3 +169,4 @@ void SettingsDialog::save_to_settings()
       }
     }
 }
+

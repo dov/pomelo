@@ -1,5 +1,6 @@
 // This is giv viewer for the skeleton
 
+#include <gtkmm/scrolledwindow.h>
 #include "dov-mm-macros.h"
 #include "skeleton-viewer.h"
 

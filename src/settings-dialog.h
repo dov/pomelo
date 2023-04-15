@@ -7,7 +7,11 @@
 #ifndef SETTINGS_DIALOG_H
 #define SETTINGS_DIALOG_H
 
-#include <gtkmm.h>
+#include <gtkmm/dialog.h>
+#include <gtkmm/notebook.h>
+#include <gtkmm/colorbutton.h>
+#include <gtkmm/filechooserbutton.h>
+#include <gtkmm/grid.h>
 #include "pomelo-settings.h"
 
 class SettingsDialog : public Gtk::Dialog
@@ -18,6 +22,7 @@ class SettingsDialog : public Gtk::Dialog
   ~SettingsDialog(){}
   void load_from_settings();
   void save_to_settings();
+  void set_color(int level, const std::string color);
 
   private:
   Gtk::Notebook *m_notebook;

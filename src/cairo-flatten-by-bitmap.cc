@@ -134,7 +134,7 @@ void FlattenByBitmap::flatten_by_bitmap(cairo_surface_t *rec_surface,
 
   // And trace it and record the data in cr
   cairo_set_source_rgba(cr, 1,0,0,1);
-  spdlog::info("trace image size={} {}\n", surface_width, surface_height);
+  spdlog::info("trace image size={} {}", surface_width, surface_height);
   trace_image(surface_width,
               surface_height,
               surface_stride,

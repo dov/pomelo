@@ -7,7 +7,7 @@
 #ifndef PROFILE_EDITOR_WINDOW_H
 #define PROFILE_EDITOR_WINDOW_H
 
-#include <gtkmm.h>
+#include <gtkmm/dialog.h>
 #include "profile-editor.h"
 #include "profile.h"
 

@@ -7,7 +7,6 @@
 #ifndef WORKER_SKELETON_H
 #define WORKER_SKELETON_H
 
-#include <gtkmm.h>
 #include <thread>
 #include <mutex>
 #include "textrusion.h"

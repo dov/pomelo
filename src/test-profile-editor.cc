@@ -1,4 +1,4 @@
-#include <gtkmm.h>
+#include <gtkmm/window.h>
 #include "profile-editor.h"
 
 class TestProfileEditor : public Gtk::Window

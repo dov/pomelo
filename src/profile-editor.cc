@@ -2,9 +2,11 @@
 //
 // Can't get the keyboard focus to work. :-(
 
+#include <gtkmm/image.h>
+#include <gtkmm/separator.h>
+#include <gtkmm/messagedialog.h>
 #include "profile-editor.h"
 #include "dov-mm-macros.h"
-#include <gtkmm.h>
 #include <goocanvasmm.h>
 #include <fmt/core.h>
 #include <string>

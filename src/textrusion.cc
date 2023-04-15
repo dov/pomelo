@@ -282,7 +282,6 @@ TeXtrusion::polys_to_polys_with_holes(vector<Polygon_2> polys)
     // Build the polygons with holes. Must do it with exact arithmetics
     // This again checks inclusion from the previous steps. This should
     // be cached so that we don't need to redo it.
-    int hole_idx=0; // This is increasing
     int poly_idx = 0;
     for (const Polygon_2& poly : polys_outer) {
         Polygon_with_holes polygon_with_holes(poly);
@@ -510,36 +509,54 @@ void TeXtrusion::add_region_contribution_cap_to_mesh(
 
           // Look for all line segments that are exactly offs_start
           // that are exactly are parallel to the distance offs_start.
+          // There should be exactly one such edge for one of the
+          // triangles in pp.
+          int poly_idx= 0;
+          bool found = false;
           for (const auto &poly : pp)
+          {
+            if (layer_idx==1
+                && ph_idx==0
+                && r_idx == 8
+                && poly_idx == 2)
+              fmt::print("Found it!\n");
+
+            // Loop over the triangle looking for the edge that
+            // is parallel to the region at offs_start. There is
+            // only one such edge in the triangle, but we don't know
+            // which one.
+            for (int i=0; i<3; i++)
             {
-              
-              // Loop over the triangle looking for the edge that
-              // is parallel to the region at offs_start. There is
-              // only one such edge in the triangle, but we don't know
-              // which one.
-              for (int i=0; i<3; i++)
-                {
-                  auto this_p = poly[i];
-                  auto next_p = poly[(i+1)%3];
+              auto this_p = poly[i];
+              auto next_p = poly[(i+1)%3];
 
-                  // Reminder: the z() coordinate indicates the distance from
-                  // in sense of the straight skeleton.
-                  //
+              // Reminder: the z() coordinate indicates the distance from
+              // in sense of the straight skeleton.
+              //
 
-                  // Check that both the vertices are at distance.
-                  if (fabs(this_p.z() - offs_start) < epsilon
-                      && fabs(next_p.z() - offs_start) < epsilon)
-                    {
-                      // Create a segment of two vertices which will
-                      // later be augmented with the z coordinates and
-                      // then turned into a quad.
-                      vector<Vec3> seg;
-                      seg.push_back({this_p.x(),-this_p.y(),flat_list[0].y});
-                      seg.push_back({next_p.x(),-next_p.y(),flat_list[0].y});
-                      connection_rings.push_back(seg);
-                    }
-                }
+              // Check that both the vertices are at distance.
+              if (fabs(this_p.z() - offs_start) < epsilon
+                  && fabs(next_p.z() - offs_start) < epsilon)
+              {
+                // Create a segment of two vertices which will
+                // later be augmented with the z coordinates and
+                // then turned into a quad.
+                vector<Vec3> seg;
+                seg.push_back({this_p.x(),-this_p.y(),flat_list[0].y});
+                seg.push_back({next_p.x(),-next_p.y(),flat_list[0].y});
+                connection_rings.push_back(seg);
+                found=true;
+              }
             }
+
+            poly_idx++;
+          }
+          if (!found)
+            fmt::print("Failed founding edge for layer={} ph={} region={} poly={}!\n",
+                       layer_idx,
+                       ph_idx,
+                       r_idx,
+                       poly_idx);
         }
 
       int poly_idx = 0;
@@ -547,13 +564,13 @@ void TeXtrusion::add_region_contribution_cap_to_mesh(
         ss << format("$color green\n"
                      "$line\n"
                      "$marks fcircle\n"
-                     "$path offset curves/layer {}/ph {}/region {}/{}/{}\n"
+                     "$path offset curves/layer {}/ph {}/region={}/dist={}/poly={}\n"
                      ,
-                     layer_idx+1,
-                     ph_idx+1,
-                     r_idx+1,
-                     d_idx+1,
-                     poly_idx+1
+                     layer_idx,
+                     ph_idx,
+                     r_idx,
+                     d_idx,
+                     poly_idx
                      );
         poly_idx++;
         if (poly.size()!=3)
@@ -630,15 +647,15 @@ void TeXtrusion::add_region_contribution_to_mesh(
                ,
                color,
                path_modifier,
-               layer_idx+1,
-               ph_idx+1,
-               r_idx+1,
+               layer_idx,
+               ph_idx,
+               r_idx,
                region.polygon[0].x(), region.polygon[0].y(),
                region.polygon[1].x(), region.polygon[1].y(),
                path_modifier,
-               layer_idx+1,
-               ph_idx+1,
-               r_idx+1);
+               layer_idx,
+               ph_idx,
+               r_idx);
 
   // Inner skeleton lines
   int n = region.polygon.size();
@@ -683,6 +700,11 @@ void TeXtrusion::add_region_contribution_to_mesh(
     throw std::runtime_error("Can't connect upper and lower rings with different sizes!");
 
   // Add a tube between upper and lower segment (quad)
+  // TBD: Why isn't this exactly always ==1 for a region!
+  if (layer_idx == 1)
+    print("Connection r_idx={} rings_size={}\n",
+          r_idx, lower_connection_rings.size());
+
   for (int ring_idx=0; ring_idx<(int)upper_connection_rings.size(); ring_idx++)
     {
       // Assume that the upper and lower rings have exactly two
@@ -690,12 +712,8 @@ void TeXtrusion::add_region_contribution_to_mesh(
       auto& ur = upper_connection_rings[ring_idx];
       auto& lr = lower_connection_rings[ring_idx];
 
-      if (ur.size()<2 || lr.size()<2)
-        continue;
-
-      
-      double z0 = flat_list[0].y;
-      double z1 = prev_flat_list[0].y;
+      // TBD - Figure out why this does not include all
+      // ur to lr connections!!
 
       mesh.vertices.push_back(ur[0]);
       mesh.vertices.push_back(ur[1]);
@@ -703,6 +721,7 @@ void TeXtrusion::add_region_contribution_to_mesh(
       mesh.vertices.push_back(ur[1]);
       mesh.vertices.push_back(lr[1]);
       mesh.vertices.push_back(lr[0]);
+
       break;
     }
 
@@ -749,38 +768,6 @@ vector<Mesh> TeXtrusion::skeleton_to_mesh(
             string color = "blue";
             string path_modifier;
 
-            if (!r.polygon.is_simple())
-              {
-                path_modifier += " (not_simple)";
-                color = "orange";
-              }
-
-            ss << format("$color {}\n"
-                         "$line\n"
-                         "$marks fcircle\n"
-                         "$path boundary{}/layer1/ph {}/region {}\n"
-                         "{} {}\n"
-                         "{} {}\n"
-                         "\n"
-                         "$color red\n"
-                         "$line\n"
-                         "$marks fcircle\n"
-                         "$path skeleton{}/layer1/ph {}/region {}\n\n"
-                         ,
-                         color,
-                         path_modifier,
-                         ph_idx+1,
-                         r_idx+1,
-                         r.polygon[0].x(), r.polygon[0].y(),
-                         r.polygon[1].x(), r.polygon[1].y(),
-                         path_modifier,
-                         ph_idx+1,
-                         r_idx+1);
-            // Inner skeleton lines
-            int n = r.polygon.size();
-            for (size_t i=1; i<r.polygon.size()+1; i++) 
-                ss << format("{} {}\n", r.polygon[i%n].x(), r.polygon[i%n].y());
-            ss << ("\n");
 
             if (!r.polygon.is_simple())
               {
@@ -855,6 +842,41 @@ vector<Mesh> TeXtrusion::skeleton_to_mesh(
               }
             else
               {
+                ss << format("$color {}\n"
+                             "$line\n"
+                             "$marks fcircle\n"
+                             "$path boundary{}/layer 0/ph {}/region {}\n"
+                             "{} {}\n"
+                             "{} {}\n"
+                             "\n"
+                             "$color red\n"
+                             "$line\n"
+                             "$marks fcircle\n"
+                             "$path skeleton{}/layer 0/ph {}/region {}\n\n"
+                             ,
+                             color,
+                             path_modifier,
+                             ph_idx,
+                             r_idx,
+                             r.polygon[0].x(), r.polygon[0].y(),
+                             r.polygon[1].x(), r.polygon[1].y(),
+                             path_modifier,
+                             ph_idx,
+                             r_idx);
+    
+                if (!r.polygon.is_simple())
+                  {
+                    path_modifier += " (not_simple)";
+                    color = "orange";
+                  }
+    
+                // Inner skeleton lines
+                int n = r.polygon.size();
+                for (size_t i=1; i<r.polygon.size()+1; i++) 
+                    ss << format("{} {}\n", r.polygon[i%n].x(), r.polygon[i%n].y());
+                ss << ("\n");
+    
+    
                 // TBD - Build a profile and call add_region_contribution_to_mesh
                 vector<Vec2> flat_list, prev_flat_list;
                 double angle_span = profile_round_max_angle;

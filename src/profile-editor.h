@@ -7,7 +7,7 @@
 #ifndef PROFILE_EDITING_H
 #define PROFILE_EDITING_H
 
-#include <gtkmm.h>
+#include <gtkmm/dialog.h>
 #include <goocanvasmm.h>
 #include "profile.h"
 

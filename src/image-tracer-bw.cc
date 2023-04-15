@@ -368,7 +368,7 @@ static IndexedImage imagedataToTracedata (const ImageData& imgd,
 
   // 4. Batch interpollation
   vector<vector<vector<vector<double>>>> bis = batchinternodes(bps);
-  print("batchinterpollation: {}ms\n\n", GetTimeInMillis()-time0);
+  print("batchinterpolation: {}ms\n", GetTimeInMillis()-time0);
   time0 = GetTimeInMillis();
 
 #if 0
