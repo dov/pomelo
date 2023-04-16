@@ -73,7 +73,7 @@ Pomelo::Pomelo(shared_ptr<PomeloSettings> pomelo_settings)
   m_refActionGroup->add_action("save_project",
     sigc::mem_fun(*this, &Pomelo::on_action_save_project) );
 
-  m_refActionGroup->add_action("save_project_as",
+  m_refActionGroup->add_action("save_as_project",
     sigc::mem_fun(*this, &Pomelo::on_action_save_as_project) );
 
   m_refActionGroup->add_action("import_profile",
@@ -148,7 +148,7 @@ Pomelo::Pomelo(shared_ptr<PomeloSettings> pomelo_settings)
     "          <attribute name='accel'>&lt;Primary&gt;s</attribute>"
     "        </item>"
     "        <item>"
-    "          <attribute name='label'>_Save project</attribute>"
+    "          <attribute name='label'>Save project _As</attribute>"
     "          <attribute name='action'>pomelo.save_as_project</attribute>"
     "          <attribute name='accel'>&lt;Primary&gt;a</attribute>"
     "        </item>"
@@ -319,7 +319,10 @@ void Pomelo::on_action_open_project()
   auto dialog = Gtk::FileChooserNative::create("Pomelo project",
                                                *this,
                                                Gtk::FILE_CHOOSER_ACTION_OPEN);
-  
+
+  auto filter = Gtk::FileFilter::create();
+  filter->add_pattern("*.po3d");
+  dialog->add_filter(filter);
   if (m_last_save_as_filename.size())
     dialog->select_filename(m_last_save_as_filename);
 
@@ -378,7 +381,11 @@ void Pomelo::on_action_save_as_project()
   {
   case Gtk::RESPONSE_ACCEPT:
   {
-    Glib::ustring filename = dialog->get_filename();
+    string filename = dialog->get_filename();
+
+    if (!ends_with(tolower(filename), ".po3d"))
+      filename += ".po3d";
+
     Glib::RefPtr<Gio::File> file = Gio::File::create_for_path(filename);
     string basename = file->get_basename();
     m_last_selected_file = filename;
@@ -529,6 +536,9 @@ void Pomelo::on_action_export_profile()
   case Gtk::RESPONSE_ACCEPT:
   {
     filename = dialog->get_filename();
+    if (!ends_with(tolower(filename), ".prof3d"))
+      filename += ".prof3d";
+
     spdlog::info("Exporting profile to {}", filename);
 
     string profile = m_main_input.get_profile_string();

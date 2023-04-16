@@ -255,27 +255,28 @@ TeXtrusion::polys_to_polys_with_holes(vector<Polygon_2> polys)
             
 
     // Optionally save the cairo paths colored by the direction.
-    if (do_save_cairo_paths) {
+    if (do_save_cairo_paths)
+    {
       print("Saving to cairo_paths.giv\n");
-        ofstream fh("cairo_paths.giv");
-        array<string,2> color = {"red","green"};
+      ofstream fh("cairo_paths.giv");
+      array<string,2> color = {"red","green"};
   
-        int poly_idx=0;
-        for (auto &poly : polys) {
-            fh << format("$arrow end\n"
-                         "$marks fcircle\n"
-                         "$line\n"
-                         "$color {}\n"
-                         "$lw 2\n"
-                         "$balloon orientation {}\n"
-                         "$path poly/{}\n",
-                         color[poly.orientation()<0],
-                         poly.orientation(),
-                         poly_idx++);
-            for (auto&p : poly) 
-                fh << format("{:.7f} {:.7f}\n", p.x(), p.y());
-            fh << "z\n\n";
-        }
+      int poly_idx=0;
+      for (auto &poly : polys) {
+        fh << format("$arrow end\n"
+                     "$marks fcircle\n"
+                     "$line\n"
+                     "$color {}\n"
+                     "$lw 2\n"
+                     "$balloon orientation {}\n"
+                     "$path poly/{}\n",
+                     color[poly.orientation()<0],
+                     poly.orientation(),
+                     poly_idx++);
+        for (auto&p : poly) 
+          fh << format("{:.7f} {:.7f}\n", p.x(), p.y());
+        fh << "z\n\n";
+      }
     }
 
 
@@ -513,14 +514,9 @@ void TeXtrusion::add_region_contribution_cap_to_mesh(
           // triangles in pp.
           int poly_idx= 0;
           bool found = false;
+          
           for (const auto &poly : pp)
           {
-            if (layer_idx==1
-                && ph_idx==0
-                && r_idx == 8
-                && poly_idx == 2)
-              fmt::print("Found it!\n");
-
             // Loop over the triangle looking for the edge that
             // is parallel to the region at offs_start. There is
             // only one such edge in the triangle, but we don't know
@@ -699,12 +695,6 @@ void TeXtrusion::add_region_contribution_to_mesh(
       lower_connection_rings.size())
     throw std::runtime_error("Can't connect upper and lower rings with different sizes!");
 
-  // Add a tube between upper and lower segment (quad)
-  // TBD: Why isn't this exactly always ==1 for a region!
-  if (layer_idx == 1)
-    print("Connection r_idx={} rings_size={}\n",
-          r_idx, lower_connection_rings.size());
-
   for (int ring_idx=0; ring_idx<(int)upper_connection_rings.size(); ring_idx++)
     {
       // Assume that the upper and lower rings have exactly two
@@ -712,19 +702,13 @@ void TeXtrusion::add_region_contribution_to_mesh(
       auto& ur = upper_connection_rings[ring_idx];
       auto& lr = lower_connection_rings[ring_idx];
 
-      // TBD - Figure out why this does not include all
-      // ur to lr connections!!
-
       mesh.vertices.push_back(ur[0]);
       mesh.vertices.push_back(ur[1]);
       mesh.vertices.push_back(lr[0]);
       mesh.vertices.push_back(ur[1]);
       mesh.vertices.push_back(lr[1]);
       mesh.vertices.push_back(lr[0]);
-
-      break;
     }
-
 }
 
 // Turn the skeleton into a 3D mesh
