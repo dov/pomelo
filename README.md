@@ -2,7 +2,7 @@
 
 Pomelo is a graphic interactive program for creating 3D meshes of text. The resulting mesh may be exported as a STL file, e.g. for importing into Blender for further processing.
 
-![Pomelo Screenshot](pomelo-screenshot.png)
+![Pomelo Screenshot](pomelo-screenshot-color.png)
 
 # Used technologies
 
