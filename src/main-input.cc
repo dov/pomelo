@@ -1,6 +1,7 @@
 #include "main-input.h"
 #include "dov-mm-macros.h"
 #include "pomelo-widget-utils.h"
+#include <gtkmm/messagedialog.h>
 #include <math.h>
 #include <fmt/core.h>
 #include <spdlog/spdlog.h>
@@ -189,6 +190,21 @@ MainInput::MainInput(Gtk::Window& window)
   m_profile_editor_window.signal_response().connect([&](int response_id)
   {
     fmt::print("Got response {}\n", response_id);
+    if (response_id == 0
+        && !m_profile_editor_window.get_is_positive_monotone())
+    {
+      spdlog::info("Tried to accepting a non monotone profile!");
+      Gtk::MessageDialog dialog(
+        *static_cast<Gtk::Window*>(this->get_toplevel()),
+        "One of the curves has a non-positive node. Fix this before continuing!",
+        false, // use_markup
+        Gtk::MESSAGE_ERROR,
+        Gtk::BUTTONS_OK,
+        true); // modal
+      dialog.run();
+      
+      return;
+    }
     m_profile_editor_window.hide();
     m_signal_profile_edited();
 

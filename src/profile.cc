@@ -29,6 +29,14 @@ Vec2 from_json(const nlohmann::json& j)
               j.value("y", 0.0));
 }
 
+// Test if the node is "positive directional", i.e. it has no
+// negative directional tangents.
+bool NodeData::is_positive_directional() const
+{
+  return control_before_xy.x < xy.x && xy.x < control_after_xy.x;
+}
+
+
 void ProfileData::load_from_string(const string& profile_string)
 {
   json j = json::parse(profile_string);
@@ -203,4 +211,16 @@ bool LayerData::get_intersect_coord(double x,
   }
 
   return ret;
+}
+
+// Test whether the curve is monotone
+bool LayerData::is_positive_monotone() const
+{
+  for (size_t i=0; i < this->size(); i++)
+  {
+    const auto& n = (*this)[i];
+    if (i>0 && n.xy.x+n.control_before_xy.x < (*this)[i-1].control_after_xy.x)
+      return false;
+  }
+  return true;
 }

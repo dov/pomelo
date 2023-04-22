@@ -47,6 +47,10 @@ class NodeData {
     control_before_xy = ::from_json(j["control_before_xy"]);
     control_after_xy = ::from_json(j["control_after_xy"]);
   }
+
+  // Test if the node is "positive directional", i.e. it has no
+  // negative directional tangents.
+  bool is_positive_directional() const;
 };
 
 class LayerData : public std::vector<NodeData> {
@@ -84,6 +88,9 @@ class LayerData : public std::vector<NodeData> {
       (*this)[i].from_json(j[i]);
   }
 
+  // Test if positive monotone
+  bool is_positive_monotone() const;
+
   private:
   std::vector<Vec2> flat_list;
 };
@@ -97,7 +104,7 @@ class ProfileData : public std::vector<LayerData> {
 
   // for debugging
   void save_flat_to_giv(const std::string& filename);
-  
+
 };
 
 #endif /* PROFILE */

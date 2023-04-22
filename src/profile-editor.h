@@ -69,6 +69,9 @@ class Node {
   // Show the node control points
   void set_show_control(bool show_control);
   void auto_show_control();
+
+  // Whether the node is positive directional
+  bool is_positive_directional(const Node* prev_node) const;
 };
 
 class Layer : public std::vector<Node> {
@@ -101,6 +104,7 @@ class Layer : public std::vector<Node> {
 
   // Make selected nodes into round
   void round_selected_symmetric_nodes();
+
 };
 
 class ProfileEditor : public Gtk::Box
@@ -132,6 +136,11 @@ class ProfileEditor : public Gtk::Box
   // Set the profile from the external data
   void set_profile(const ProfileData& prof);
 
+  // Query whether the profile is positive
+  bool get_is_positive_monotone() const {
+    return is_positive_monotone;
+  }
+
   private:
   // A canvas item for the layers graphs
   Glib::RefPtr< Goocanvas::Group > m_layers_group;
@@ -154,6 +163,11 @@ class ProfileEditor : public Gtk::Box
   double m_profile_maxx = 30;
   double m_profile_maxy = 10;
   const int m_max_layers = 3;
+
+  const double control_point_radius = 5;
+  const double node_radius = 10;
+
+  bool is_positive_monotone = true;
 };
 
 #endif /* PROFILE-EDITING */

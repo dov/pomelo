@@ -193,7 +193,6 @@ void ProfileEditor::populate_canvas_items()
   string colors[2] = { "pink", "blue" }; // colors not selected and selected
   string color_per_layer[4] = {"red","green","orange","cyan" };
 
-
   // Remove the old layer drawing. Do from the end to not disturb the
   // enumeration
   for (int i=m_layers_group->get_n_children()-1; i>=0; i--)
@@ -215,8 +214,8 @@ void ProfileEditor::populate_canvas_items()
   
         // Create the control points
         (*layer)[i].item_control_group = Goocanvas::Group::create();
-        (*layer)[i].item_control_minus = Goocanvas::Ellipse::create(0,0,9,9);
-        (*layer)[i].item_control_plus = Goocanvas::Ellipse::create(0,0,9,9);
+        (*layer)[i].item_control_minus = Goocanvas::Ellipse::create(0,0,control_point_radius,control_point_radius);
+        (*layer)[i].item_control_plus = Goocanvas::Ellipse::create(0,0,control_point_radius,control_point_radius);
         (*layer)[i].item_control_line = Goocanvas::Polyline::create(false,Goocanvas::Points(1));
   
 #if 0
@@ -246,7 +245,7 @@ void ProfileEditor::populate_canvas_items()
   
         if (!layer->is_baselayer || i<layer->size()-1)
           {
-            auto circle = Goocanvas::Ellipse::create(0,0,15,15);
+            auto circle = Goocanvas::Ellipse::create(0,0,node_radius,node_radius);
             circle->property_fill_color() = color ;
             circle->property_stroke_color() = "black" ;
             circle->property_line_width() = 1.5 ;
@@ -307,19 +306,31 @@ void ProfileEditor::populate_canvas_items()
 // Update the ites to match the layer coordinates
 void ProfileEditor::draw_layers()
 {
-  string colors[2] = { "pink", "blue" }; // colors not selected and selected
+  string colors[3] = { "pink", "blue","red" }; // colors not selected and selected
 
-  for (auto layer : m_layers) {
+  // Setting for the profile editor, will be used to issue warning on
+  // the accept signal
+  this->is_positive_monotone = true; // assume it is
+  for (const auto& layer : m_layers) {
     // Create group for the layer
     auto layer_group = layer->item_group;
 
     // Create the bezier curve
     string path_string;
 
+    Node *prev_point = nullptr;
     for (size_t i=0; i<layer->size(); i++) {
-      auto& n = (*layer)[i];
+      const auto& n = (*layer)[i];
       auto color = colors[int((*layer)[i].selected)];
+      double line_width = 3.0; // Default line_width
 
+      // Warning color if a node isn't positive directional
+      if (!n.is_positive_directional(prev_point))
+      {
+        color = colors[2];
+        this->is_positive_monotone = false;
+        line_width *= 2.0; // Make it thicker for the color blind
+      }
       double cx, cy;
 
       profile_coord_to_canvas_coord((*layer)[i].xy.x, (*layer)[i].xy.y,
@@ -362,7 +373,7 @@ void ProfileEditor::draw_layers()
                                         dx,dy);
           th0 = MY_TWO_PI/6-atan2(dy,dx);
 
-          double radius = 20;
+          double radius = node_radius*2;
           for (int j=0; j<3; j++)
             {
               double th = th0 + j * MY_TWO_PI/3;
@@ -373,6 +384,7 @@ void ProfileEditor::draw_layers()
           
           poly->property_points() = points;
           poly->property_fill_color() = color;
+          poly->property_line_width() = line_width;
 
         }
       else
@@ -381,6 +393,7 @@ void ProfileEditor::draw_layers()
           circle->property_center_x() = cx;
           circle->property_center_y() = cy;
           circle->property_fill_color() = color;
+          circle->property_line_width() = line_width;
         }
 
       // Update the control points. 
@@ -416,6 +429,7 @@ void ProfileEditor::draw_layers()
         points.set_coordinate(i, coords[i][0], coords[i][1]);
       (*layer)[i].item_control_line->property_points() = points;
       (*layer)[i].auto_show_control();
+      prev_point = &(*layer)[i];
     }
       
     layer->item_path->property_data() = path_string;
@@ -752,6 +766,10 @@ bool Node::on_motion_notify(const Glib::RefPtr<Goocanvas::Item>& item,
       drag_xy = {new_x, new_y};
 
       pe->draw_layers();
+
+      // Always redraw to update the monotone property colors.
+      // This can be optimized, but it probably doesn't matter
+      this->pe->draw_layers();
     }
   return true;
 }
@@ -778,6 +796,24 @@ void Node::set_show_control(bool show_control)
   else
     // "Hide it" by moving it far far away
     item_control_group->set_simple_transform(0,9999,1.0,0);
+}
+
+// Whether the node is positive directional
+bool Node::is_positive_directional(const Node *prev_point) const
+{
+  // special condition for first point
+  if (prev_point == nullptr)
+    return dxyp.x >= 0;
+
+  // Check conditions of the point itself
+  if (!(dxym.x <= 0 && dxyp.x >= 0))
+    return false;
+  // Check conditions vs the previous point
+  if (prev_point
+      && prev_point->xy.x + prev_point->dxyp.x
+      > xy.x + dxym.x)
+    return false;
+  return true;
 }
 
 // Get the current edited profile as an exported profile data

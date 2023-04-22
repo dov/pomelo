@@ -22,6 +22,9 @@ class ProfileEditorWindow : public Gtk::Dialog {
   // Set the profile from the external data
   void set_profile(const ProfileData& prof);
 
+  // Get whether the profile is positive monotone
+  bool get_is_positive_monotone() const;
+
   private:
   ProfileEditor *profile_editor=nullptr;
 };

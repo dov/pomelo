@@ -44,3 +44,10 @@ void ProfileEditorWindow::set_profile(const ProfileData& prof)
     print("Oops\n");
 }
 
+bool ProfileEditorWindow::get_is_positive_monotone() const
+{
+  if (profile_editor)
+    return profile_editor->get_is_positive_monotone();
+  else
+    print("Oops\n");
+}
