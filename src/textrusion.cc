@@ -371,6 +371,7 @@ vector<PHoleInfo> TeXtrusion::skeletonize(const std::vector<Polygon_with_holes>&
 
     vector<PHoleInfo> phole_infos;
 
+    spdlog::info("Skeletonizing {} polygons with holes", polys_with_holes.size());
     for (int ph_idx=0; ph_idx < (int)polys_with_holes.size(); ph_idx++) {
         if (updater &&
             updater->info("skeletonize", 1.0*ph_idx/polys_with_holes.size()))
@@ -378,9 +379,13 @@ vector<PHoleInfo> TeXtrusion::skeletonize(const std::vector<Polygon_with_holes>&
 
         const auto& ph = polys_with_holes[ph_idx];
 
+        spdlog::info("Skeletonized phole {}", ph_idx);
+
         PHoleInfo phi(ph);
         phi.skeletonize();
+        spdlog::info("Dividing phole {} into regions", ph_idx);
         phi.divide_into_regions();
+        
         phi.m_debug_dir = m_debug_dir;
         phole_infos.push_back(phi);
     }
@@ -1004,7 +1009,18 @@ mark_domains(CDT& cdt)
 // Convert the member polygon_with_holes into a skeleton
 void PHoleInfo::skeletonize()
 {
-    skeleton = CGAL::create_interior_straight_skeleton_2(polygon_with_holes);
+  skeleton = CGAL::create_interior_straight_skeleton_2(polygon_with_holes);
+  if (!skeleton)
+  {
+    spdlog::error("Failed finding skeleton!");
+    return;
+  }
+
+  int count_half_edges = 0;
+  for (auto it = skeleton->halfedges_begin(); it != skeleton->halfedges_end(); ++it)
+    count_half_edges++;
+
+  spdlog::info("Found skeleton with {} half edges!", count_half_edges);
 }
 
 // Divide the member skeleton into SkeletonPolygonRegions
@@ -1072,6 +1088,7 @@ void PHoleInfo::divide_into_regions()
             regions.push_back(region);
         }
     }
+    spdlog::info("Added {} regions", regions.size());
 }
 
 double SkeletonPolygonRegion::get_depth() const

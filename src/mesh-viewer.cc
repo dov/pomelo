@@ -411,6 +411,7 @@ bool MeshViewer::on_render (const Glib::RefPtr< Gdk::GLContext >& context)
   {
     throw_if_error(); 
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_MULTISAMPLE);
     glDepthFunc(GL_LESS);
     glClearColor (m_background[0],
                   m_background[1],

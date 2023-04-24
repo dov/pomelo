@@ -140,7 +140,7 @@ void WorkerSkeleton::do_work_skeleton(
       {
         double max_angle_to_smooth = m_pomelo_settings->get_double_default("smooth_max_angle", 135) * DEG2RAD;
         print("max_angle_to_smooth = {}\n", max_angle_to_smooth/DEG2RAD);
-        polys_with_holes = smooth_acute_angles(0.1, max_angle_to_smooth, polys_with_holes, 16);
+        polys_with_holes = smooth_acute_angles(0.15, max_angle_to_smooth, polys_with_holes, 16);
       }
     
     m_phole_infos = m_textrusion->skeletonize(polys_with_holes,

@@ -180,6 +180,7 @@ void ProfileData::save_flat_to_giv(const std::string& filename)
 
     fh << format("$path layer {}\n"
                  "$color {}\n"
+                 "$vflip\n"
                  ,
                  layer_idx,
                  colors[layer_idx%colors.size()]);

@@ -121,6 +121,45 @@ void FlattenByBitmap::flatten_by_bitmap(cairo_surface_t *rec_surface,
   for (int i=0; i<surface_stride*surface_height; i++)
     data[i] = int(data[i]>128)*255;
 
+  // Single "holes" create bad artifacts. Close these by a one
+  // step morphology!
+  for (int row_idx=1; row_idx<surface_height-1; row_idx++)
+  {
+    uint8_t *prow = data+(row_idx-1)*surface_stride;
+    uint8_t *row = data+row_idx*surface_stride;
+    uint8_t *nrow = data+(row_idx+1)*surface_stride;
+    for (int col_idx=1; col_idx<surface_width-1; col_idx++)
+    {
+      if (
+         ~row[col_idx]
+         & (
+           // right
+           (  prow[col_idx-1]             //  1 1 X
+            & prow[col_idx]               //  1 0 X
+            & row[col_idx-1]              //  1 1 X
+            & nrow[col_idx-1]             //  (X=don't care)
+            & nrow[col_idx])
+           | //left
+           (  prow[col_idx+1]             // X 1 1
+            & prow[col_idx]               // X 0 1
+            & row[col_idx+1]              // X 1 1
+            & nrow[col_idx+1]
+            & nrow[col_idx])
+           | // up
+           (  row[col_idx-1]              // X X X
+            & row[col_idx+1]              // 1 0 1
+            & nrow[col_idx-1]             // 1 1 1
+            & nrow[col_idx]
+            & nrow[col_idx+1])
+           | // down
+           (  prow[col_idx-1]             // 1 1 1
+            & prow[col_idx]               // 1 0 1
+            & prow[col_idx+1]             // X X X
+            & row[col_idx-1]
+            & row[col_idx+1])))
+        row[col_idx]=255;                // Center 0 -> 1
+    }
+  }
 
 #if 0
   ofstream fh("/tmp/flat-before-trace.pgm", ios::binary);
