@@ -104,9 +104,9 @@ ProfileEditor::ProfileEditor()
 
   // Draw a graph just to make sure it works
   auto points = Goocanvas::Points(3);
-  points.set_coordinate(0, m_xmargin, m_ymargin);
+  points.set_coordinate(0, m_xmargin, m_ymargin*2);
   points.set_coordinate(1, m_xmargin, m_canvas_height-m_ymargin);
-  points.set_coordinate(2, m_canvas_width-m_xmargin, m_canvas_height-m_ymargin);
+  points.set_coordinate(2, m_canvas_width-m_xmargin*2, m_canvas_height-m_ymargin);
   auto line = Goocanvas::Polyline::create(false, points); 
   line->property_stroke_color() = "black" ;
   line->property_line_width() = 3.0 ;
@@ -118,6 +118,29 @@ ProfileEditor::ProfileEditor()
 
   auto root = w_canvas->get_root_item();
   root->add_child(line);
+
+  // text annotation to the graph
+  auto text = Goocanvas::Text::create("d",
+                                      m_canvas_width-m_xmargin,
+                                      m_canvas_height-m_ymargin,
+                                      -1, // width
+                                      Goocanvas::ANCHOR_EAST
+                                      );
+  text->property_font() = "Sans Italic 24";
+  text->property_fill_color() = "blue";
+  root->add_child(text);
+
+  text = Goocanvas::Text::create("h(d)",
+                                 m_xmargin,
+                                 m_ymargin,
+                                 -1, // width
+                                 Goocanvas::ANCHOR_CENTER
+                                 );
+  text->property_font() = "Sans Italic 24";
+  text->property_fill_color() = "blue";
+  root->add_child(text);
+
+  // TBD add tooltips to the graph parts
 
   // clear all selected items on button click
   w_canvas->signal_button_press_event().connect(
