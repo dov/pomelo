@@ -475,6 +475,7 @@ class Giv:Widget from Gtk:Image:Viewer
               giv_widget_set_show_marks(self, !selfp->do_show_marks);
               gtk_image_viewer_redraw(GTK_IMAGE_VIEWER(self), true);
               return 1;
+#if 0
           case 'g':
               giv_widget_set_show_grid(self, !selfp->do_show_grid);
               gtk_image_viewer_redraw(GTK_IMAGE_VIEWER(self), true);
@@ -483,6 +484,7 @@ class Giv:Widget from Gtk:Image:Viewer
               giv_widget_set_show_cross_hair(self, !selfp->do_show_cross_hair);
               gtk_image_viewer_redraw(GTK_IMAGE_VIEWER(self), true);
               return 1;
+#endif
           case 'f':
               giv_widget_zoom_fill_image_or_giv(self);
               return 1;

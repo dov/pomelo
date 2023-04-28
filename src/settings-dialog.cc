@@ -20,7 +20,6 @@ SettingsDialog::SettingsDialog(Gtk::Window& parent,
   m_notebook = Gtk::make_managed<Gtk::Notebook>();
   get_content_area()->pack_start(*m_notebook);
 
-#if 0
   // Currently we don't have any skeleton settings
 
   // Build the skeleton page
@@ -56,7 +55,6 @@ SettingsDialog::SettingsDialog(Gtk::Window& parent,
     w_grid->attach(*mmLabelLeft("[°]"),                2,row);
     row++;
   }
-#endif
 
   //------------------------------------------------------------------
   {
@@ -110,10 +108,8 @@ SettingsDialog::SettingsDialog(Gtk::Window& parent,
 
 void SettingsDialog::load_from_settings()
 {
-#if 0
   m_sharp_angles_checkbutton->set_active(m_pomelo_settings->get_int_default("smooth_sharp_angles", 1));
   m_smooth_angle_max->set_value(m_pomelo_settings->get_double_default("smooth_max_angle", 135));
-#endif
 
   Gdk::RGBA color = Gdk::RGBA(m_pomelo_settings->get_string_default("background_color", "#608080"));
   m_background_chooser->set_rgba(color);
@@ -130,12 +126,10 @@ void SettingsDialog::load_from_settings()
 
 void SettingsDialog::save_to_settings()
 {
-#if 0
   m_pomelo_settings->set_int("smooth_sharp_angles",
                              m_sharp_angles_checkbutton->get_active());
   m_pomelo_settings->set_double("smooth_max_angle",
                                 m_smooth_angle_max->get_value());
-#endif
   m_pomelo_settings->set_string("background_color",
                                 m_background_chooser->get_rgba().to_string());
   m_pomelo_settings->set_string("mesh_color",

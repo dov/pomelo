@@ -106,6 +106,8 @@ calc_smooth_polygon(const Polygon_2& poly,
       const auto& p = poly[(i-1+n)%n];
       const auto& q = poly[i];
       const auto& r = poly[(i+1)%n];
+      double dpq = CGAL::sqrt((p-q).squared_length());
+      double dqr = CGAL::sqrt((q-r).squared_length());
 
       if (calc_angle(p,q,r) > max_angle_to_smooth)
         ret.push_back(q);
@@ -114,9 +116,29 @@ calc_smooth_polygon(const Polygon_2& poly,
         Point_2 c;
         double th_s, th_e;
         bool inner_angle;
-        find_center_of_rotation(p,q,r,radius,
-                                // output
-                                c, th_s, th_e, inner_angle);
+
+        // Reduce the radius until the start and the end fall
+        // in the triangle pqr.
+        double rd = radius;
+        if (rd > dpq/2)
+          rd = dpq/2;
+        if (rd > dqr/2)
+          rd = dqr/2;
+        while(true)
+        {
+          find_center_of_rotation(p,q,r,rd,
+                                  // output
+                                  c, th_s, th_e, inner_angle);
+          Point_2 p_start { c[0] + rd * cos(th_s),
+                            c[1] + rd * sin(th_s) };
+          Point_2 p_end { c[0] + rd * cos(th_e),
+                          c[1] + rd * sin(th_e) };
+          double d_p_start = CGAL::sqrt((q-p_start).squared_length());
+          double d_p_end = CGAL::sqrt((q-p_end).squared_length());
+          if (d_p_start < dpq && d_p_end < dqr)
+            break;
+          rd *= 0.9;
+        }
         if ((inner_angle && !smooth_inner_angles)
             || (!inner_angle && !smooth_outer_angles))
           ret.push_back(q);
@@ -127,8 +149,8 @@ calc_smooth_polygon(const Polygon_2& poly,
               {
                 double th = th_s + dth * i;
                 ret.push_back(
-                  {c[0] + radius * cos(th),
-                   c[1] + radius * sin(th)});
+                  {c[0] + rd * cos(th),
+                   c[1] + rd * sin(th)});
               }
           }
       }

@@ -33,6 +33,47 @@ using namespace fmt;
 const double MY_PI=3.141592653589793;
 const double DEG2RAD=MY_PI/180;
 
+// These should be in a utility library
+static void poly_to_giv(const string& filename,
+                        const string& header,
+                        const Polygon_2& poly,
+                        bool append)
+{
+    auto flags = ofstream::out;
+    if (append)
+        flags |= ofstream::app;
+    ofstream of(filename, flags);
+    of << header;
+    of << "m ";
+    for (const auto& p  : poly)
+        of << p.x() << " " << p.y() << "\n";
+    of << "z\n\n";
+    of.close();
+}
+
+
+static void polys_with_holes_to_giv(const string& filename,
+                                    const string& outer_header,
+                                    const string& hole_header,
+                                    std::vector<Polygon_with_holes>& polys,
+                                    bool append)
+{
+  for (const auto &ph : polys)
+  {
+    poly_to_giv(filename,
+                outer_header,
+                ph.outer_boundary(),
+                append);
+    append = true;
+    for (const auto &h : ph.holes())
+      poly_to_giv(filename,
+                  hole_header,
+                  h,
+                  append);
+      
+  }
+}
+
 // constructor
 WorkerSkeleton::WorkerSkeleton(Pomelo *caller,
                                shared_ptr<PomeloSettings> pomelo_settings
@@ -110,7 +151,7 @@ void WorkerSkeleton::do_work_skeleton(
   bool finished_successfully = false;
   string error_message;
   string giv_string;
-  double resolution = 20;
+  double resolution = 100; // will be automatically reduced if needed
 
   try {
     cairo_surface_t *rec_surface = cairo_recording_surface_create(
@@ -136,13 +177,55 @@ void WorkerSkeleton::do_work_skeleton(
     print("{} polys found\n", polys.size());
     auto polys_with_holes = m_textrusion->polys_to_polys_with_holes(polys);
 
+    string giv_filename = format("{}/polys_with_holes.giv", m_debug_dir);
+    string outer_header = fmt::format(
+      "$color red\n"
+      "$path orig/outer\n"
+      "$marks fcircle\n");
+    string hole_header = fmt::format(
+      "$color green\n"
+      "$path orig/hole\n"
+      "$marks fcircle\n");
+
+    if (m_debug_dir.size())
+    {
+      spdlog::info("Saving polys with holes to {}", giv_filename);
+      polys_with_holes_to_giv(giv_filename,
+                              outer_header,
+                              hole_header,
+                              polys_with_holes,
+                              false);
+    }
+
     if (m_pomelo_settings->get_int_default("smooth_sharp_angles",1))
       {
-        double max_angle_to_smooth = m_pomelo_settings->get_double_default("smooth_max_angle", 135) * DEG2RAD;
+        double max_angle_to_smooth = m_pomelo_settings->get_double_default("smooth_max_angle", 160) * DEG2RAD;
         print("max_angle_to_smooth = {}\n", max_angle_to_smooth/DEG2RAD);
-        polys_with_holes = smooth_acute_angles(0.15, max_angle_to_smooth, polys_with_holes, 16);
+        polys_with_holes = smooth_acute_angles(0.5, max_angle_to_smooth, polys_with_holes, 16);
       }
-    
+
+    if (m_debug_dir.size())
+    {
+      spdlog::info("Saving smooth polys with holes to {}", giv_filename);
+
+      outer_header = fmt::format(
+        "$color purple\n"
+        "$path smooth/outer\n"
+        "$marks fcircle\n");
+      hole_header = fmt::format(
+        "$color seagreen\n"
+        "$path smooth/hole\n"
+        "$marks fcircle\n");
+
+
+      polys_with_holes_to_giv(giv_filename,
+                              outer_header,
+                              hole_header,
+                              polys_with_holes,
+                              true);
+    }
+
+
     m_phole_infos = m_textrusion->skeletonize(polys_with_holes,
                                               // output
                                               giv_string);

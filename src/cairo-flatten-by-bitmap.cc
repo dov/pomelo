@@ -72,6 +72,7 @@ void FlattenByBitmap::flatten_by_bitmap(cairo_surface_t *rec_surface,
 
   // Create an image with the above extents with resolution=resolution
   cairo_surface_t *surface = nullptr;
+  spdlog::info("Initial resolution={}", resolution);
   while(1)
   {
     if (surface)
@@ -82,10 +83,12 @@ void FlattenByBitmap::flatten_by_bitmap(cairo_surface_t *rec_surface,
     if (cairo_image_surface_get_width(surface))
       break;
     resolution/=2.0;
+    spdlog::info("Reducing resolution to {}", resolution);
   }
-  spdlog::info("surface size={}x{}", 
+  spdlog::info("surface size={}x{} resolution={}", 
                cairo_image_surface_get_width(surface),
-               cairo_image_surface_get_height(surface));
+               cairo_image_surface_get_height(surface),
+               resolution);
 
   cairo_t *cr = cairo_create(surface);
   cairo_scale(cr, resolution, resolution);
