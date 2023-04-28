@@ -26,20 +26,29 @@ Pomelo is a graphic interactive program for creating 3D meshes of text. The resu
 ![Pomelo Rounded Profile](pomelo-screenshot-simple.png)
 ![Pomelo Curve Profile](pomelo-screenshot-curve.png)
 
-# Known problems
+# Overview 
 
-The main problem of pomelo is related to the creation of the "straight skeleton", see [[https://en.wikipedia.org/wiki/Straight_skeleton]], a geometric construct that roughly describes the "middle" of the outline. 
+Pomelo works by a two phase algorithm:
 
-Here are some known problems related to the straight skeleton:
+1. Creation of a [Straight Skeleton](https://en.wikipedia.org/wiki/Straight_skeleton)
+2. Creation of the mesh based on the straight skeleton, and the choosen profile.
 
-1. It sometimes gets stuck for an indefinite time
-2. It sometimes crashes the program
-3. It sometimes does not "create anything"
-4. It creates ugly geometries of internal sharp angles
+# Profiles
 
-Pomelo contains mitigation for problem 4, through the advanced setting "smooth sharp angles", which makes the resulting geometry more pleasing. Unfortunately, it also has the side effect making the first three problems more likely to occur.
+Pomelo supports two types of profiles:
 
-Currently, for complex fonts and geometry, there is no other option than testing what works.
+1. The round profile, creates a round edge, smoothing the transition vertical to horizontal with a round radius.
+2. Through a Bezier based profile editor, that allow creating multiple profiles that are inserted on top of one another.
+
+![Profile editor](profile-editor-example.png)
+
+# Smoothing
+
+The straight skeleton's sometimes create sharp and ugly geometry. This may be partly mitigated 
+by turning on Settings/Smoothing option, which inserts additional nodes in the skeleton. However, the smoothing may itself create other artifacts. 
+
+![Non smoothed skeleton](pomelo-non-smooth-geometry.png)
+![Smoothed skeleton](pomelo-smooth-geometry.png)
 
 # Technical description
 
