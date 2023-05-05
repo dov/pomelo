@@ -4,6 +4,8 @@ Pomelo is a graphic interactive program for creating 3D meshes of text. The resu
 
 ![Pomelo Screenshot](pomelo-screenshot-color.png)
 
+See also a short intro at: https://www.youtube.com/watch?v=mCoGFMXl4X8
+
 # Used technologies
 
 - pango
