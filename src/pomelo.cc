@@ -426,14 +426,14 @@ void Pomelo::on_action_file_export_stl()
 
     auto meshes = m_worker_skeleton.get_meshes();
     string filenames;
-    for (size_t i=0; i<meshes.size(); i++)
+    for (size_t i=0; i<meshes->size(); i++)
       {
         string mesh_fn = mesh_filename;
 
         if (!ends_with(tolower(mesh_filename), ".stl"))
           mesh_filename += ".stl";
 
-        if (meshes.size()>1)
+        if (meshes->size()>1)
           {
             size_t found = mesh_filename.rfind('.');
             if (found==std::string::npos)
@@ -443,9 +443,9 @@ void Pomelo::on_action_file_export_stl()
 
        filenames += mesh_fn + " ";
 
-       save_stl(meshes[i], mesh_fn);
+       save_stl((*meshes)[i], mesh_fn);
        spdlog::info("Saved mesh with {} vertices to {}",
-                    meshes[i]->vertices.size(),
+                    (*meshes)[i].vertices.size(),
                     mesh_fn);
       }
     set_status(format("Saved file(s): {}", filenames));
@@ -579,24 +579,48 @@ void Pomelo::on_action_file_export_gltf()
   // Show the dialog and wait for a user response:
   const int result = dialog->run();
 
+  auto meshes = m_worker_skeleton.get_meshes();
+  vector<glm::vec3> mesh_colors;
+
+  for (size_t i=0; i<meshes->size(); i++)
+  {
+    Gdk::RGBA color;
+
+    if (i==0)
+      color = Gdk::RGBA(m_pomelo_settings->get_string_default("mesh_color",
+                                                              "#c0c0c0"));
+    else if (i==1)
+      color = Gdk::RGBA(m_pomelo_settings->get_string_default("mesh_level1_color",
+                                                              "#c0c0c0"));
+    else if (i==2)
+      color = Gdk::RGBA(m_pomelo_settings->get_string_default("mesh_level2_color",
+                                                              "#c0c0c0"));
+    mesh_colors.push_back(
+      {color.get_red(),
+       color.get_green(),
+       color.get_blue()});
+  }
+
+
   // Handle the response:
   switch (result)
   {
   case Gtk::RESPONSE_ACCEPT:
   {
     mesh_filename = dialog->get_filename();
-    auto meshes = m_worker_skeleton.get_meshes();
+
+    meshes->save_gltf(mesh_filename);
+    set_status(format("Saved meshes to {}", mesh_filename));
+
+#if 0
     for (size_t i=0; i<meshes.size(); i++)
       {
         auto& mesh = meshes[i];
         auto msh_fn = format("mesh-{:02d}.gltf", i);
         // TBD - create a multi mesh gltf file
-        save_gltf(meshes[i], mesh_filename);
-        set_status(format("Saved mesh with {} vertices to {}",
-                          mesh->vertices.size(),
-                          mesh_filename));
       }
 
+#endif
     break;
   }
 
@@ -797,10 +821,12 @@ void Pomelo::on_button_clicked()
 }
 #endif
 
+#if 0
 void Pomelo::set_mesh(const string& mesh_filename)
 {
   m_mesh_viewer.set_mesh_file(mesh_filename);
 }
+#endif
 
 void Pomelo::set_debug_dir(const string& debug_dir)
 {
@@ -922,6 +948,7 @@ void Pomelo::on_notification_from_skeleton_worker_thread()
               // Set the mesh!
               auto meshes = m_worker_skeleton.get_meshes();
               m_mesh_viewer.set_meshes(meshes);
+              m_mesh_viewer.refresh_from_settings(false);
               m_mesh_viewer.redraw();
             }
 
@@ -1086,6 +1113,8 @@ void Pomelo::load_project(const std::string& filename)
       continue;
     m_pomelo_settings->set_string(key, j.value(key,""));
   }
+  m_mesh_viewer.refresh_from_settings(false);
+  m_settings_dialog->load_from_settings();
 
   // visible layers
   vector<Glib::RefPtr<Gio::SimpleAction>> toggles = {

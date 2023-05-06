@@ -717,7 +717,7 @@ void TeXtrusion::add_region_contribution_to_mesh(
 }
 
 // Turn the skeleton into a 3D mesh
-vector<Mesh> TeXtrusion::skeleton_to_mesh(
+MultiMesh TeXtrusion::skeleton_to_mesh(
   const vector<PHoleInfo>& phole_infos,
   // output
   string& giv_string
@@ -727,7 +727,7 @@ vector<Mesh> TeXtrusion::skeleton_to_mesh(
     // viewer!
     stringstream ss;
 
-    vector<Mesh> meshes; // A container for the 3D meshes
+    MultiMesh meshes; // A container for the 3D meshes
 
     // Create the meshes. Round only has one mesh.
     if (this->use_profile_data)

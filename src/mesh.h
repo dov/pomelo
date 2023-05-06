@@ -15,10 +15,21 @@
 class Mesh {
   public:
   std::vector<glm::dvec3> vertices;  // 3 at a time for triangles
+  glm::vec3 color;
+};
+
+class MultiMesh : public std::vector<Mesh> {
+  public:
+  // TBD
+  void save_gltf(const std::string& filename);
 };
 
 std::shared_ptr<Mesh> read_stl(const std::string& filename);
-void save_stl(std::shared_ptr<Mesh> mesh, const std::string& filename);
-void save_gltf(std::shared_ptr<Mesh> mesh, const std::string& filename);
+void save_stl(const Mesh& mesh, const std::string& filename);
 
+#if 0
+void save_gltf(std::shared_ptr<Mesh> mesh,
+               const std::string& filename,
+               glm::vec3 mesh_colors);
+#endif
 #endif /* MESH */

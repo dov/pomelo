@@ -28,9 +28,11 @@ class MeshViewer : public Gtk::GLArea
   MeshViewer(std::shared_ptr<PomeloSettings> pomelo_settings);
 
   // Create a mesh 
-  void set_meshes(std::vector<std::shared_ptr<Mesh>> meshes,
+  void set_meshes(std::shared_ptr<MultiMesh> meshes,
                   bool update_view=true);
+#if 0
   void set_mesh_file(const std::string& mesh_filename);
+#endif
   void redraw();
 
   // Reset the view to the original view
@@ -139,12 +141,6 @@ class MeshViewer : public Gtk::GLArea
   
   // Background color and mesh colors
   glm::vec3 m_background = {0.4,0.4,0.5};
-  std::vector<glm::vec3> m_mesh_color = {
-    {0.8,0.8,0.8},  // This is controllable
-    {0.8,0,0},      
-    {0,0.8,0},
-    {0,0,0.8},
-  };
 
   // Whether there is a valid matcap
   bool m_has_matcap = false;
@@ -161,7 +157,7 @@ class MeshViewer : public Gtk::GLArea
 
   HWMesh m_hw_mesh;
   std::shared_ptr<PomeloSettings> m_pomelo_settings;
-  std::vector<std::shared_ptr<Mesh>> m_meshes;
+  std::shared_ptr<MultiMesh> m_meshes = std::make_shared<MultiMesh>();
 };
 
 #endif /* MESH-VIEWER */

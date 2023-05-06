@@ -42,7 +42,9 @@ public:
   Pomelo(std::shared_ptr<PomeloSettings> pomelo_settings);
   virtual ~Pomelo();
 
+#if 0
   void set_mesh(const std::string& mesh_filename);
+#endif
   void set_status(const std::string& message);
   void set_debug_dir(const std::string& debug_dir);
 

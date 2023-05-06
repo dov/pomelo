@@ -654,13 +654,13 @@ void MeshViewer::redraw()
   get_window()->invalidate_rect(rect, true);
 }
 
-void MeshViewer::set_meshes(vector<shared_ptr<Mesh>> meshes,
+void MeshViewer::set_meshes(shared_ptr<MultiMesh> meshes,
                             bool update_view)
 {
-  spdlog::info("set_meshes update_view={}. mesh_size={}",
-               update_view, meshes.size());
+  spdlog::info("set_meshes update_view={}. num_meshes={}",
+               update_view, meshes->size());
   m_meshes = meshes;
-  if (!m_meshes.size())
+  if (!m_meshes->size())
   {
     spdlog::info("No mesh to use!");
     return;
@@ -673,45 +673,45 @@ void MeshViewer::set_meshes(vector<shared_ptr<Mesh>> meshes,
       bbox[k+3] = -1 * numeric_limits<float>::infinity();
     }
     
-  for (size_t mesh_idx=0; mesh_idx<meshes.size(); mesh_idx++)
-    {
-      if (mesh_idx < m_show_layer.size() && !m_show_layer[mesh_idx])
-        continue;
+  for (size_t mesh_idx=0; mesh_idx<meshes->size(); mesh_idx++)
+  {
+    if (mesh_idx < m_show_layer.size() && !m_show_layer[mesh_idx])
+      continue;
 
-      vector<dvec3>& vertices = meshes[mesh_idx]->vertices; // shortcut
-      if (vertices.size() % 3 != 0)
+    vector<dvec3>& vertices = (*meshes)[mesh_idx].vertices; // shortcut
+    if (vertices.size() % 3 != 0)
+    {
+      spdlog::error("Expected number of vertices to a multiple of 3!");
+      throw runtime_error("Expected number of vertices to a multiple of 3!");
+    }
+    
+    for (size_t i=0; i<vertices.size(); i+= 3)
+    {
+      const vec3& v1 {vertices[i]};
+      const vec3& v2 {vertices[i+1]};
+      const vec3& v3 {vertices[i+2]};
+    
+      vec3 normal = glm::normalize(cross(v2-v1,v3-v1));
+      for (int j=0; j<3; j++)
       {
-        spdlog::error("Expected number of vertices to a multiple of 3!");
-        throw runtime_error("Expected number of vertices to a multiple of 3!");
-      }
-    
-      for (size_t i=0; i<vertices.size(); i+= 3)
-        {
-          const vec3& v1 {vertices[i]};
-          const vec3& v2 {vertices[i+1]};
-          const vec3& v3 {vertices[i+2]};
-    
-          vec3 normal = glm::normalize(cross(v2-v1,v3-v1));
-          for (int j=0; j<3; j++)
-            {
-              // Calculate the bounding box
-              for (int k=0; k<3; k++) {
-                float vv = vertices[i+j][k];
-                if (vv<bbox[k])
-                  bbox[k] =vv;
-                if (vv>bbox[k+3])
-                  bbox[k+3] = vv;
-              }
-              m_hw_mesh.vertices.push_back({
-                  vertices[i+j],
-                  //vec3(1.0,fmod(1.0*i/(20*3),1.0),fmod(1.0*i/10,1.0)), // Color red
-                  m_mesh_color[mesh_idx],
-                  normal,
-                  vec3(j==0,j==1,j==2) // bary
-                });
-            }
+        // Calculate the bounding box
+        for (int k=0; k<3; k++) {
+          float vv = vertices[i+j][k];
+          if (vv<bbox[k])
+            bbox[k] =vv;
+          if (vv>bbox[k+3])
+            bbox[k+3] = vv;
+        }
+        m_hw_mesh.vertices.push_back({
+            vertices[i+j],
+            //vec3(1.0,fmod(1.0*i/(20*3),1.0),fmod(1.0*i/10,1.0)), // Color red
+            (*m_meshes)[mesh_idx].color,
+            normal,
+            vec3(j==0,j==1,j==2) // bary
+          });
       }
     }
+  }
     
   spdlog::info("Loaded {} triangles", m_hw_mesh.vertices.size()/3);
 
@@ -747,12 +747,14 @@ void MeshViewer::set_meshes(vector<shared_ptr<Mesh>> meshes,
   spdlog::info("Done set_meshes()!");
 }
 
+#if 0
 void MeshViewer::set_mesh_file(const std::string& mesh_filename)
 {
   shared_ptr<Mesh> mesh = read_stl(mesh_filename);
   vector<shared_ptr<Mesh>> meshes = {mesh};
   set_meshes(meshes);
 }
+#endif
 
 // Setup the world view
 void MeshViewer::setup_world(double scale,
@@ -836,24 +838,27 @@ void MeshViewer::refresh_from_settings(bool update_view)
   Gdk::RGBA mesh_color(
     m_pomelo_settings->get_string_default("mesh_color",
                                           "#c0c0c0"));
-  m_mesh_color[0] = {
-    mesh_color.get_red(),
-    mesh_color.get_green(),
-    mesh_color.get_blue()};
+  if (m_meshes->size()>0)
+    (*m_meshes)[0].color = {
+      mesh_color.get_red(),
+      mesh_color.get_green(),
+      mesh_color.get_blue()};
 
   mesh_color = Gdk::RGBA(m_pomelo_settings->get_string_default("mesh_level1_color",
                                                                "#c0c0c0"));  
-  m_mesh_color[1] = {
-    mesh_color.get_red(),
-    mesh_color.get_green(),
-    mesh_color.get_blue()};
+  if (m_meshes->size()>1)
+    (*m_meshes)[1].color = {
+      mesh_color.get_red(),
+      mesh_color.get_green(),
+      mesh_color.get_blue()};
 
   mesh_color = Gdk::RGBA(m_pomelo_settings->get_string_default("mesh_level2_color",
                                                                "#c0c0c0"));  
-  m_mesh_color[2] = {
-    mesh_color.get_red(),
-    mesh_color.get_green(),
-    mesh_color.get_blue()};
+  if (m_meshes->size()>2)
+    (*m_meshes)[2].color = {
+      mesh_color.get_red(),
+      mesh_color.get_green(),
+      mesh_color.get_blue()};
 
   //spdlog::info("updating matcap");
   //update_matcap();

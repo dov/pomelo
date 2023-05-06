@@ -190,9 +190,9 @@ class TeXtrusion {
                                        std::string& giv_string);
 
     // Turn the skeleton into by the layers
-    std::vector<Mesh> skeleton_to_mesh(const std::vector<PHoleInfo>& phole_infos,
-                                     // output
-                                     std::string& giv_string);
+    MultiMesh skeleton_to_mesh(const std::vector<PHoleInfo>& phole_infos,
+                               // output
+                               std::string& giv_string);
 
     // Set the debug dir, when set debug algo files will be written to it
     void set_debug_dir(const std::string& debug_dir) {
