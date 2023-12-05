@@ -244,15 +244,15 @@ static void savePathsToGiv(const string& filename,
     int path_idx=0;
     for (const auto& path :layer)
     {
-      fh << format("$path layer {}/path {}\n"
+      fh << fmt::format("$path layer {}/path {}\n"
                    "$color {}\n",
                    layer_idx, path_idx,
                    layer_colors[layer_idx]);
       for (const auto& coord : path)
       {
-        fh << format("{} {}\n", coord[0], coord[1]);
+        fh << fmt::format("{} {}\n", coord[0], coord[1]);
       }
-      fh << format("z\n\n", path_idx);
+      fh << fmt::format("z\n\n", path_idx);
       path_idx++;
     }
     layer_idx++;
@@ -271,15 +271,15 @@ static void savePathsToGiv(const string& filename,
     int path_idx=0;
     for (const auto& path :layer)
     {
-      fh << format("$path layer {}/path {}\n"
+      fh << fmt::format("$path layer {}/path {}\n"
                    "$color {}\n",
                    layer_idx, path_idx,
                    layer_colors[layer_idx]);
       for (const auto& coord : path)
       {
-        fh << format("{} {}\n", coord[0], coord[1]);
+        fh <<fmt::format("{} {}\n", coord[0], coord[1]);
       }
-      fh << format("z\n\n", path_idx);
+      fh <<fmt::format("z\n\n", path_idx);
       path_idx++;
     }
     layer_idx++;
@@ -293,7 +293,7 @@ static string saveLayersToGiv(const string& image_filename,
   stringstream strm;
 
   if (image_filename.size())
-    strm << format("$image {}\n\n", image_filename);
+    strm <<fmt::format("$image {}\n\n", image_filename);
 
   int layer_idx=0;
   for (const auto& layer : layers)
@@ -301,7 +301,7 @@ static string saveLayersToGiv(const string& image_filename,
     int path_idx=0;
     for (const auto& path :layer)
     {
-      strm << format("$path layer {}/path {}\n"
+      strm <<fmt::format("$path layer {}/path {}\n"
                      "$color {}\n"
                      "$lw 3\n"
                      ,
@@ -314,25 +314,25 @@ static string saveLayersToGiv(const string& image_filename,
       {
         if (coord_idx == 0
             || (coord[1]!= old_x || coord[2] != old_y))
-          strm << format("{} {}\n", coord[1], coord[2]);
+          strm <<fmt::format("{} {}\n", coord[1], coord[2]);
 
         if (coord[0] == 2.0) // quadratic
         {
-          strm << format("R {} {} {} {}\n",
+          strm <<fmt::format("R {} {} {} {}\n",
                          coord[3], coord[4], coord[5], coord[6]);
           old_x = coord[5];
           old_y = coord[6];
         }
         else // a line
         {
-          strm << format("{} {}\n", coord[3], coord[4]);
+          strm <<fmt::format("{} {}\n", coord[3], coord[4]);
           old_x = coord[1];
           old_y = coord[2];
         }
 
         coord_idx++;
       }
-      strm << format("z\n\n", path_idx);
+      strm <<fmt::format("z\n\n", path_idx);
       path_idx++;
     }
     layer_idx++;
@@ -1109,9 +1109,9 @@ static string getsvgstring (const IndexedImage& ii, map<string,double> options)
   int w = (int) (ii.width * options.at("scale")), h = (int) (ii.height * options.at("scale"));
   string viewboxorviewport;
   if (options.at("viewbox")!=0)
-    viewboxorviewport = format("viewBox=\"0 0 {} {}",w,h);
+    viewboxorviewport =fmt::format("viewBox=\"0 0 {} {}",w,h);
   else
-    viewboxorviewport = format("width=\"{}\" height=\"{}\" ",w,h);
+    viewboxorviewport =fmt::format("width=\"{}\" height=\"{}\" ",w,h);
 
   svgstr << "<svg " << viewboxorviewport << "version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\" ";
 
@@ -1159,7 +1159,7 @@ static string getsvgstring (const IndexedImage& ii, map<string,double> options)
   for(auto& [key, value] : zindex)
   {
     if(options.at("desc")!=0)
-      thisdesc = format("desc=\"l {} p {}\" ", value[0], value[1]);
+      thisdesc =fmt::format("desc=\"l {} p {}\" ", value[0], value[1]);
     else
       thisdesc = ""; 
 
@@ -1179,7 +1179,7 @@ static string getsvgstring (const IndexedImage& ii, map<string,double> options)
 
 static string tosvgcolorstr (const array<uint8_t,3>& c)
 {
-  return format("fill=\"rgb({},{},{})\" stroke=\"rgb({},{},{})\" stroke-width=\"1\"",
+  return fmt::format("fill=\"rgb({},{},{})\" stroke=\"rgb({},{},{})\" stroke-width=\"1\"",
                 c[0],c[1],c[2],
                 c[0],c[1],c[2]);
 }

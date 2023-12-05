@@ -13,7 +13,6 @@
 #include <spdlog/spdlog.h>
 
 using namespace std;
-using namespace fmt;
 static constexpr double MY_TWO_PI = 2*3.141592653589793;
 
 Gtk::Button *mmSvgButton(const string& filename,
@@ -144,7 +143,7 @@ ProfileEditor::ProfileEditor()
 
   // clear all selected items on button click
   w_canvas->signal_button_press_event().connect(
-    [=](GdkEventButton*) -> bool{
+    [=,this](GdkEventButton*) -> bool{
       spdlog::info("Got canvas button press event. Clear selected points");
       this->clear_all_selected();
       this->draw_layers();
@@ -360,7 +359,7 @@ void ProfileEditor::draw_layers()
                                     // output
                                     cx,cy);
       if (i==0)
-        path_string += format("M {} {} ", cx,cy);
+        path_string += fmt::format("M {} {} ", cx,cy);
       else
         {
           double cp1x, cp1y, cp2x, cp2y;
@@ -373,7 +372,7 @@ void ProfileEditor::draw_layers()
                                         (*layer)[i].xy.y+(*layer)[i].dxym.y,
                                         // output
                                         cp2x,cp2y);
-          path_string += format("C {} {} {} {} {} {} ",
+          path_string += fmt::format("C {} {} {} {} {} {} ",
                                 cp1x,cp1y,
                                 cp2x,cp2y,
                                 cx,cy);
@@ -569,7 +568,7 @@ void ProfileEditor::clear_all_selected(Layer *except_layer)
   for (auto layer : m_layers) {
     if (layer.get() == except_layer)
       {
-        print("Skipping zeroing selected\n");
+        fmt::print("Skipping zeroing selected\n");
         continue;
       }
     for (auto& node : *layer)
@@ -728,7 +727,7 @@ void Layer::corner_selected_nodes()
       if ((*this)[i].selected)
         {
           (*this)[i].type = NODE_CORNER;
-          print("Making node {} into a corner\n", i);
+          fmt::print("Making node {} into a corner\n", i);
         }
     }
 }
@@ -868,7 +867,7 @@ ProfileData ProfileEditor::get_profile()
 void ProfileEditor::set_profile(const ProfileData& prof)
 {
   m_layers.clear();
-  print("prof_size = {}\n", prof.size());
+  fmt::print("prof_size = {}\n", prof.size());
   for (size_t i=0; i<prof.size(); i++)
   {
     m_layers.push_back(make_shared<Layer>());

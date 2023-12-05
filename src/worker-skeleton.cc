@@ -28,7 +28,6 @@
 
 
 using namespace std;
-using namespace fmt;
 
 const double MY_PI=3.141592653589793;
 const double DEG2RAD=MY_PI/180;
@@ -175,10 +174,10 @@ void WorkerSkeleton::do_work_skeleton(
                          resolution);
     
     auto polys = m_textrusion->cairo_path_to_polygons(cr);
-    print("{} polys found\n", polys.size());
+    fmt::print("{} polys found\n", polys.size());
     auto polys_with_holes = m_textrusion->polys_to_polys_with_holes(polys);
 
-    string giv_filename = format("{}/polys_with_holes.giv", m_debug_dir);
+    string giv_filename = fmt::format("{}/polys_with_holes.giv", m_debug_dir);
     string outer_header = fmt::format(
       "$color red\n"
       "$path orig/outer\n"
@@ -201,7 +200,7 @@ void WorkerSkeleton::do_work_skeleton(
     if (m_pomelo_settings->get_int_default("smooth_sharp_angles",1))
       {
         double max_angle_to_smooth = m_pomelo_settings->get_double_default("smooth_max_angle", 160) * DEG2RAD;
-        print("max_angle_to_smooth = {}\n", max_angle_to_smooth/DEG2RAD);
+        fmt::print("max_angle_to_smooth = {}\n", max_angle_to_smooth/DEG2RAD);
         polys_with_holes = smooth_acute_angles(0.5, max_angle_to_smooth, polys_with_holes, 16);
       }
 
@@ -232,8 +231,8 @@ void WorkerSkeleton::do_work_skeleton(
                                               giv_string);
     if (m_debug_dir.size())
     {
-      string giv_filename = format("{}/skeleton.giv", m_debug_dir);
-      print("Saving to {}\n", giv_filename);
+      string giv_filename = fmt::format("{}/skeleton.giv", m_debug_dir);
+      fmt::print("Saving to {}\n", giv_filename);
       spdlog::info("Saving to {}", giv_filename);
       string_to_file(giv_string, giv_filename);
     }
@@ -244,7 +243,7 @@ void WorkerSkeleton::do_work_skeleton(
   }
   catch(const CGAL::Failure_exception& exc) {
     // We should still show errors!
-    error_message = format("CGAL failure: {}", exc.message());
+    error_message = fmt::format("CGAL failure: {}", exc.message());
   }
   catch(const std::runtime_error& exc) {
     // We should still show errors!
@@ -306,7 +305,7 @@ void WorkerSkeleton::do_work_profile(
   catch(const EAborted&) {
   }
   catch(const CGAL::Failure_exception& exc) {
-    error_message = format("CGAL failure: {}", exc.message());
+    error_message = fmt::format("CGAL failure: {}", exc.message());
   }
   catch(const std::runtime_error& exc)
   {
@@ -327,7 +326,7 @@ void WorkerSkeleton::do_work_profile(
 
     if (m_debug_dir.size())
     {
-      string giv_filename = format("{}/mesh_giv_file.giv", m_debug_dir);
+      string giv_filename = fmt::format("{}/mesh_giv_file.giv", m_debug_dir);
       spdlog::info("Saved {}", giv_filename);
       string_to_file(giv_string, giv_filename);
     }

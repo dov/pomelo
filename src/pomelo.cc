@@ -20,7 +20,6 @@
 
 using namespace std;
 namespace fs = std::filesystem;
-using namespace fmt;
 using json = nlohmann::json;
 
 
@@ -438,7 +437,7 @@ void Pomelo::on_action_file_export_stl()
             size_t found = mesh_filename.rfind('.');
             if (found==std::string::npos)
               found = mesh_filename.size();
-            mesh_fn = mesh_filename.substr(0,found) + format("-{:02d}", i) + mesh_filename.substr(found);
+            mesh_fn = mesh_filename.substr(0,found) + fmt::format("-{:02d}", i) + mesh_filename.substr(found);
           }
 
        filenames += mesh_fn + " ";
@@ -616,7 +615,7 @@ void Pomelo::on_action_file_export_gltf()
     for (size_t i=0; i<meshes.size(); i++)
       {
         auto& mesh = meshes[i];
-        auto msh_fn = format("mesh-{:02d}.gltf", i);
+        auto msh_fn = fmt::format("mesh-{:02d}.gltf", i);
         // TBD - create a multi mesh gltf file
       }
 
@@ -876,7 +875,7 @@ void Pomelo::on_build_profile(bool use_profile_data,
   // Start a new worker thread.
   m_worker_action = ACTION_PROFILE;
   m_worker_skeleton_thread = make_unique<std::thread>(
-    [=] {
+    [=, this] {
       m_worker_skeleton.do_work_profile(use_profile_data,
                                         radius,
                                         round_max_angle,
@@ -911,7 +910,7 @@ void Pomelo::set_status(const string& message)
 Updater::ContinueStatus PomeloUpdater::info(const std::string& context, double progress)
 {
   auto lambda = [this,context,progress]()->bool {
-    m_pomelo->set_status(context + format("{}", progress));
+    m_pomelo->set_status(context + fmt::format("{}", progress));
     return true;
   };
   Glib::signal_idle().connect (lambda);
@@ -1057,7 +1056,7 @@ void Pomelo::load_project(const std::string& filename)
   catch(const json::parse_error& err)
   {
     spdlog::error("Failed parsing json from {}!", filename);
-    print("Failed parsing json\n");
+    fmt::print("Failed parsing json\n");
     return;
   }
 
@@ -1123,7 +1122,7 @@ void Pomelo::load_project(const std::string& filename)
     m_ref_layer2_toggle };
   for (int i=0; i<3; i++)
   {
-    string key = format("layer{}", i);
+    string key = fmt::format("layer{}", i);
     if (!j.contains(key))
       continue;
     bool show_layer = j.value(key, false);

@@ -139,7 +139,7 @@ int main(int argc, char **argv)
       hp_idx++;
 
       save_poly_to_giv("hp.giv",
-                  format("$path {}/outer\n"
+                  fmt::format("$path {}/outer\n"
                          "$color red\n"
                          , hp_idx),
                        hp.outer_boundary(),
@@ -149,7 +149,7 @@ int main(int argc, char **argv)
         {
           hole_idx++;
           save_poly_to_giv("hp.giv",
-                           format("$path {}/hole {}\n"
+                           fmt::format("$path {}/hole {}\n"
                                   "$color green\n"
                                   , hp_idx, hole_idx),
                            h,

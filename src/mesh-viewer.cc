@@ -177,7 +177,7 @@ create_shader (int shader_type,
       glDeleteShader (shader);
       shader = 0;
 
-      auto error_str = format(
+      auto error_str = fmt::format(
           "Compilation failure in {} shader: {}",
           shader_type == GL_VERTEX_SHADER ? "vertex" : "fragment",
           error_string);
@@ -238,7 +238,7 @@ void MeshViewer::init_shaders ()
     
           glDeleteProgram (program);
           throw runtime_error(
-            format(
+            fmt::format(
               "Linking failure in program {}: {}",
               program, error_string));
         }

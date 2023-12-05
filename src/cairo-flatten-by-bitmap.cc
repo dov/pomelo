@@ -11,8 +11,8 @@
 #include "image-tracer-bw.h"
 #include <spdlog/spdlog.h>
 
-using namespace fmt;
 using namespace std;
+using fmt::print;
 
 // Save a path to a giv file. This should perhaps be moved
 // to a utility function.
@@ -23,7 +23,7 @@ static void path_to_giv(cairo_path_t *cpath,
 {
   ofstream fh(filename);
   if (ref_image.size())
-    fh << format("$image {}\n", ref_image);
+    fh << fmt::format("$image {}\n", ref_image);
 
   print("num_data = {}\n", cpath->num_data);
   for (int i=0; i < cpath->num_data; i += cpath->data[i].header.length)
@@ -35,8 +35,8 @@ static void path_to_giv(cairo_path_t *cpath,
         case CAIRO_PATH_LINE_TO:
           if (data->header.type==CAIRO_PATH_MOVE_TO)
             fh << "m ";
-          fh << format("{} {}\n",
-                       data[1].point.x*resolution,data[1].point.y*resolution);
+          fh << fmt::format("{} {}\n",
+                            data[1].point.x*resolution,data[1].point.y*resolution);
           break;
         case CAIRO_PATH_CURVE_TO:
           // No curve support. Just draw a line to last point
@@ -100,7 +100,7 @@ void FlattenByBitmap::flatten_by_bitmap(cairo_surface_t *rec_surface,
   cairo_paint (cr);
   if (m_debug_dir.size())
   {
-    string image_filename = format("{}/trace_input.png", m_debug_dir);
+    string image_filename = fmt::format("{}/trace_input.png", m_debug_dir);
     cairo_surface_write_to_png(surface, image_filename.c_str());
     spdlog::info("saving to {}", image_filename);
   }
@@ -166,10 +166,10 @@ void FlattenByBitmap::flatten_by_bitmap(cairo_surface_t *rec_surface,
 
 #if 0
   ofstream fh("/tmp/flat-before-trace.pgm", ios::binary);
-  fh << format("P5\n"
-               "{} {}\n"
-               "255\n",
-               surface_stride, surface_height);
+  fh << fmt::format("P5\n"
+                    "{} {}\n"
+                    "255\n",
+                    surface_stride, surface_height);
   fh.write((const char*)data, surface_height * surface_stride);
   fh.close();
 #endif

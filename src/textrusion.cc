@@ -19,7 +19,7 @@
 
 using namespace std;
 using namespace Glib;
-using namespace fmt;
+using fmt::print;
 
 static void poly_to_giv(ustring filename,
                         ustring header,
@@ -169,9 +169,9 @@ TeXtrusion::cairo_path_to_polygons(Cairo::RefPtr<Cairo::Context>& cr)
               printf("Oops! The resulting polygon isn't simple!!\n");
 #if 0
               ofstream of("not_simple.giv");
-              of << format("$marks fcircle\n");
+              of << fmt::format("$marks fcircle\n");
               for (const auto &p : poly)
-                  of << format("{:f} {:f}\n",
+                of << fmt::format("{:f} {:f}\n",
                                p.x(), p.y());
               of << "z\n";
 #endif
@@ -263,7 +263,7 @@ TeXtrusion::polys_to_polys_with_holes(vector<Polygon_2> polys)
   
       int poly_idx=0;
       for (auto &poly : polys) {
-        fh << format("$arrow end\n"
+        fh << fmt::format("$arrow end\n"
                      "$marks fcircle\n"
                      "$line\n"
                      "$color {}\n"
@@ -274,7 +274,7 @@ TeXtrusion::polys_to_polys_with_holes(vector<Polygon_2> polys)
                      poly.orientation(),
                      poly_idx++);
         for (auto&p : poly) 
-          fh << format("{:.7f} {:.7f}\n", p.x(), p.y());
+          fh << fmt::format("{:.7f} {:.7f}\n", p.x(), p.y());
         fh << "z\n\n";
       }
     }
@@ -407,7 +407,7 @@ vector<PHoleInfo> TeXtrusion::skeletonize(const std::vector<Polygon_with_holes>&
             }
 
 
-            ss << format("$color {}\n"
+            ss << fmt::format("$color {}\n"
                          "$line\n"
                          "$marks fcircle\n"
                          "$path boundary\n"
@@ -425,7 +425,7 @@ vector<PHoleInfo> TeXtrusion::skeletonize(const std::vector<Polygon_with_holes>&
             // Inner skeleton lines
             int n = r.polygon.size();
             for (size_t i=1; i<r.polygon.size()+1; i++) 
-                ss << format("{} {}\n", r.polygon[i%n].x(), r.polygon[i%n].y());
+                ss << fmt::format("{} {}\n", r.polygon[i%n].x(), r.polygon[i%n].y());
             ss << ("\n");
         }
 
@@ -562,7 +562,7 @@ void TeXtrusion::add_region_contribution_cap_to_mesh(
 
       int poly_idx = 0;
       for (const auto &poly : pp) {
-        ss << format("$color green\n"
+        ss << fmt::format("$color green\n"
                      "$line\n"
                      "$marks fcircle\n"
                      "$path offset curves/layer {}/ph {}/region={}/dist={}/poly={}\n"
@@ -594,7 +594,7 @@ void TeXtrusion::add_region_contribution_cap_to_mesh(
               float(p.x()),
               -float(p.y()), 
               float(z) };
-            ss << format("{} {}\n", p.x(), p.y());
+            ss << fmt::format("{} {}\n", p.x(), p.y());
 
             // If this is the first or last index in the insert
             // then we should also add a tube quad.
@@ -634,7 +634,7 @@ void TeXtrusion::add_region_contribution_to_mesh(
     color = "orange";
   }
 
-  ss << format("$color {}\n"
+  ss << fmt::format("$color {}\n"
                "$line\n"
                "$marks fcircle\n"
                "$path boundary{}/layer {}/ph {}/region {}\n"
@@ -661,11 +661,11 @@ void TeXtrusion::add_region_contribution_to_mesh(
   // Inner skeleton lines
   int n = region.polygon.size();
   for (size_t i=1; i<region.polygon.size()+1; i++) 
-    ss << format("{} {}\n", region.polygon[i%n].x(), region.polygon[i%n].y());
+    ss << fmt::format("{} {}\n", region.polygon[i%n].x(), region.polygon[i%n].y());
   ss << ("\n");
 
   if (!region.polygon.is_simple()) {
-    cerr << format("Oops! The polygon isn't simple. Skipping!\n");
+    cerr << fmt::format("Oops! The polygon isn't simple. Skipping!\n");
     return;
   }
 
@@ -760,7 +760,7 @@ MultiMesh TeXtrusion::skeleton_to_mesh(
 
             if (!r.polygon.is_simple())
               {
-                cerr << format("Oops! The polygon isn't simple. Skipping!\n");
+                cerr << fmt::format("Oops! The polygon isn't simple. Skipping!\n");
                 continue;
               }
 
@@ -831,7 +831,7 @@ MultiMesh TeXtrusion::skeleton_to_mesh(
               }
             else
               {
-                ss << format("$color {}\n"
+                ss << fmt::format("$color {}\n"
                              "$line\n"
                              "$marks fcircle\n"
                              "$path boundary{}/layer 0/ph {}/region {}\n"
@@ -862,7 +862,7 @@ MultiMesh TeXtrusion::skeleton_to_mesh(
                 // Inner skeleton lines
                 int n = r.polygon.size();
                 for (size_t i=1; i<r.polygon.size()+1; i++) 
-                    ss << format("{} {}\n", r.polygon[i%n].x(), r.polygon[i%n].y());
+                    ss << fmt::format("{} {}\n", r.polygon[i%n].x(), r.polygon[i%n].y());
                 ss << ("\n");
     
     
@@ -1071,11 +1071,11 @@ void PHoleInfo::divide_into_regions()
 
 #if 0
             ofstream of("not-simple.giv");
-            of << format("$marks fcircle\n"
+            of << fmt::format("$marks fcircle\n"
                          "$color red\n"
                          );
             for (const auto &p : poly) 
-              of << format("{:f} {:f}\n", p.x(), p.y());
+              of << fmt::format("{:f} {:f}\n", p.x(), p.y());
             of << "z\n";
             of.close();
 #endif
@@ -1253,7 +1253,7 @@ vector<Polygon3D> SkeletonPolygonRegion::get_offset_curve(double d1, double d2) 
       spdlog::error("Failed cutting polygon!");
       if (m_debug_dir.size())
       {
-        string polygon_filename = format("{}/failed_polygon.giv", m_debug_dir);
+        string polygon_filename = fmt::format("{}/failed_polygon.giv", m_debug_dir);
         spdlog::info("Saved failed polygon to {}", polygon_filename);
         poly_to_giv(polygon_filename,
                     "$color red\n",
