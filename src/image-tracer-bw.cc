@@ -68,7 +68,6 @@ int64_t GetTimeInMillis() {
 }
 
 using namespace std;
-using namespace fmt;
 
 const string versionnumber = "1.1.2";
 
@@ -155,7 +154,7 @@ void trace_image(int width,
 {
   spdlog::info("trace_image() width={} height={} resolution={:.3f}",
                width, height, resolution);
-  print("Tracing image of size {}x{} pixels\n", width, height);
+  fmt::print("Tracing image of size {}x{} pixels\n", width, height);
 
   // Assume 8-bit image
   ImageData imgd(stride,height,data);
@@ -245,9 +244,9 @@ static void savePathsToGiv(const string& filename,
     for (const auto& path :layer)
     {
       fh << fmt::format("$path layer {}/path {}\n"
-                   "$color {}\n",
-                   layer_idx, path_idx,
-                   layer_colors[layer_idx]);
+                        "$color {}\n",
+                        layer_idx, path_idx,
+                        layer_colors[layer_idx]);
       for (const auto& coord : path)
       {
         fh << fmt::format("{} {}\n", coord[0], coord[1]);
@@ -277,9 +276,9 @@ static void savePathsToGiv(const string& filename,
                    layer_colors[layer_idx]);
       for (const auto& coord : path)
       {
-        fh <<fmt::format("{} {}\n", coord[0], coord[1]);
+        fh << fmt::format("{} {}\n", coord[0], coord[1]);
       }
-      fh <<fmt::format("z\n\n", path_idx);
+      fh << fmt::format("z\n\n", path_idx);
       path_idx++;
     }
     layer_idx++;
@@ -293,7 +292,7 @@ static string saveLayersToGiv(const string& image_filename,
   stringstream strm;
 
   if (image_filename.size())
-    strm <<fmt::format("$image {}\n\n", image_filename);
+    strm << fmt::format("$image {}\n\n", image_filename);
 
   int layer_idx=0;
   for (const auto& layer : layers)
@@ -301,7 +300,7 @@ static string saveLayersToGiv(const string& image_filename,
     int path_idx=0;
     for (const auto& path :layer)
     {
-      strm <<fmt::format("$path layer {}/path {}\n"
+      strm << fmt::format("$path layer {}/path {}\n"
                      "$color {}\n"
                      "$lw 3\n"
                      ,
@@ -314,25 +313,25 @@ static string saveLayersToGiv(const string& image_filename,
       {
         if (coord_idx == 0
             || (coord[1]!= old_x || coord[2] != old_y))
-          strm <<fmt::format("{} {}\n", coord[1], coord[2]);
+          strm << fmt::format("{} {}\n", coord[1], coord[2]);
 
         if (coord[0] == 2.0) // quadratic
         {
-          strm <<fmt::format("R {} {} {} {}\n",
+          strm << fmt::format("R {} {} {} {}\n",
                          coord[3], coord[4], coord[5], coord[6]);
           old_x = coord[5];
           old_y = coord[6];
         }
         else // a line
         {
-          strm <<fmt::format("{} {}\n", coord[3], coord[4]);
+          strm << fmt::format("{} {}\n", coord[3], coord[4]);
           old_x = coord[1];
           old_y = coord[2];
         }
 
         coord_idx++;
       }
-      strm <<fmt::format("z\n\n", path_idx);
+      strm << fmt::format("z\n\n", path_idx);
       path_idx++;
     }
     layer_idx++;
@@ -349,17 +348,17 @@ static IndexedImage imagedataToTracedata (const ImageData& imgd,
   // 1. Color quantization
   int64_t time0 = GetTimeInMillis();
   IndexedImage ii = imagedataToIndexedImage(imgd);
-  print("imagedataToIndexedImage: {} ms\n", GetTimeInMillis()-time0);
+  fmt::print("imagedataToIndexedImage: {} ms\n", GetTimeInMillis()-time0);
   time0 = GetTimeInMillis();
   // 2. Layer separation and edge detection
   vector<vector<vector<int>>> rawlayers = layering(ii);   // Layer,y,x (rtl meaning of indices)
-  print("layering: {} ms\n", GetTimeInMillis()-time0);
+  fmt::print("layering: {} ms\n", GetTimeInMillis()-time0);
   time0 = GetTimeInMillis();
   // 3. Batch pathscan
   vector<vector<vector<vector<int>>>> bps = batchpathscan(
     rawlayers,
     (int)(floor(options.at("pathomit"))));
-  print("batchpathscan: {} ms\n", GetTimeInMillis()-time0);
+  fmt::print("batchpathscan: {} ms\n", GetTimeInMillis()-time0);
   time0 = GetTimeInMillis();
 
 #if 0
@@ -368,7 +367,7 @@ static IndexedImage imagedataToTracedata (const ImageData& imgd,
 
   // 4. Batch interpollation
   vector<vector<vector<vector<double>>>> bis = batchinternodes(bps);
-  print("batchinterpolation: {}ms\n", GetTimeInMillis()-time0);
+  fmt::print("batchinterpolation: {}ms\n", GetTimeInMillis()-time0);
   time0 = GetTimeInMillis();
 
 #if 0
@@ -377,7 +376,7 @@ static IndexedImage imagedataToTracedata (const ImageData& imgd,
   
   // 5. Batch tracing
   ii.layers = batchtracelayers(bis,options.at("ltres"),options.at("qtres"));
-  print("batchtracelayers: {}ms\n", GetTimeInMillis()-time0);
+  fmt::print("batchtracelayers: {}ms\n", GetTimeInMillis()-time0);
   time0 = GetTimeInMillis();
 
 #if 0
@@ -891,7 +890,7 @@ static vector<vector<double>> fitseq (vector<vector<double>> path,
     // return spline if fits
     if(curvepass)
     {
-      print("Got a spline!\n");
+      fmt::print("Got a spline!\n");
       segment.push_back(vector<double>(7,0));
       auto& thissegment = segment.back();
       thissegment[0] = 2.0;
@@ -1109,9 +1108,9 @@ static string getsvgstring (const IndexedImage& ii, map<string,double> options)
   int w = (int) (ii.width * options.at("scale")), h = (int) (ii.height * options.at("scale"));
   string viewboxorviewport;
   if (options.at("viewbox")!=0)
-    viewboxorviewport =fmt::format("viewBox=\"0 0 {} {}",w,h);
+    viewboxorviewport = fmt::format("viewBox=\"0 0 {} {}",w,h);
   else
-    viewboxorviewport =fmt::format("width=\"{}\" height=\"{}\" ",w,h);
+    viewboxorviewport = fmt::format("width=\"{}\" height=\"{}\" ",w,h);
 
   svgstr << "<svg " << viewboxorviewport << "version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\" ";
 
@@ -1159,7 +1158,7 @@ static string getsvgstring (const IndexedImage& ii, map<string,double> options)
   for(auto& [key, value] : zindex)
   {
     if(options.at("desc")!=0)
-      thisdesc =fmt::format("desc=\"l {} p {}\" ", value[0], value[1]);
+      thisdesc = fmt::format("desc=\"l {} p {}\" ", value[0], value[1]);
     else
       thisdesc = ""; 
 

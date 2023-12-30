@@ -9,7 +9,6 @@
 #include <fmt/core.h>
 
 using namespace std;
-using namespace fmt;
 
 static const double MY_PI=3.141592653589793;
 

@@ -160,7 +160,7 @@ namespace agg
         self_type gradient(self_type c, double k) const
         {
             self_type ret;
-            calc_type ik = uround(k * base_scale);
+            calc_type ik = uround(k * unsigned(base_scale));
             ret.v = value_type(calc_type(v) + (((calc_type(c.v) - v) * ik) >> base_shift));
             ret.a = value_type(calc_type(a) + (((calc_type(c.a) - a) * ik) >> base_shift));
             return ret;
@@ -347,7 +347,7 @@ namespace agg
         self_type gradient(self_type c, double k) const
         {
             self_type ret;
-            calc_type ik = uround(k * base_scale);
+            calc_type ik = uround(k * unsigned(base_scale));
             ret.v = value_type(calc_type(v) + (((calc_type(c.v) - v) * ik) >> base_shift));
             ret.a = value_type(calc_type(a) + (((calc_type(c.a) - a) * ik) >> base_shift));
             return ret;

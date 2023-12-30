@@ -42,13 +42,13 @@ Pomelo::Pomelo(shared_ptr<PomeloSettings> pomelo_settings)
   this->add(*w_vbox); 
 
   m_skeleton_viewer = Glib::RefPtr<SkeletonViewer>(new SkeletonViewer(*this));
-  m_skeleton_viewer->signal_response().connect([=](int response_id) {
+  m_skeleton_viewer->signal_response().connect([this](int response_id) {
     m_skeleton_viewer->hide();
   });
 
   m_settings_dialog = Glib::RefPtr<SettingsDialog>(new SettingsDialog(*this,
                                                                       m_pomelo_settings));
-  m_settings_dialog->signal_response().connect([=](int response_id)
+  m_settings_dialog->signal_response().connect([this](int response_id)
   {
     if (response_id==1) // OK - Should make this an enum
       {
@@ -339,7 +339,7 @@ void Pomelo::on_action_open_project()
     m_last_save_as_filename = filename;
     m_last_selected_file = filename;
 
-    set_status(format("Loading project from file {}",basename));
+    set_status(fmt::format("Loading project from file {}",basename));
     load_project(filename);
 
     break;
@@ -389,7 +389,7 @@ void Pomelo::on_action_save_as_project()
     string basename = file->get_basename();
     m_last_selected_file = filename;
 
-    set_status(format("Saving project to file {}",basename));
+    set_status(fmt::format("Saving project to file {}",basename));
     save_project(filename);
 
     break;
@@ -447,7 +447,7 @@ void Pomelo::on_action_file_export_stl()
                     (*meshes)[i].vertices.size(),
                     mesh_fn);
       }
-    set_status(format("Saved file(s): {}", filenames));
+    set_status(fmt::format("Saved file(s): {}", filenames));
   
 
     break;
@@ -485,7 +485,7 @@ void Pomelo::on_action_import_profile()
     m_last_selected_file = filename;
 
     spdlog::info("Importing profile from {}", filename);
-    set_status(format("Importing profile from file {}",basename));
+    set_status(fmt::format("Importing profile from file {}",basename));
     string profile_string;
 
     try {
@@ -494,7 +494,7 @@ void Pomelo::on_action_import_profile()
     catch(...)
     {
       spdlog::error("Failed importing profile from file {}",basename);
-      set_status(format("Failed importing profile from file {}",basename));
+      set_status(fmt::format("Failed importing profile from file {}",basename));
       break;
     }
 
@@ -552,7 +552,7 @@ void Pomelo::on_action_export_profile()
       return;
     }
 
-    set_status(format("Saved profile file to {}", filename));
+    set_status(fmt::format("Saved profile file to {}", filename));
 
     break;
   }
@@ -609,7 +609,7 @@ void Pomelo::on_action_file_export_gltf()
     mesh_filename = dialog->get_filename();
 
     meshes->save_gltf(mesh_filename);
-    set_status(format("Saved meshes to {}", mesh_filename));
+    set_status(fmt::format("Saved meshes to {}", mesh_filename));
 
 #if 0
     for (size_t i=0; i<meshes.size(); i++)
@@ -656,7 +656,7 @@ void Pomelo::on_action_load_svg()
     string basename = file->get_basename();
     m_last_selected_file = m_svg_filename;
     
-    set_status(format("Loading path from svg file {}",basename));
+    set_status(fmt::format("Loading path from svg file {}",basename));
     m_main_input.set_text_edit_string(basename, true);
     break;
   }
@@ -718,7 +718,7 @@ void Pomelo::on_action_help_about()
 
   Dialog.set_version(VERSION);
   Dialog.set_copyright("Dov Grobgeld <dov.grobgeld@gmail.com>");
-  Dialog.set_comments(format(
+  Dialog.set_comments(fmt::format(
                         "A program for generating 3D meshes of text\n\n"
                         "Commit-Id: {}\n"
                         "Commit-time: {}\n",
@@ -850,7 +850,7 @@ void Pomelo::on_build_skeleton(Glib::ustring text_string,
   // Start a new worker thread.
   m_worker_action = ACTION_SKELETON;
   m_worker_skeleton_thread = make_unique<std::thread>(
-    [=] {
+    [=,this] {
       m_worker_skeleton.do_work_skeleton(
                                          do_rtl,
                                          font_description,
@@ -983,7 +983,7 @@ void Pomelo::on_notification_from_skeleton_worker_thread()
       m_progress_dialog.update(message,fraction_done);
   
   
-      set_status(format("Progress {:.0f}%: {}", fraction_done*100, message.c_str()));
+      set_status(fmt::format("Progress {:.0f}%: {}", fraction_done*100, message.c_str()));
     }
 }
 
@@ -1173,7 +1173,7 @@ void Pomelo::save_project(const string& filename)
   try {
     string_to_file(j.dump(2), filename);
     spdlog::info("Successfully saved project to {}", filename);
-    set_status(format("Successfully saved project to {}", filename));
+    set_status(fmt::format("Successfully saved project to {}", filename));
   }
   catch(...)
   {

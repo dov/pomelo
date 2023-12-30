@@ -21,7 +21,6 @@
 
 using namespace std;
 using namespace Glib;
-using namespace fmt;
 
 const double MY_PI=3.141592653589793;
 const double DEG2RAD=MY_PI/180;
@@ -164,7 +163,7 @@ int main(int argc, char **argv)
   auto skel = textrusion.skeletonize(hpolys,
                                      // output
                                      giv_string);
-  print("Saving skeleton to {}\n", giv_filename);
+  fmt::print("Saving skeleton to {}\n", giv_filename);
   ofstream fh(giv_filename);
   fh << giv_string;
   fh.close();

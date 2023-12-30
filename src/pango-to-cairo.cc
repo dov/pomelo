@@ -9,7 +9,6 @@
 
 using namespace std;
 using namespace Glib;
-using namespace fmt;
 
 void pangomarkup_to_cairo(cairo_t *cr,       
                           const char *markup,
@@ -49,13 +48,13 @@ void pangomarkup_to_cairo(cairo_t *cr,
   PangoLayoutIter *line_iter = pango_layout_get_iter(layout);
   float line_spacing = pango_layout_get_line_spacing(layout);
   
-  print("line_count = {} line_spacing=line_spacing={}\n", pango_layout_get_line_count(layout), line_spacing);
+  fmt::print("line_count = {} line_spacing=line_spacing={}\n", pango_layout_get_line_count(layout), line_spacing);
   PangoRectangle layout_logical_rect;
   pango_layout_get_extents(layout,
                            NULL,
                            &layout_logical_rect);
   do {
-    print("Layouting a line\n");
+    fmt::print("Layouting a line\n");
     PangoLayoutIter *run_iter = pango_layout_iter_copy(line_iter);
     int baseline = pango_layout_iter_get_baseline(line_iter);
     PangoRectangle line_logical_rect;
@@ -66,7 +65,7 @@ void pangomarkup_to_cairo(cairo_t *cr,
     cairo_move_to(cr, line_logical_rect.x/PANGO_SCALE, baseline/PANGO_SCALE);
     
     do {
-      print("showing a glyph item\n");
+      fmt::print("showing a glyph item\n");
       PangoGlyphItem *glyph_item = pango_layout_iter_get_run_readonly(run_iter);
       if (!glyph_item)
         break;

@@ -45,15 +45,13 @@
 namespace agg {
     namespace svg {
 
-
-
         // constructor
         gradient::gradient()
             : 
-            m_type(GRADIENT_LINEAR),
-            m_id(""),
             m_colcnt(0),
-            m_opaque(1.0)
+            m_type(GRADIENT_LINEAR),
+            m_opaque(1.0),
+            m_id("")
         {
         }
 

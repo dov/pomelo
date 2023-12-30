@@ -140,7 +140,7 @@ namespace agg {
             if(m_color_profile.size() >= 2)
             {
                 unsigned i;
-                unsigned start = uround(m_color_profile[0].offset * color_lut_size);
+                unsigned start = uround(m_color_profile[0].offset * unsigned(color_lut_size));
                 unsigned end;
                 color_type c = m_color_profile[0].color;
                 c.opacity(c.opacity() * opaque);
@@ -150,7 +150,7 @@ namespace agg {
                 }
                 for(i = 1; i < m_color_profile.size(); i++)
                 {
-                    end  = uround(m_color_profile[i].offset * color_lut_size);
+                  end  = uround(m_color_profile[i].offset * unsigned(color_lut_size));
                     color_type c1 = m_color_profile[i-1].color;
                     c1.opacity(c1.opacity() * opaque);
                     color_type c2 = m_color_profile[i].color;

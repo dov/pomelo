@@ -19,7 +19,6 @@
 
 using namespace std;
 using namespace Glib;
-using fmt::print;
 
 static void poly_to_giv(ustring filename,
                         ustring header,
@@ -171,7 +170,7 @@ TeXtrusion::cairo_path_to_polygons(Cairo::RefPtr<Cairo::Context>& cr)
               ofstream of("not_simple.giv");
               of << fmt::format("$marks fcircle\n");
               for (const auto &p : poly)
-                of << fmt::format("{:f} {:f}\n",
+                  of << fmt::format("{:f} {:f}\n",
                                p.x(), p.y());
               of << "z\n";
 #endif
@@ -182,7 +181,7 @@ TeXtrusion::cairo_path_to_polygons(Cairo::RefPtr<Cairo::Context>& cr)
           break;
       }
   }
-  print("cpath->num_data={} poly_size={}\n", cpath->num_data, polys.size());
+  fmt::print("cpath->num_data={} poly_size={}\n", cpath->num_data, polys.size());
   if (updater)
       if (updater->info("cairo path to polygons", 1.0))
           throw EAborted("Aborted!");
@@ -257,7 +256,7 @@ TeXtrusion::polys_to_polys_with_holes(vector<Polygon_2> polys)
     // Optionally save the cairo paths colored by the direction.
     if (do_save_cairo_paths)
     {
-      print("Saving to cairo_paths.giv\n");
+      fmt::print("Saving to cairo_paths.giv\n");
       ofstream fh("cairo_paths.giv");
       array<string,2> color = {"red","green"};
   
@@ -733,7 +732,7 @@ MultiMesh TeXtrusion::skeleton_to_mesh(
     if (this->use_profile_data)
     {
       if (m_debug_dir.size())
-        this->profile_data.save_flat_to_giv(format("{}/prof.giv", m_debug_dir));
+        this->profile_data.save_flat_to_giv(fmt::format("{}/prof.giv", m_debug_dir));
 
       meshes.resize(this->profile_data.size());
     }

@@ -18,7 +18,6 @@
 #include <spdlog/spdlog.h>
 
 using namespace std;
-using namespace fmt;
 using namespace glm;
 
 #define VIEW_INIT_AXIS_X 1.0
@@ -36,9 +35,9 @@ static void print_mat(float *m)
 {
   for (int i=0; i<16; i++)
     {
-      print("{:.2} ", m[i]);
+      fmt::print("{:.2} ", m[i]);
       if ((i+1)%4==0)
-        print("\n");
+        fmt::print("\n");
     }
 }
 

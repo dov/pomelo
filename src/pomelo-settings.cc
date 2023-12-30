@@ -7,7 +7,6 @@
 
 
 using namespace std;
-using namespace fmt;
 
 static void rec_mkdir(std::string path)
 {
@@ -85,7 +84,7 @@ std::string PomeloSettings::get_string_default(const string& key, const char *de
 
 int PomeloSettings::get_int_default(const string& key, int default_value)
 {
-  print("Getting {}\n", key);
+  fmt::print("Getting {}\n", key);
   if (!has_group(m_group_name) || !has_key(m_group_name, key))
     return default_value;
   return get_integer(m_group_name, key);
@@ -93,7 +92,7 @@ int PomeloSettings::get_int_default(const string& key, int default_value)
 
 int PomeloSettings::get_double_default(const string& key, double default_value)
 {
-  print("Getting {}\n", key);
+  fmt::print("Getting {}\n", key);
   if (!has_group(m_group_name) || !has_key(m_group_name, key))
     return default_value;
 

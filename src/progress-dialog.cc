@@ -11,8 +11,6 @@
 #include <fmt/core.h>
 #include <spdlog/spdlog.h>
 
-using namespace fmt;
-
 // Constructor
 ProgressDialog::ProgressDialog(Gtk::Window& parent,
                                const Glib::ustring& title)
@@ -42,7 +40,7 @@ ProgressDialog::type_signal_cancel ProgressDialog::signal_cancel()
 // Slots
 void ProgressDialog::on_response(int response_id)
 {
-  print("on_response. response_id={}\n", response_id);
+  fmt::print("on_response. response_id={}\n", response_id);
   this->m_signal_cancel();
 }
 

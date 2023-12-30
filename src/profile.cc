@@ -13,7 +13,6 @@
 using json = nlohmann::json;
 
 using namespace std;
-using namespace fmt;
 
 nlohmann::json as_json(const Vec2& v)
 {
@@ -119,7 +118,7 @@ void LayerData::set_linear_limit(double linear_limit)
         this->flat_list.push_back(Vec2(data[1].point.x,data[1].point.y));
         break;
       default:
-        print("Oops...\n");
+        fmt::print("Oops...\n");
       }
   }
 }
@@ -178,14 +177,14 @@ void ProfileData::save_flat_to_giv(const std::string& filename)
     layer.set_linear_limit();
     auto path = layer.get_flat_list();
 
-    fh << format("$path layer {}\n"
+    fh << fmt::format("$path layer {}\n"
                  "$color {}\n"
                  "$vflip\n"
                  ,
                  layer_idx,
                  colors[layer_idx%colors.size()]);
     for (auto& p : path)
-      fh << format("{} {}\n", p.x,p.y);
+      fh << fmt::format("{} {}\n", p.x,p.y);
     fh << "\n";
     layer_idx++;
   }

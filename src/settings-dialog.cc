@@ -8,7 +8,6 @@
 #include <fmt/core.h>
 
 using namespace std;
-using namespace fmt;
 
 SettingsDialog::SettingsDialog(Gtk::Window& parent,
                                shared_ptr<PomeloSettings> pomelo_settings)
@@ -159,7 +158,7 @@ void SettingsDialog::save_to_settings()
                                       matcap_source_filename);
       }
       catch(std::exception& e) {
-        print("Got error: {}\n", e.what());
+        fmt::print("Got error: {}\n", e.what());
       }
     }
 }

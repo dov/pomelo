@@ -25,7 +25,7 @@ static void path_to_giv(cairo_path_t *cpath,
   if (ref_image.size())
     fh << fmt::format("$image {}\n", ref_image);
 
-  print("num_data = {}\n", cpath->num_data);
+  fmt::print("num_data = {}\n", cpath->num_data);
   for (int i=0; i < cpath->num_data; i += cpath->data[i].header.length)
     {
       auto data = &cpath->data[i];
@@ -189,17 +189,17 @@ void FlattenByBitmap::flatten_by_bitmap(cairo_surface_t *rec_surface,
   if (m_debug_dir.size())
   {
     // trace input
-    string image_filename = format("{}/trace_input_bin.png", m_debug_dir);
+    string image_filename = fmt::format("{}/trace_input_bin.png", m_debug_dir);
     cairo_surface_write_to_png(surface, image_filename.c_str());
     spdlog::info("saving to {}", image_filename);
-    print("saving to {}\n", image_filename);
+    fmt::print("saving to {}\n", image_filename);
 
     // the resulting traced image
     cairo_path_t *path = cairo_copy_path_flat(m_ctx);
-    print("num paths in cairo-flatten-by-bitmap ={}\n", path->num_data);
-    string giv_filename = format("{}/{}", m_debug_dir, "path-by-bitmap.giv");
+    fmt::print("num paths in cairo-flatten-by-bitmap ={}\n", path->num_data);
+    string giv_filename = fmt::format("{}/{}", m_debug_dir, "path-by-bitmap.giv");
     spdlog::info("saving to {}", giv_filename);
-    print("saving to {}\n", giv_filename);
+    fmt::print("saving to {}\n", giv_filename);
     path_to_giv(path, giv_filename, resolution, image_filename);
     cairo_path_destroy(path);
   }

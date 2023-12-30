@@ -7,7 +7,6 @@
 #include <fmt/core.h>
 #include "svgpath-to-cairo.h"
 
-using namespace fmt;
 using namespace std;
 
 // For pomelo we don't need to set the color, but it is nice for

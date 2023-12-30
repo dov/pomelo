@@ -9,8 +9,6 @@
 #include "fmt/core.h"
 #include <spdlog/spdlog.h>
 
-using namespace fmt;
-
 ProfileEditorWindow::ProfileEditorWindow(Gtk::Window& parent)
   : Gtk::Dialog("Profile Editor",
                 parent,
@@ -41,7 +39,7 @@ void ProfileEditorWindow::set_profile(const ProfileData& prof)
   if (profile_editor)
     profile_editor->set_profile(prof);
   else
-    print("Oops\n");
+    fmt::print("Oops\n");
 }
 
 bool ProfileEditorWindow::get_is_positive_monotone() const
@@ -49,5 +47,6 @@ bool ProfileEditorWindow::get_is_positive_monotone() const
   if (profile_editor)
     return profile_editor->get_is_positive_monotone();
   else
-    print("Oops\n");
+    fmt::print("Oops\n");
+  return false;
 }

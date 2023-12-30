@@ -7,7 +7,6 @@
 #include "cairo-flatten-by-bitmap.h"
 #include <fstream>
 
-using namespace fmt;
 using namespace std;
 
 static void die(const char *fmt, ...)
@@ -27,7 +26,7 @@ void path_to_giv(cairo_path_t *cpath,
                  const char *filename)
 {
   ofstream fh(filename);
-  print("num_data = {}\n", cpath->num_data);
+  fmt::print("num_data = {}\n", cpath->num_data);
   for (int i=0; i < cpath->num_data; i += cpath->data[i].header.length)
     {
       auto data = &cpath->data[i];
@@ -37,7 +36,7 @@ void path_to_giv(cairo_path_t *cpath,
         case CAIRO_PATH_LINE_TO:
           if (data->header.type==CAIRO_PATH_MOVE_TO)
             fh << "m ";
-          fh << format("{} {}\n",
+          fh << fmt::format("{} {}\n",
                        data[1].point.x,data[1].point.y);
           break;
         case CAIRO_PATH_CURVE_TO:
@@ -71,7 +70,7 @@ int main(int argc, char **argv)
   p2c.parse_file(filename, true);
 
   cairo_path_t *path = cairo_copy_path_flat(rec_cr);
-  print("num paths={}\n", path->num_data);
+  fmt::print("num paths={}\n", path->num_data);
   path_to_giv(path, "/tmp/path.giv");
 
   cairo_fill(rec_cr);

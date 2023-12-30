@@ -257,10 +257,10 @@ namespace svg
         m_attr_value(new char[1024]),
         m_attr_name_len(127),
         m_attr_value_len(1023),
+        m_tags_ignored(false),
         m_swap_red_blue(false),
         m_width_in_mm(-1),
-        m_height_in_mm(-1),
-        m_tags_ignored(false)
+        m_height_in_mm(-1)
     {
         m_title[0] = 0;
         for (int i=0; i<4; i++)
