@@ -24,7 +24,9 @@ class SettingsDialog : public Gtk::Dialog
   ~SettingsDialog(){}
   void load_from_settings();
   void save_to_settings();
-  void set_color(int level, const std::string color);
+  void set_color(int level, const std::string& color);
+  // Whether the skeleton parameters have changed
+  bool skeleton_params_have_changed();
 
   private:
   Gtk::Notebook *m_notebook;

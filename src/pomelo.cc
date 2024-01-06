@@ -52,9 +52,11 @@ Pomelo::Pomelo(shared_ptr<PomeloSettings> pomelo_settings)
   {
     if (response_id==1) // OK - Should make this an enum
       {
+        if (m_settings_dialog->skeleton_params_have_changed())
+          m_main_input.set_skeleton_ready_state(false);
+
         m_settings_dialog->save_to_settings();
         m_pomelo_settings->save();
-        m_main_input.set_skeleton_ready_state(false);
         m_mesh_viewer.refresh_from_settings();
       }
     else

@@ -157,9 +157,20 @@ void SettingsDialog::save_to_settings()
         m_pomelo_settings->set_string("matcap_source_filename",
                                       matcap_source_filename);
       }
-      catch(std::exception& e) {
+      catch(const std::exception& e) {
         fmt::print("Got error: {}\n", e.what());
       }
     }
 }
 
+// Check whether any parameter that influence the skeleton has changed.
+// This will influence the status of the skeleton.
+bool SettingsDialog::skeleton_params_have_changed()
+{
+  double epsilon = 1e-5;
+
+  return ((bool(m_pomelo_settings->get_int_default("smooth_sharp_angles"))
+               != m_sharp_angles_checkbutton->get_active())
+          || fabs(m_pomelo_settings->get_double_default("smooth_max_angle")
+                  - m_smooth_angle_max->get_value()) > epsilon);
+}
