@@ -58,7 +58,7 @@ void PomeloSettings::save()
     }
   catch(Glib::KeyFileError& err)
     {
-      spdlog::error("Failed saving to file {}: code={}\n", m_settings_file, err.code());
+      spdlog::error("Failed saving to file {}: code={}\n", m_settings_file, (int)err.code());
     }
 }
 
@@ -70,7 +70,7 @@ void PomeloSettings::load()
     }
   catch(Glib::KeyFileError& err)
     {
-      spdlog::error("Failed saving to file {}: code={}\n", m_settings_file, err.code());
+      spdlog::error("Failed saving to file {}: code={}\n", m_settings_file, (int)err.code());
     }
 }
 

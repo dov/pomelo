@@ -163,7 +163,11 @@ void WorkerSkeleton::do_work_skeleton(
     // Cairo::RefPtr<Cairo::Surface> surface = Cairo::RecordingSurface::create();
     Cairo::RefPtr<Cairo::Context> cr = Cairo::Context::create(surface);
     if (svg_filename.size()>0)
+    {
       m_textrusion->svg_filename_to_context(surface, svg_filename);
+      resolution = 20; // typically want smaller resolution for svg. Test this assumption!
+                       // this should be a parameter!
+    }
     else
       m_textrusion->markup_to_context(surface, markup);
 

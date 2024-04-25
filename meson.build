@@ -1,9 +1,18 @@
 project('pomelo','cpp','c',
-       default_options : ['cpp_std=c++2a'])
-subproject('nanosvg')
-subproject('tinygltf')
-subproject('nlohmann_json')
-subproject('spdlog')
+        version : '0.0.9',
+        default_options : ['cpp_std=c++2a'])
+
+nanosvg_proj = subproject('nanosvg')
+tinygltf_proj = subproject('tinygltf')
+nlohmann_json_proj = subproject('nlohmann_json')
+spdlog_proj = subproject('spdlog')
+gob2_proj = subproject('gob2')
+
+nanosvg_dep = nanosvg_proj.get_variable('nanosvg_dep')
+tinygltf_dep = tinygltf_proj.get_variable('tinygltf_dep')
+nhlohmann_json_dep = nlohmann_json_proj.get_variable('nlohmann_json_dep')
+spdlog_dep = spdlog_proj.get_variable('spdlog_dep')
+gob2 = gob2_proj.get_variable('gob2_exe')
 
 gnome = import('gnome')
 

@@ -425,7 +425,7 @@ bool MeshViewer::on_render (const Glib::RefPtr< Gdk::GLContext >& context)
   catch(const Gdk::GLError& gle)
   {
     spdlog::error("An error occurred in the render callback of the GLArea: {} - {} - {}",
-                  gle.domain(), gle.code(), gle.what().c_str());
+                  (int)gle.domain(), (int)gle.code(), gle.what().c_str());
     return false;
   }
   

@@ -122,7 +122,7 @@ int main(int argc, char *argv[])
   spdlog::info("CommitID: {}", COMMIT_ID);
   spdlog::info("CommitTime: {}", COMMIT_TIME);
   spdlog::info("Version: {}", VERSION);
-  spdlog::info("Command line: {}", fmt::join(args," "));
+  spdlog::info("Command line: {}", fmt::format("{}", fmt::join(args," ")));
   if (do_log_and_exit)
   {
     spdlog::info("exiting");

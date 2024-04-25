@@ -7,3 +7,4 @@ build_mingw64/
 /src/giv-widget/gtk-image-viewer/gtk-image-viewer-fixed.*
 *.svg
 *.o
+*.log

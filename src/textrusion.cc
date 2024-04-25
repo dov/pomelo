@@ -270,7 +270,7 @@ TeXtrusion::polys_to_polys_with_holes(vector<Polygon_2> polys)
                      "$balloon orientation {}\n"
                      "$path poly/{}\n",
                      color[poly.orientation()<0],
-                     poly.orientation(),
+                     (int)poly.orientation(),
                      poly_idx++);
         for (auto&p : poly) 
           fh << fmt::format("{:.7f} {:.7f}\n", p.x(), p.y());

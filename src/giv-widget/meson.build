@@ -1,5 +1,3 @@
-gob2 = find_program('gob2')
-
 giv_widget_src = custom_target('gen-output',
   output : ['giv-widget.h','giv-widget-private.h','giv-widget.cc'],
   input : 'giv-widget.gob',

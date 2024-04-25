@@ -55,10 +55,6 @@ glm_dep = dependency('glm')
 gmp_dep = dependency('gmp')
 goo_dep = dependency('goocanvasmm-2.0')
 mpfr_dep = dependency('mpfr')
-nanosvg_dep = dependency('nanosvg')
-tinygltf_dep = dependency('tinygltf')
-nhlohmann_json_dep = dependency('nlohmann_json')
-spdlog_dep = dependency('spdlog')
 
 subdir('giv-widget')
 

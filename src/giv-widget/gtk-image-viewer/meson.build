@@ -1,4 +1,3 @@
-gob2 = find_program('gob2')
 patch_src = find_program('patch_src.py')
 
 gen_src = custom_target('gen-output',
