@@ -25,53 +25,12 @@
 #include "cairo-flatten-by-bitmap.h"
 #include <spdlog/spdlog.h>
 #include "utils.h"
-
+#include "giv-debug-utils.h"
 
 using namespace std;
 
 const double MY_PI=3.141592653589793;
 const double DEG2RAD=MY_PI/180;
-
-// These should be in a utility library
-static void poly_to_giv(const string& filename,
-                        const string& header,
-                        const Polygon_2& poly,
-                        bool append)
-{
-    auto flags = ofstream::out;
-    if (append)
-        flags |= ofstream::app;
-    ofstream of(filename, flags);
-    of << header;
-    of << "m ";
-    for (const auto& p  : poly)
-        of << p.x() << " " << p.y() << "\n";
-    of << "z\n\n";
-    of.close();
-}
-
-
-static void polys_with_holes_to_giv(const string& filename,
-                                    const string& outer_header,
-                                    const string& hole_header,
-                                    std::vector<Polygon_with_holes>& polys,
-                                    bool append)
-{
-  for (const auto &ph : polys)
-  {
-    poly_to_giv(filename,
-                outer_header,
-                ph.outer_boundary(),
-                append);
-    append = true;
-    for (const auto &h : ph.holes())
-      poly_to_giv(filename,
-                  hole_header,
-                  h,
-                  append);
-      
-  }
-}
 
 // constructor
 WorkerSkeleton::WorkerSkeleton(Pomelo *caller,

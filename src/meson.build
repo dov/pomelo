@@ -6,7 +6,9 @@ engine_sources = ['textrusion.cc',
                   'bezier-intersect.cc',
                   'cairo-flatten-by-bitmap.cc',
                   'image-tracer-bw.cc',
-                  'utils.cc'
+                  'utils.cc',
+                  'giv-debug-utils.cc',
+                  'mesh.cc',
                  ]
 
 sources = ['pomelo-main.cc',
@@ -14,7 +16,6 @@ sources = ['pomelo-main.cc',
            'mesh-viewer.cc',
            'trackball.cc',
            'main-input.cc',
-           'mesh.cc',
            'worker-skeleton.cc',
            'progress-dialog.cc',
            'skeleton-viewer.cc',
@@ -46,6 +47,8 @@ endif
 cc = meson.get_compiler('c')
 m_dep = cc.find_library('m', required : false)
 pthread_dep = cc.find_library('pthread', required : false)
+glibmm_dep = dependency('glibmm-2.4')
+pangomm_dep = dependency('pangomm-1.4')
 gtkmm_dep = dependency('gtkmm-3.0')
 pangoft_dep = dependency('pangoft2')
 cairo_dep = dependency('cairo')
@@ -116,6 +119,24 @@ exe = executable(name_cap,
                  install :true
                 )
 
+
+executable('pomelo-cli',
+           ['pomelo-cli.cc'],
+           link_with : [lib_engine],
+           cpp_args : cpp_args,
+           dependencies : [pangoft_dep,
+                           fmt_dep,
+                           glm_dep,
+                           gmp_dep,
+                           mpfr_dep,
+                           m_dep,
+                           nanosvg_dep,
+                           tinygltf_dep,
+                           nhlohmann_json_dep,
+                           spdlog_dep,
+                           glibmm_dep,
+                           pangomm_dep],
+           install : true)
 
 # An example for converting an svg path to cairo
 executable('test-svgpath-to-cairo',
