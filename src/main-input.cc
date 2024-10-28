@@ -57,7 +57,7 @@ MainInput::MainInput(Gtk::Window& window)
 
   // Setup the radius num steps
   m_num_radius_steps.set_digits(0);
-  m_num_radius_steps.set_range(1,50);
+  m_num_radius_steps.set_range(0,50);
   m_num_radius_steps.set_increments(1,10);
   m_num_radius_steps.set_value(10);
   m_num_radius_steps.signal_value_changed().connect(sigc::mem_fun(*this,

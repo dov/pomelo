@@ -40,6 +40,7 @@ void create_mesh(bool do_rtl,
                  string font_description_string,
                  double linear_limit,
                  string markup,
+                 int max_image_width,
                  string debug_dir,
                  bool use_profile_data,
                  double zdepth,
@@ -54,6 +55,7 @@ void create_mesh(bool do_rtl,
   textrusion->do_rtl = do_rtl;
   textrusion->font_description = Pango::FontDescription(font_description_string);
   textrusion->linear_limit = linear_limit;
+  textrusion->m_debug_dir = debug_dir;
 
   // tbd - support svg
   cairo_surface_t *rec_surface = cairo_recording_surface_create(
@@ -67,6 +69,7 @@ void create_mesh(bool do_rtl,
 
   // Flatten by a bitmap and store the result in cr
   FlattenByBitmap fb(cr->cobj());
+  fb.max_image_width = max_image_width;
   fb.set_debug_dir(debug_dir);
   fb.flatten_by_bitmap(surface->cobj(),
                        resolution);
@@ -119,16 +122,7 @@ void create_mesh(bool do_rtl,
   }
   
   string giv_string;
-  auto phole_infos = textrusion->skeletonize(polys_with_holes,
-                                               // output
-                                               giv_string);
-  if (debug_dir.size())
-  {
-    string giv_filename = fmt::format("{}/skeleton.giv", debug_dir);
-    fmt::print("Saving to {}\n", giv_filename);
-    spdlog::info("Saving to {}", giv_filename);
-    string_to_file(giv_string, giv_filename);
-  }
+  auto phole_infos = textrusion->skeletonize(polys_with_holes);
 
   // second stage of algo, turn into mesh
   textrusion->use_profile_data = use_profile_data;
@@ -169,6 +163,7 @@ int main(int argc, char **argv)
   double linear_limit = 500;
   string markup = ".";
   int num_radius_steps = 5;
+  int max_image_width = -1;
 
   for (int i=0; i<argc; i++)
     args.push_back(argv[i]);
@@ -188,6 +183,9 @@ int main(int argc, char **argv)
                  "   --debug_dir debug_dir  Set debug dir for temporary files\n"
                  "   --log-stdout           Log to stdout\n"
                  "   --num-radius-steps n   Set number radius steps\n"
+                 "   --markup text          Set markup\n"
+                 "   --max-image-width w    Max image width for tracing\n"
+                 "   --font-description fc  Font description (font config format)\n"
                  );
       exit(0);
     }
@@ -209,6 +207,21 @@ int main(int argc, char **argv)
     CASE("--num-radius-steps")
     {
       num_radius_steps = atoi(argv[argp++]);
+      continue;
+    }
+    CASE("--markup")
+    {
+      markup = argv[argp++];
+      continue;
+    }
+    CASE("--max-image-width")
+    {
+      max_image_width = atoi(argv[argp++]);
+      continue;
+    }
+    CASE("--font-description")
+    {
+      font_description = argv[argp++];
       continue;
     }
     die("Unknown option {}!", S_);
@@ -260,6 +273,7 @@ int main(int argc, char **argv)
               font_description,
               linear_limit,
               markup,
+              max_image_width,
               debug_dir,
               use_profile_data,
               zdepth,

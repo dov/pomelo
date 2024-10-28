@@ -39,7 +39,7 @@ SectionEnd
 Section "Start Menu Shortcuts"
   CreateDirectory "$SMPROGRAMS\${NAME_CAP}"
   CreateShortCut "$SMPROGRAMS\${NAME_CAP}\Uninstall.lnk" "$INSTDIR\bin\uninst.exe" "" "$INSTDIR\uninst.exe" 0
-  CreateShortCut "$SMPROGRAMS\${NAME_CAP}\${NAME_CAP}.lnk" "$INSTDIR\bin\${NAME_CAP}.exe" "" "$INSTDIR\${NAME_CAP}.exe" 0
+  CreateShortCut "$SMPROGRAMS\${NAME_CAP}\${NAME_CAP}.lnk" "$INSTDIR\bin\${NAME_CAP}.exe" "" "$INSTDIR\${NAME}.exe" 0
 SectionEnd
 
 Section "" ; (default section)

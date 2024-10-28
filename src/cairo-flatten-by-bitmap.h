@@ -24,6 +24,9 @@ class FlattenByBitmap {
                          double resolution);
 
 
+  // settings
+  int max_image_width = -1;
+
  private:
   std::string m_debug_dir;
   cairo_t *m_ctx;

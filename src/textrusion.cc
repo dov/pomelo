@@ -12,13 +12,17 @@
 #include <string.h>
 #include <vector>
 #include <list>
+#include "utils.h"
 #include "textrusion.h"
 #include "svgpath-to-cairo.h"
 #include "pango-to-cairo.h"
 #include <spdlog/spdlog.h>
+#include <glm/gtx/norm.hpp>
+#include <fmt/core.h>
 
 using namespace std;
 using namespace Glib;
+using fmt::print;
 
 static void poly_to_giv(ustring filename,
                         ustring header,
@@ -361,16 +365,15 @@ TeXtrusion::polys_to_polys_with_holes(vector<Polygon_2> polys)
 }
 
 // Skeletonize the pholes one by one.
-vector<PHoleInfo> TeXtrusion::skeletonize(const std::vector<Polygon_with_holes>& polys_with_holes,
-                                          // output
-                                          std::string& giv_string
-                                          )
+vector<PHoleInfo> TeXtrusion::skeletonize(const std::vector<Polygon_with_holes>& polys_with_holes)
 {
     stringstream ss;
 
     vector<PHoleInfo> phole_infos;
 
     spdlog::info("Skeletonizing {} polygons with holes", polys_with_holes.size());
+    string regions_giv;
+
     for (int ph_idx=0; ph_idx < (int)polys_with_holes.size(); ph_idx++) {
         if (updater &&
             updater->info("skeletonize", 1.0*ph_idx/polys_with_holes.size()))
@@ -381,55 +384,53 @@ vector<PHoleInfo> TeXtrusion::skeletonize(const std::vector<Polygon_with_holes>&
         spdlog::info("Skeletonized phole {}", ph_idx);
 
         PHoleInfo phi(ph);
+        phi.m_debug_dir = m_debug_dir;
         phi.skeletonize();
         spdlog::info("Dividing phole {} into regions", ph_idx);
-        phi.divide_into_regions();
+        string giv_path = fmt::format("regions/phole{}", ph_idx);
+        string region_giv;
+
+        phi.divide_into_regions(giv_path,
+                                // output
+                                region_giv);
+        regions_giv += region_giv;
         
-        phi.m_debug_dir = m_debug_dir;
         phole_infos.push_back(phi);
     }
+
+    if (m_debug_dir.size()) {
+        string outline_giv;
+        for (int ph_idx=0; ph_idx < (int)phole_infos.size(); ph_idx++) {
+            auto& phi = phole_infos[ph_idx];
+            for (auto &r : phi.regions) {
+                string path = "skeleton";
+                string color = "blue";
+    
+                if (!r.polygon.is_simple()) {
+                    path += "/not_simple";
+                    color = "orange";
+                }
+    
+    
+                outline_giv += fmt::format("$color {}\n"
+                                           "$line\n"
+                                           "$marks fcircle\n"
+                                           "$path outline/phole{}\n"
+                                           "{} {}\n"
+                                           "{} {}\n\n",
+                                           color,
+                                           ph_idx,
+                                           r.polygon[0].x(), r.polygon[0].y(),
+                                           r.polygon[1].x(), r.polygon[1].y());
+            }
+        }
+        
+        string_to_file(regions_giv + "\n" + outline_giv,
+                       fmt::format("{}/regions.giv", m_debug_dir));
+    }
+
     if (updater && updater->info("skeletonize", 1.0))
         throw EAborted("Aborted!");
-
-    // Create a skeleton giv path. This is a replication of the code
-    // below and should be merged
-    for (int ph_idx=0; ph_idx < (int)phole_infos.size(); ph_idx++) {
-        auto& phi = phole_infos[ph_idx];
-        for (auto &r : phi.regions) {
-            r.m_debug_dir = m_debug_dir;
-            string path = "skeleton";
-            string color = "blue";
-
-            if (!r.polygon.is_simple()) {
-                path += "/not_simple";
-                color = "orange";
-            }
-
-
-            ss << fmt::format("$color {}\n"
-                         "$line\n"
-                         "$marks fcircle\n"
-                         "$path boundary\n"
-                         "{} {}\n"
-                         "{} {}\n\n"
-                         "$color red\n"
-                         "$line\n"
-                         "$marks fcircle\n"
-                         "$path {}\n"
-                         ,
-                         color,
-                         r.polygon[0].x(), r.polygon[0].y(),
-                         r.polygon[1].x(), r.polygon[1].y(),
-                         path);
-            // Inner skeleton lines
-            int n = r.polygon.size();
-            for (size_t i=1; i<r.polygon.size()+1; i++) 
-                ss << fmt::format("{} {}\n", r.polygon[i%n].x(), r.polygon[i%n].y());
-            ss << ("\n");
-        }
-
-    }
-    giv_string = ss.str();
 
     return phole_infos;
 }
@@ -437,18 +438,18 @@ vector<PHoleInfo> TeXtrusion::skeletonize(const std::vector<Polygon_with_holes>&
 
 // Add an upper or a lower cap of a region contribution
 void TeXtrusion::add_region_contribution_cap_to_mesh(
-  Mesh& mesh,
-  stringstream& ss,
-  int layer_idx,
-  int ph_idx,
-  int r_idx,
-  bool is_lower,
+  Mesh& mesh,       // The mesh we are accumulating into
+  stringstream& ss, // giv output
+  int layer_idx,    // meta data
+  int ph_idx,       // meta data
+  int r_idx,        // meta_data
+  bool is_lower,    // Used to determine triangles winding number
   bool extrapolate, // whether to extrapolate the last point
-  const vector<Vec2>& flat_list,
-  const SkeletonPolygonRegion& region,
+  const vector<Vec2>& flat_list,  // The profile we are adding. The offset curve will be pushed up by this
+  const SkeletonPolygonRegion& region,  // The region we are adding
 
   // output connection rings
-  vector<vector<Vec3>>& connection_rings
+  vector<vector<Vec3>>& connection_rings // The outer boundary, i.e. the segment of region at flat_list[0]
   )
 {
   double depth = region.get_depth();
@@ -494,16 +495,24 @@ void TeXtrusion::add_region_contribution_cap_to_mesh(
           offs_end = flat_list[d_idx+1].x;
           z_end = flat_list[d_idx+1].y;
     
-          if (offs_end > depth)
+          if (offs_end > depth-epsilon)
             {
               z_end = z_start + (depth-offs_start)/(offs_end-offs_start)*(z_end-z_start);
               offs_end = depth+epsilon;
             }
         }
-                    
+
+      bool debug=false;
+
+#if 0
+      // use this to insert specific
+      if (ph_idx == 3 && r_idx==38 && d_idx == 5)
+          debug =true;
+#endif
+
       // This returns a list of quads where each quad has been
       // triangulated
-      vector<Polygon3D> pp = region.get_offset_curve_and_triangulate(offs_start,offs_end);
+      vector<Polygon3D> pp = region.get_offset_curve_and_triangulate(offs_start,offs_end, debug);
 
       // The "tube" is connecting the first "distance index" to the
       // z-depth of the mesh. This connects the bridge between the
@@ -561,17 +570,19 @@ void TeXtrusion::add_region_contribution_cap_to_mesh(
 
       int poly_idx = 0;
       for (const auto &poly : pp) {
-        ss << fmt::format("$color green\n"
-                     "$line\n"
-                     "$marks fcircle\n"
-                     "$path offset curves/layer {}/ph {}/region={}/dist={}/poly={}\n"
-                     ,
-                     layer_idx,
-                     ph_idx,
-                     r_idx,
-                     d_idx,
-                     poly_idx
-                     );
+        ss << fmt::format("$color green/0.3\n"
+                          "$outline_color green\n"
+                          "$polygon\n"
+                          "$line\n"
+                          "$marks fcircle\n"
+                          "$path offset curves/layer {}/ph {}/region={}/dist={}/poly={}\n"
+                          ,
+                          layer_idx,
+                          ph_idx,
+                          r_idx,
+                          d_idx,
+                          poly_idx
+            );
         poly_idx++;
         if (poly.size()!=3)
           throw std::runtime_error("Expected 3 vertices!");
@@ -624,7 +635,6 @@ void TeXtrusion::add_region_contribution_to_mesh(
   const SkeletonPolygonRegion& region
   )
 {
-  double depth = region.get_depth();
   string color = "blue";
   string path_modifier;
 
@@ -783,8 +793,11 @@ MultiMesh TeXtrusion::skeleton_to_mesh(
 
                     auto& layer = this->profile_data[layer_idx];
                     LayerData *prev_layer = nullptr;
+
+                    // Until we have proper profile intersection,
+                    // always refer to the base layer
                     if (layer_idx>0)
-                      prev_layer = &this->profile_data[layer_idx-1];
+                        prev_layer = &this->profile_data[0]; // Was layer_idx-1
 
                     layer.set_linear_limit(); // TBD use linear limit parameter
                     auto flat_list = layer.get_flat_list();
@@ -796,8 +809,11 @@ MultiMesh TeXtrusion::skeleton_to_mesh(
                         flat_list[0].x,
                         flat_list.back().x);
 
-                      do_extrapolate = prev_flat_list.back().y < flat_list.back().y;
-                      do_extrapolate = true;
+                      // We extrapolate if the layer extends beyond
+                      // the base layer in x and it is above it
+                      do_extrapolate = !prev_flat_list.size()
+                        || (prev_flat_list.back().x < flat_list.back().x
+                            && prev_flat_list.back().y < flat_list.back().y);
                     }
                     else
                     {
@@ -830,27 +846,27 @@ MultiMesh TeXtrusion::skeleton_to_mesh(
               }
             else
               {
-                ss << fmt::format("$color {}\n"
-                             "$line\n"
-                             "$marks fcircle\n"
-                             "$path boundary{}/layer 0/ph {}/region {}\n"
-                             "{} {}\n"
-                             "{} {}\n"
-                             "\n"
-                             "$color red\n"
-                             "$line\n"
-                             "$marks fcircle\n"
-                             "$path skeleton{}/layer 0/ph {}/region {}\n\n"
-                             ,
-                             color,
-                             path_modifier,
-                             ph_idx,
-                             r_idx,
-                             r.polygon[0].x(), r.polygon[0].y(),
-                             r.polygon[1].x(), r.polygon[1].y(),
-                             path_modifier,
-                             ph_idx,
-                             r_idx);
+                ss << fmt::format("$color {}/0.3\n"
+                                  "$line\n"
+                                  "$marks fcircle\n"
+                                  "$path boundary{}/layer 0/ph {}/region {}\n"
+                                  "{} {}\n"
+                                  "{} {}\n"
+                                  "\n"
+                                  "$color red\n"
+                                  "$line\n"
+                                  "$marks fcircle\n"
+                                  "$path skeleton{}/layer 0/ph {}/region {}\n\n"
+                                  ,
+                                  color,
+                                  path_modifier,
+                                  ph_idx,
+                                  r_idx,
+                                  r.polygon[0].x(), r.polygon[0].y(),
+                                  r.polygon[1].x(), r.polygon[1].y(),
+                                  path_modifier,
+                                  ph_idx,
+                                  r_idx);
     
                 if (!r.polygon.is_simple())
                   {
@@ -872,7 +888,11 @@ MultiMesh TeXtrusion::skeleton_to_mesh(
                 for (int d_idx=0; d_idx<this->profile_num_radius_steps+1; d_idx++)
                   {
                     double r = profile_radius;
-                    double th = angle_span * d_idx/this->profile_num_radius_steps;
+                    double th;
+                    if (this->profile_num_radius_steps == 0)
+                        th = M_PI/2;
+                    else
+                        th = angle_span * d_idx/this->profile_num_radius_steps;
                     // TBDov: The following calculation is wrong e.g. for
                     // profile_num_radius_steps==2.
                     //
@@ -1023,7 +1043,8 @@ void PHoleInfo::skeletonize()
 }
 
 // Divide the member skeleton into SkeletonPolygonRegions
-void PHoleInfo::divide_into_regions()
+void PHoleInfo::divide_into_regions(const string& giv_path,
+                                    string& regions_giv)
 {
     // Why does this happen
     if (!skeleton)
@@ -1050,7 +1071,9 @@ void PHoleInfo::divide_into_regions()
         if (CGAL::squared_distance(poly[poly.size()-1], poly[0])<eps2)
             poly.erase(poly.begin()+poly.size()-1);
 
-        // search for a degenerate sliver angle and remove the vertex
+#if 0
+        // search for a degenerate sliver angle and remove the vertex.
+        // TBD: This causes holes in the poly!
         size_t n = poly.size();
         for (size_t i=0; i<n; i++) {
             const auto& pp = poly[(i-1+n)%n];
@@ -1063,6 +1086,7 @@ void PHoleInfo::divide_into_regions()
                 n-=1;
             }
         }
+#endif
         
         // This should n't happen anymore
         if (!poly.is_simple()) {
@@ -1087,6 +1111,25 @@ void PHoleInfo::divide_into_regions()
             regions.push_back(region);
         }
     }
+
+    {
+      int region_idx=0;
+      for (auto &r : regions) {
+        regions_giv += fmt::format("$path {}/region{}\n"
+                                   "$color red/0.3\n"
+                                   "$outline_color red\n"
+                                   "$polygon\n"
+                                   "$line\n"
+                                   "$marks fcircle\n",
+                                   giv_path,
+                                   region_idx++
+                                   );
+        for (auto &p : r.polygon)
+          regions_giv +=  fmt::format("{:f} {:f}\n", p.x(), p.y());
+        regions_giv += "z\n\n";
+      }
+    }
+
     spdlog::info("Added {} regions", regions.size());
 }
 
@@ -1104,7 +1147,9 @@ double SkeletonPolygonRegion::get_depth() const
     return max_depth;
 }
 
-// Sutherland-Hodgman polygon clipping
+// Sutherland-Hodgman polygon clipping. Returns a clipped
+// version of poly that falls on the positive side of
+// line.
 vector<Polygon_2> cut_polygon_by_line(const Polygon_2& poly,
                                       const Line_2& line)
 {
@@ -1210,9 +1255,10 @@ vector<Polygon_2> cut_polygon_by_line(const Polygon_2& poly,
 
 // Get a slice of the polygon between the line pairs line1 and
 // line2. Line1 and line2 should be properly oriented!
-vector<Polygon_2> cut_polygon_by_line_pair(const Polygon_2& poly,
-                                           const Line_2& line1,
-                                           const Line_2& line2)
+static vector<Polygon_2> cut_polygon_by_line_pair(const Polygon_2& poly,
+                                                  const Line_2& line1,
+                                                  const Line_2& line2,
+                                                  bool debug)
 {
     vector<Polygon_2> ret;
     vector<Polygon_2> cuts1 = cut_polygon_by_line(poly,line1); // output polygons
@@ -1222,7 +1268,59 @@ vector<Polygon_2> cut_polygon_by_line_pair(const Polygon_2& poly,
         for (const auto& p2 : cuts2) 
             ret.push_back(p2);
     }
-    return ret;
+
+    if (debug)
+    {
+        ofstream fh("/tmp/cuts.giv");
+        fh.close();
+        poly_to_giv("/tmp/cuts.giv",
+                    ("$marks fcircle\n"
+                     "$color red\n"
+                     "$path input\n"
+                        ),
+                    poly,
+                    true
+            );
+        for (auto &p : cuts1)
+            poly_to_giv("/tmp/cuts.giv",
+                        ("$marks fcircle\n"
+                         "$color green\n"
+                         "$path cut1\n"
+                            ),
+                        p,
+                        true);
+
+        for (auto &p : ret)
+            poly_to_giv("/tmp/cuts.giv",
+                        ("$marks fcircle\n"
+                         "$color blue\n"
+                         "$path cut2\n"
+                            ),
+                        p,
+                        true);
+
+    }
+
+    // Check if there are zero length vectors in ret
+    vector<Polygon_2> filter_ret;
+    for (const auto& p : ret) {
+        Polygon_2 pp;
+        for (size_t i=0; i<p.size(); i++) {
+            const Point_2& p1 = p[i];
+            const Point_2& p2 = p[(i+1)%p.size()];
+            auto sq_dist = CGAL::squared_distance(p1, p2);
+
+            if (sq_dist < 1e-8) {
+                print("Zero length edge in cut_polygon_by_line_pair!\n");
+            }
+            else
+                pp.push_back(p1);
+        }
+        if (pp.size()>2)
+            filter_ret.push_back(pp);
+    }
+    
+    return filter_ret;
 }
 
 // TBD: This needs to be modified when adding support for ridge smoothing.
@@ -1235,7 +1333,7 @@ vector<Polygon_2> cut_polygon_by_line_pair(const Polygon_2& poly,
 //
 // Once we have this info, we have enough to cut the edges.
 
-vector<Polygon3D> SkeletonPolygonRegion::get_offset_curve(double d1, double d2) const
+vector<Polygon3D> SkeletonPolygonRegion::get_offset_curve(double d1, double d2, bool debug) const
 {
     Line_2 boundary_line(polygon[0],polygon[1]); // the boundary curve
     Vector_2 vec = boundary_line.perpendicular(polygon[0]).to_vector();
@@ -1246,7 +1344,45 @@ vector<Polygon3D> SkeletonPolygonRegion::get_offset_curve(double d1, double d2) 
     vector<Polygon3D> ret;
     vector<Polygon_2> polys;
     try {
-      polys = cut_polygon_by_line_pair(polygon, line1, line2);
+      polys = cut_polygon_by_line_pair(polygon, line1, line2, debug);
+      if (debug)
+      {
+          poly_to_giv("/tmp/offs.giv",
+                      ("$marks fcircle\n"
+                       "$color red\n"
+                       "$path input\n"
+                          ),
+                      polygon,
+                      false
+              );
+          ofstream fh("/tmp/offs.giv", std::ios_base::app);
+          int line_idx=0;
+          for (auto& l : {
+                  array<Point_2,2> { polygon[0],polygon[1] },
+                  array<Point_2,2> {polygon[0] + vec*d1, polygon[1] + vec*d1},
+                  array<Point_2,2> {polygon[0] + vec*d2, polygon[1] + vec*d2}})
+              fh << fmt::format("\n"
+                                "$color green\n"
+                                "$marks fcircle\n"
+                                "$path line/{}\n"
+                                "{} {}\n"
+                                "{} {}\n\n",
+                                line_idx++,
+                                l[0].x(), l[0].y(),
+                                l[1].x(), l[1].y());
+          fh.close();
+
+          for (auto &poly : polys)
+            poly_to_giv("/tmp/offs.giv",
+                        ("$marks fcircle\n"
+                         "$color blue\n"
+                         "$path output\n"
+                            ),
+                        poly,
+                        true
+                );
+                      
+      }
     }
     catch(const CGAL::Failure_exception& exc) {
       spdlog::error("Failed cutting polygon!");
@@ -1295,11 +1431,21 @@ vector<Polygon3D> SkeletonPolygonRegion::get_offset_curve(double d1, double d2) 
     return ret;
 }
 
-vector<Polygon3D> SkeletonPolygonRegion::get_offset_curve_and_triangulate(double d1, double d2) const
+static inline double sqr(double x) {
+  return x*x;
+}
+
+vector<Polygon3D> SkeletonPolygonRegion::get_offset_curve_and_triangulate(double d1, double d2, bool debug) const
 {
-    auto polys = get_offset_curve(d1,d2);
+    auto polys = get_offset_curve(d1,d2, debug);
     Line_2 boundary_line(polygon[0],polygon[1]); // the boundary curve
 
+    ofstream fh;
+    if (debug)
+        fh.open("/tmp/debug.giv");
+    fh.close();
+    
+    
     vector<Polygon3D> tris3;
     for (const auto& poly3 : polys) {
         // build a "normal" poly from the polys. We'll build the 3D coordinates
@@ -1307,6 +1453,13 @@ vector<Polygon3D> SkeletonPolygonRegion::get_offset_curve_and_triangulate(double
         Polygon_2 poly;
         for (const auto&p : poly3)
             poly.push_back(Point_2(p.x(),p.y()));
+
+        if (debug)
+            poly_to_giv("/tmp/debug.giv",
+                        fmt::format("$color red\n"
+                                    "$marks fcircle\n"),
+                        poly,
+                        true);
     
         CDT cdt;
         cdt.insert_constraint(poly.vertices_begin(), poly.vertices_end(), true);
@@ -1327,10 +1480,22 @@ vector<Polygon3D> SkeletonPolygonRegion::get_offset_curve_and_triangulate(double
                                   p, boundary_line));
                 tri3.emplace_back(p.x(),p.y(),z);
             }
-            tris3.push_back(tri3);
+
+            // Check if there is a zerolength edge
+            bool zero_length_edge = false;
+            for (int i=0; i<3; i++) {
+              glm::dvec2 p(tri3[i].x(),tri3[i].y());
+              glm::dvec2 q(tri3[(i+1)%3].x(),tri3[(i+1)%3].y());
+              
+              double len2 = sqr(q.x-p.x) + sqr(q.y-p.y);
+              if (len2 < 1e-8)
+                  zero_length_edge = true;
+            }
+            if (!zero_length_edge)
+                tris3.push_back(tri3);
         }
     }
-  
+
     return tris3;
 }
   

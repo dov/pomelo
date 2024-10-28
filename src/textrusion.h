@@ -117,11 +117,11 @@ class SkeletonPolygonRegion {
     // distances d1 and d2 from the boundary curve. The result is returned
     // as a vector of 3D polygons where the z-axis is the distance from
     // the outer boundary curve. (The first segment of the polygon)
-    std::vector<Polygon3D> get_offset_curve(double d1, double d2) const;
+    std::vector<Polygon3D> get_offset_curve(double d1, double d2, bool debug) const;
 
     // Get offset curve and triangulate it. Each return Polygon3D
     // should contain exactly 3 vertices.
-    std::vector<Polygon3D> get_offset_curve_and_triangulate(double d1, double d2) const;
+    std::vector<Polygon3D> get_offset_curve_and_triangulate(double d1, double d2, bool debug=false) const;
     
     // The polygon region. The first edge lies on he associated PHoleInfo
     // boundary.
@@ -147,7 +147,11 @@ class PHoleInfo {
     void skeletonize();
 
     // Split the skeletons into SkeletonPolygonRegion:s
-    void divide_into_regions();
+    void divide_into_regions(
+      const std::string& giv_path,
+      // output
+      std::string& regions_giv
+    );
 
     Polygon_with_holes polygon_with_holes;
     boost::shared_ptr<StraightSkeleton> skeleton;
@@ -185,9 +189,7 @@ class TeXtrusion {
     std::vector<Polygon_with_holes> polys_to_polys_with_holes(std::vector<Polygon_2> polys);
 
     // Skeletonize the glyphs
-    std::vector<PHoleInfo> skeletonize(const std::vector<Polygon_with_holes>& polys_with_holes,
-                                       // output
-                                       std::string& giv_string);
+    std::vector<PHoleInfo> skeletonize(const std::vector<Polygon_with_holes>& polys_with_holes);
 
     // Turn the skeleton into by the layers
     MultiMesh skeleton_to_mesh(const std::vector<PHoleInfo>& phole_infos,

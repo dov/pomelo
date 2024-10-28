@@ -42,6 +42,12 @@ SettingsDialog::SettingsDialog(Gtk::Window& parent,
     m_smooth_angle_max->set_increments(1,10);
     m_smooth_angle_max->set_value(135);
   
+    m_max_image_width = Gtk::make_managed<Gtk::SpinButton>();
+    m_max_image_width->set_digits(0);
+    m_max_image_width->set_range(100,30000);
+    m_max_image_width->set_increments(100,10000);
+    m_max_image_width->set_value(1000);
+
     m_sharp_angles_checkbutton = Gtk::make_managed<Gtk::CheckButton>();
   
     int row=0;
@@ -52,6 +58,10 @@ SettingsDialog::SettingsDialog(Gtk::Window& parent,
     w_grid->attach(*mmLabelRight("Smooth angle max: "), 0,row);
     w_grid->attach(*m_smooth_angle_max,                 1,row);
     w_grid->attach(*mmLabelLeft("[°]"),                2,row);
+    row++;
+    w_grid->attach(*mmLabelRight("Max image width: "), 0,row);
+    w_grid->attach(*m_max_image_width,        1,row);
+    w_grid->attach(*mmLabelLeft("[pixels]"),  2,row);
     row++;
   }
 
@@ -109,6 +119,7 @@ void SettingsDialog::load_from_settings()
 {
   m_sharp_angles_checkbutton->set_active(m_pomelo_settings->get_int_default("smooth_sharp_angles", 1));
   m_smooth_angle_max->set_value(m_pomelo_settings->get_double_default("smooth_max_angle", 135));
+  m_max_image_width->set_value(m_pomelo_settings->get_int_default("max_image_width", 1000));
 
   Gdk::RGBA color = Gdk::RGBA(m_pomelo_settings->get_string_default("background_color", "#608080"));
   m_background_chooser->set_rgba(color);
@@ -129,6 +140,8 @@ void SettingsDialog::save_to_settings()
                              m_sharp_angles_checkbutton->get_active());
   m_pomelo_settings->set_double("smooth_max_angle",
                                 m_smooth_angle_max->get_value());
+  m_pomelo_settings->set_int("max_image_width",
+                             m_max_image_width->get_value());
   m_pomelo_settings->set_string("background_color",
                                 m_background_chooser->get_rgba().to_string());
   m_pomelo_settings->set_string("mesh_color",
@@ -172,5 +185,9 @@ bool SettingsDialog::skeleton_params_have_changed()
   return ((bool(m_pomelo_settings->get_int_default("smooth_sharp_angles"))
                != m_sharp_angles_checkbutton->get_active())
           || fabs(m_pomelo_settings->get_double_default("smooth_max_angle")
-                  - m_smooth_angle_max->get_value()) > epsilon);
+                  - m_smooth_angle_max->get_value()) > epsilon)
+          || (m_pomelo_settings->get_int_default("max_image_width")
+              != int(m_smooth_angle_max->get_value()))
+
+    ;
 }

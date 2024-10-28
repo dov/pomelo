@@ -8,6 +8,7 @@
 #include <fstream>
 #include <iostream>
 #include <filesystem>
+#include <glm/gtx/norm.hpp>
 #include "fmt/core.h"
 
 // Define these only in *one* .cc file.
@@ -20,9 +21,20 @@
 
 using namespace std;
 using namespace glm;
+using fmt::print;
 namespace fs = std::filesystem;
 
 constexpr float export_scale = 0.01;
+
+// Loop over the coordinates in the mesh and zero out all coordinates
+// than are smaller than 1+epsilon where epsilon is with respect to a
+// a float.
+static float zero_small_val(float v)
+{
+  if (fabs(v) < 1e-6)
+    return 0;
+  return v;
+}
 
 // Read and return a mesh
 std::shared_ptr<Mesh> read_stl(const std::string& filename)
@@ -129,7 +141,32 @@ void save_stl(const Mesh& mesh,
   // Make use of the fact that all the vertices are ordered in
   // groups of three composing the contained triangles.
   const  auto& vertices = mesh.vertices; // shortcut
-  size_t size = (size_t)vertices.size()/3;
+
+  // Copy the non-zero triangles
+  vector<glm::dvec3> non_zero_vertices;
+  for(size_t tr_idx=0; tr_idx<mesh.vertices.size()/3; tr_idx++)
+    {
+      bool zero_length_edge = false;
+      for (int i=0; i<3; i++)
+        {
+          // Check if the length of the edge is zero
+          double len = glm::length(vertices[tr_idx*3+i]-vertices[tr_idx*3+(i+1)%3]);
+          if (len < 1e-9)
+            {
+              fmt::print("Warning: Zero length edge in triangle {}. len={}\n", tr_idx, len);
+              zero_length_edge = true;
+              break;
+            }
+        }
+#if 0
+      if (!zero_length_edge) // Change back!
+        continue;
+#endif
+      for (int i=0; i<3; i++)
+        non_zero_vertices.push_back(vertices[tr_idx*3+i]);
+    }
+
+  size_t size = (size_t)non_zero_vertices.size()/3;
   fh.write((const char*)&size, 4);
 
   uint16_t color=0;
@@ -143,7 +180,8 @@ void save_stl(const Mesh& mesh,
         {
           for (int j=0; j<3; j++)
             {
-              float f = (float)vertices[tr_idx*3+i][j] * export_scale;
+              float f = (float)non_zero_vertices[tr_idx*3+i][j] * export_scale;
+              f = zero_small_val(f);
               fh.write((char*)&f, 4);
             }
         }
@@ -169,6 +207,13 @@ void MultiMesh::save_gltf(const std::string& filename)
   tinygltf::Asset asset;
 
 
+  tinygltf::Light light;
+  light.color = {1.0f, 1.0f, 1.0f};
+  light.intensity = 1.0f;
+  light.range = 10.0f;
+  light.type = "directional";
+  m.lights.push_back(light);
+  
   // Create a buffer that contain the vertices and faces for
   // all the meshes
   int buffer_size = 0;
@@ -208,6 +253,8 @@ void MultiMesh::save_gltf(const std::string& filename)
     const Mesh* mesh = &(*this)[mesh_idx];
     const auto& vertices = mesh->vertices; // shortcut
     int num_vertices = vertices.size();
+    if (num_vertices == 0)
+        continue;
     int num_faces = num_vertices/3;
 
     // Make use of the fact that the vertices are ordered
@@ -223,12 +270,12 @@ void MultiMesh::save_gltf(const std::string& filename)
       float *pvp = vp; // Keep for min and max
   
       // Swap y and z
-      *vp++ = float(v[0]* export_scale);
-      *vp++ = float(v[2] * export_scale); 
-      *vp++ = float(-v[1] * export_scale);
+      *vp++ = zero_small_val(v[0]* export_scale);
+      *vp++ = zero_small_val(v[2] * export_scale); 
+      *vp++ = zero_small_val(-v[1] * export_scale);
       for (int i=0; i<3; i++)
       {
-        float c = *pvp++;
+        float c = zero_small_val(*pvp++);
 
         if (c < minValues[mesh_idx][i])
           minValues[mesh_idx][i] = c;
@@ -287,7 +334,8 @@ void MultiMesh::save_gltf(const std::string& filename)
     mat.pbrMetallicRoughness.baseColorFactor = {mesh->color.r,
                                                 mesh->color.g,
                                                 mesh->color.b,
-                                                1.0f};  
+                                                1.0f};
+    mat.pbrMetallicRoughness.roughnessFactor = 0.5;
 
     fmt::print("Adding layer {} with color {},{},{}\n",
                m.materials.size(),
@@ -310,12 +358,20 @@ void MultiMesh::save_gltf(const std::string& filename)
   // followed by the meshes as children
   vector<int> children;
   for (size_t i=0; i<size(); i++)
+  {
+    if ((&(*this)[i])->vertices.size() == 0)
+      continue; // skip empty meshes
     children.push_back(i+1); // +1 since the children follow this node
+  }
+    
   node.children = children;
   node.name = fs::path(filename).filename().string();
   m.nodes.push_back(node);
   for (size_t i=0; i<size(); i++)
   {
+    if ((&(*this)[i])->vertices.size() == 0)
+      continue; // skip empty meshes
+
     node = tinygltf::Node();
     node.mesh = i;
     node.name = fmt::format("Layer {}", i);

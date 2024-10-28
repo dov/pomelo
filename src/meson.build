@@ -104,7 +104,7 @@ endif
 
 incdir = ['giv-widget']
 
-exe = executable(name_cap,
+exe = executable(name,
                  sources,
                  resources,
                  dependencies: deps,

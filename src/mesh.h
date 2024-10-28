@@ -25,6 +25,7 @@ class MultiMesh : public std::vector<Mesh> {
 };
 
 std::shared_ptr<Mesh> read_stl(const std::string& filename);
+
 void save_stl(const Mesh& mesh, const std::string& filename);
 
 #if 0

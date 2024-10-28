@@ -315,6 +315,8 @@ void MeshViewer::init_buffers (guint *vao_out)
 
 void MeshViewer::update_geometry()
 {
+  if (m_hw_mesh.vertices.size()==0)
+      return;
   glBindBuffer (GL_ARRAY_BUFFER, m_buffer_id);
   glBufferData (GL_ARRAY_BUFFER,
                 m_hw_mesh.vertices.size() * sizeof(MeshViewer::VertexInfo),

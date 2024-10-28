@@ -73,17 +73,41 @@ void FlattenByBitmap::flatten_by_bitmap(cairo_surface_t *rec_surface,
   // Create an image with the above extents with resolution=resolution
   cairo_surface_t *surface = nullptr;
   spdlog::info("Initial resolution={}", resolution);
-  while(1)
+
+  if (max_image_width > 0)
   {
     if (surface)
       cairo_surface_destroy(surface);
+    resolution = 1.0*max_image_width/width;
+    margin = 10.0/resolution;
+      width += 2*margin;
+      height+= 2*margin;
+      x0 -= margin;
+      y0 -= margin;
     surface = cairo_image_surface_create(
       CAIRO_FORMAT_A8,
-      int(width*resolution),int(height*resolution));
-    if (cairo_image_surface_get_width(surface))
-      break;
-    resolution/=2.0;
-    spdlog::info("Reducing resolution to {}", resolution);
+      int(width * resolution),
+      int(height * resolution));
+    if (!cairo_image_surface_get_width(surface))
+    {
+      spdlog::error("Failed creating image of size {}", max_image_width);
+      throw std::runtime_error(fmt::format("Failed creating image of size {}", max_image_width));
+    }
+  }
+  else
+  {
+    while(1)
+    {
+      if (surface)
+        cairo_surface_destroy(surface);
+      surface = cairo_image_surface_create(
+        CAIRO_FORMAT_A8,
+        int(width*resolution),int(height*resolution));
+      if (cairo_image_surface_get_width(surface))
+        break;
+      resolution/=2.0;
+      spdlog::info("Reducing resolution to {}", resolution);
+    }
   }
   spdlog::info("surface size={}x{} resolution={}", 
                cairo_image_surface_get_width(surface),
@@ -200,7 +224,8 @@ void FlattenByBitmap::flatten_by_bitmap(cairo_surface_t *rec_surface,
     string giv_filename = fmt::format("{}/{}", m_debug_dir, "path-by-bitmap.giv");
     spdlog::info("saving to {}", giv_filename);
     fmt::print("saving to {}\n", giv_filename);
-    path_to_giv(path, giv_filename, resolution, image_filename);
+    path_to_giv(path, giv_filename, resolution,
+                "trace_input_bin.png"); // without path
     cairo_path_destroy(path);
   }
 

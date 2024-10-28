@@ -132,6 +132,7 @@ void WorkerSkeleton::do_work_skeleton(
 
     // Flatten by a bitmap and store the result in cr
     FlattenByBitmap fb(cr->cobj());
+    fb.max_image_width = m_pomelo_settings->get_int_default("max_image_width",1);
     fb.set_debug_dir(m_debug_dir);
     fb.flatten_by_bitmap(surface->cobj(),
                          resolution);
@@ -189,16 +190,7 @@ void WorkerSkeleton::do_work_skeleton(
     }
 
 
-    m_phole_infos = m_textrusion->skeletonize(polys_with_holes,
-                                              // output
-                                              giv_string);
-    if (m_debug_dir.size())
-    {
-      string giv_filename = fmt::format("{}/skeleton.giv", m_debug_dir);
-      fmt::print("Saving to {}\n", giv_filename);
-      spdlog::info("Saving to {}", giv_filename);
-      string_to_file(giv_string, giv_filename);
-    }
+    m_phole_infos = m_textrusion->skeletonize(polys_with_holes);
 
     finished_successfully=true;
   }

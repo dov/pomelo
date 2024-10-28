@@ -160,13 +160,7 @@ int main(int argc, char **argv)
     hpolys = smooth_acute_angles(0.5, max_angle_to_smooth, hpolys, 16);
 
   string giv_string;
-  auto skel = textrusion.skeletonize(hpolys,
-                                     // output
-                                     giv_string);
-  fmt::print("Saving skeleton to {}\n", giv_filename);
-  ofstream fh(giv_filename);
-  fh << giv_string;
-  fh.close();
+  auto skel = textrusion.skeletonize(hpolys);
   
   exit(0);
   return(0);
