@@ -8,8 +8,11 @@
 #include <fstream>
 #include <iostream>
 #include <filesystem>
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/norm.hpp>
 #include "fmt/core.h"
+#include "spdlog/spdlog.h"
+
 
 // Define these only in *one* .cc file.
 #define TINYGLTF_IMPLEMENTATION
@@ -153,7 +156,7 @@ void save_stl(const Mesh& mesh,
           double len = glm::length(vertices[tr_idx*3+i]-vertices[tr_idx*3+(i+1)%3]);
           if (len < 1e-9)
             {
-              fmt::print("Warning: Zero length edge in triangle {}. len={}\n", tr_idx, len);
+              spdlog::warn("Warning: Zero length edge in triangle {}. len={}\n", tr_idx, len);
               zero_length_edge = true;
               break;
             }

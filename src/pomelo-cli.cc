@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <fmt/core.h>
+#include <fmt/ranges.h>
 #include <fmt/chrono.h>
 #include "cairo-flatten-by-bitmap.h"
 #include "spdlog/sinks/basic_file_sink.h"
@@ -34,20 +35,24 @@ static void die(fmt::format_string<Args...> FormatStr, Args &&... args)
 }
 
 #define CASE(s) if (s == S_)
+#define CASE2(s,s1) if (s == S_ || s1 == S_)
 
 // task creating the mesh
 void create_mesh(bool do_rtl,
                  string font_description_string,
                  double linear_limit,
-                 string markup,
+                 const string& svg_filename,
+                 const string& markup,
                  int max_image_width,
                  string debug_dir,
                  bool use_profile_data,
+                 const ProfileData& profile_data,
                  double zdepth,
                  double radius,
                  double round_max_angle,
                  int num_radius_steps,
-                 const ProfileData& profile_data) 
+                 const string& mesh_filename
+                 ) 
 {
   double resolution = 100; // will be automatically reduced if needed
 
@@ -64,7 +69,16 @@ void create_mesh(bool do_rtl,
   );
 
   Cairo::RefPtr<Cairo::Surface> surface = Cairo::RefPtr<Cairo::Surface>(new Cairo::Surface(rec_surface));
-  textrusion->markup_to_context(surface, markup);
+
+  if (svg_filename.size()>0)
+  {
+    textrusion->svg_filename_to_context(surface, svg_filename);
+    resolution = 20; // typically want smaller resolution for svg. Test this assumption!
+                     // this should be a parameter!
+  }
+  else
+    textrusion->markup_to_context(surface, markup);
+
   Cairo::RefPtr<Cairo::Context> cr = Cairo::Context::create(surface);
 
   // Flatten by a bitmap and store the result in cr
@@ -146,6 +160,39 @@ void create_mesh(bool do_rtl,
     save_stl(meshes[0], fmt::format("{}/mesh.stl", debug_dir));
   }
 
+  if (mesh_filename.size())
+  {
+    if (meshes.size() == 0)
+    {
+      spdlog::error("No meshes found!");
+      exit(-1);
+    }
+
+    if (mesh_filename.ends_with(".gltf")
+      || mesh_filename.ends_with(".glb"))
+    {
+      meshes.save_gltf(mesh_filename);
+    }
+    else
+    {
+      if (meshes.size() == 1)
+      {
+        save_stl(meshes[0], mesh_filename);
+      }
+      else
+      {
+        for (int mesh_idx=0; mesh_idx<meshes.size(); mesh_idx++)
+        {
+          // The base name is the mesh_filename without the extension
+          string mesh_filename_base = mesh_filename;
+          if (mesh_filename_base.size() > 4)
+            mesh_filename_base = mesh_filename_base.substr(0, mesh_filename_base.size()-4);
+          string mesh_layer_filename = fmt::format("{}_{}.stl", mesh_filename_base, mesh_idx);
+          save_stl(meshes[mesh_idx], mesh_layer_filename);
+        }
+      }
+    }
+  }
 }
 
 int main(int argc, char **argv)
@@ -160,10 +207,14 @@ int main(int argc, char **argv)
   bool do_log_and_exit = false;
   double do_rtl = false;
   string font_description = "Sans 24";
+  string profile_filename;
   double linear_limit = 500;
   string markup = ".";
+  string svg_filename;
   int num_radius_steps = 5;
   int max_image_width = -1;
+  double zdepth = 10;
+  double radius = 3;
 
   for (int i=0; i<argc; i++)
     args.push_back(argv[i]);
@@ -186,6 +237,11 @@ int main(int argc, char **argv)
                  "   --markup text          Set markup\n"
                  "   --max-image-width w    Max image width for tracing\n"
                  "   --font-description fc  Font description (font config format)\n"
+                 "   --svg-file sf          Read svg file (and ignore markup)\n"
+                 "   --radius r             Set radius\n"
+                 "   --zdepth z             Set zdepth\n"
+                 "   --profile-filename pf  Set profile filename\n"
+                 "  -o, --output mesh_file Set output mesh file\n"
                  );
       exit(0);
     }
@@ -222,6 +278,31 @@ int main(int argc, char **argv)
     CASE("--font-description")
     {
       font_description = argv[argp++];
+      continue;
+    }
+    CASE("--svg-file")
+    {
+      svg_filename = argv[argp++];
+      continue;
+    }
+    CASE("--radius")
+    {
+      radius = atof(argv[argp++]);
+      continue;
+    }
+    CASE("--zdepth")
+    {
+      zdepth = atof(argv[argp++]);
+      continue;
+    }
+    CASE("--profile-filename")
+    {
+      profile_filename = argv[argp++];
+      continue;
+    }
+    CASE2("-o", "--output")
+    {
+      mesh_filename = argv[argp++];
       continue;
     }
     die("Unknown option {}!", S_);
@@ -264,23 +345,32 @@ int main(int argc, char **argv)
   }
 
   bool use_profile_data = false;
-  double zdepth = 10;
-  double radius = 3;
-  double round_max_angle = 1;
   ProfileData profile_data;
+  if (profile_filename.size())
+  {
+    profile_data.load_from_file(profile_filename);
+    use_profile_data = true;
+  }
+
+  double round_max_angle = M_PI/2;  // round up to 90 degrees
 
   create_mesh(do_rtl,
               font_description,
               linear_limit,
+              svg_filename,
               markup,
               max_image_width,
               debug_dir,
               use_profile_data,
+              profile_data,
               zdepth,
               radius,
               round_max_angle,
               num_radius_steps,
-              profile_data);
+
+              // mesh output
+              mesh_filename
+              );
 
   exit(0);
   return(0);

@@ -52,6 +52,10 @@ by turning on Settings/Smoothing option, which inserts additional nodes in the s
 ![Non smoothed skeleton](pomelo-non-smooth-geometry.png)
 ![Smoothed skeleton](pomelo-smooth-geometry.png)
 
+# Command line version
+
+It is also possible to run the 
+
 # Technical description
 
 See: [Technical description](TechnicalDescription.md)

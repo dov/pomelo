@@ -10,6 +10,7 @@
 #include "pomelo.h"
 #include <fmt/core.h>
 #include <fmt/chrono.h>
+#include <fmt/ranges.h>
 #include "textrusion.h"
 #include "pomelo-settings.h"
 #include "spdlog/sinks/basic_file_sink.h"

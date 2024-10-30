@@ -17,6 +17,7 @@
 #include "svgpath-to-cairo.h"
 #include "pango-to-cairo.h"
 #include <spdlog/spdlog.h>
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/norm.hpp>
 #include <fmt/core.h>
 
@@ -480,7 +481,7 @@ void TeXtrusion::add_region_contribution_cap_to_mesh(
             continue; // No extrapolation if explicitly requested
 
           // The "next" point is the depth
-          offs_end = depth+epsilon;
+          offs_end = depth; // +epsilon;
     
           // Get the slope of the last point and extrapolate
           auto dxy = flat_list[d_idx-1]-flat_list[d_idx-2];
@@ -1311,7 +1312,7 @@ static vector<Polygon_2> cut_polygon_by_line_pair(const Polygon_2& poly,
             auto sq_dist = CGAL::squared_distance(p1, p2);
 
             if (sq_dist < 1e-8) {
-                print("Zero length edge in cut_polygon_by_line_pair!\n");
+              spdlog::warn("Zero length edge in cut_polygon_by_line_pair!\n");
             }
             else
                 pp.push_back(p1);

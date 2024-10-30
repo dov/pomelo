@@ -28,6 +28,13 @@ gtk_dep = dependency('gtk+-3.0')
 incagg = include_directories('agg')
 incgtkimageviewer = include_directories('agg')
 
+# We don't care about these warnings in the context of pomelo
+local_cpp_args = ['-Wno-deprecated-declarations',
+                  '-Wno-deprecated-enum-enum-conversion',
+                  '-Wno-unused-variable',
+                  '-Wno-deprecated-enum-float-conversion',
+                 ]
+
 libgivwidget = library(
   'giv-widget',
   giv_widget_sources,
@@ -41,5 +48,6 @@ libgivwidget = library(
     libgtkimageviewer
   ],
   dependencies : [gtk_dep],
+  cpp_args: local_cpp_args,
   install : false)
 
