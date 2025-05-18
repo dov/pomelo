@@ -9,6 +9,7 @@ engine_sources = ['textrusion.cc',
                   'utils.cc',
                   'giv-debug-utils.cc',
                   'mesh.cc',
+                  'mesh-utils.cc',
                  ]
 
 sources = ['pomelo-main.cc',
@@ -108,7 +109,7 @@ exe = executable(name,
                  sources,
                  resources,
                  dependencies: deps,
-                 gui_app : true,  # true to hide console
+                 win_subsystem : 'windows',  # true to hide console
                  cpp_args : cpp_args,
                  link_args : link_args,
                  include_directories : incdir,
@@ -170,6 +171,14 @@ executable('test-profile-editor',
            cpp_args : cpp_args,
            dependencies : deps)
 
+executable('test-merge-by-distance',
+           ['test-merge-by-distance.cc',
+           ],
+           resources,
+           link_with : [lib_engine],
+           cpp_args : cpp_args,
+           dependencies : deps)
+
 #executable('test-profile-editor-window',
 #           ['test-profile-editor-window.cc',
 #            'profile-editor-window.cc',
@@ -181,4 +190,5 @@ executable('test-profile-editor',
 #           link_with : [lib_engine],
 #           cpp_args : cpp_args,
 #           dependencies : deps)
+
 

@@ -24,16 +24,16 @@
 using namespace std;
 namespace fs = std::filesystem;
 
-static void die(const char *fmt, ...)
+template <typename... Args>
+static void die(fmt::format_string<Args...> FormatStr, Args &&... args)
 {
-  va_list ap;
-  va_start(ap,fmt); 
-    
-  spdlog::error("Dieing: {}", fmt); // tbd format this properly!
-  vfprintf(stderr, fmt, ap);
+  string msg = fmt::format(FormatStr, std::forward<Args>(args)...);
+  if (msg[msg.size()-1] != '\n')
+    msg += "\n";
+  spdlog::error("Dying: {}", msg); 
+  fmt::print(stderr, "{}", msg);
   exit(-1);
 }
-
 
 #define CASE(s) if (s == S_)
 
@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
       do_log_stdout = true;
       continue;
     }
-    die("Unknown option: %s\n", S_.c_str());
+    die("Unknown option: {}\n", S_);
   }
 
   // If we have another argument treat it as a project and load it

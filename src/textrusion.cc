@@ -20,6 +20,7 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/norm.hpp>
 #include <fmt/core.h>
+#include "mesh-utils.h"
 
 using namespace std;
 using namespace Glib;
@@ -961,6 +962,11 @@ MultiMesh TeXtrusion::skeleton_to_mesh(
     }
     giv_string = ss.str();
 
+    // Finally get rid of nearby duplicate vertices
+    print("Merge meshes by distance\n");
+    for (auto& mesh : meshes)
+        merge_by_distance(mesh, 1e-4); 
+    
 #if 0
     ofstream of("path.giv");
     of << giv_string;
@@ -1176,7 +1182,7 @@ vector<Polygon_2> cut_polygon_by_line(const Polygon_2& poly,
 
             // starts a new polygon
             if (result) {
-                if (const Point_2* pi = boost::get<Point_2 >(&*result)) {
+                if (const Point_2* pi = std::get_if<Point_2 >(&*result)) {
                     cut.push_back(*pi);
                     cut_on_boundary.push_back(true);
                 }
@@ -1189,7 +1195,7 @@ vector<Polygon_2> cut_polygon_by_line(const Polygon_2& poly,
                  && !line.has_on_positive_side(q)) {
             auto result = CGAL::intersection(Line_2(p,q), line);
             if (result) {
-                if (const Point_2* pi = boost::get<Point_2 >(&*result)) {
+                if (const Point_2* pi = std::get_if<Point_2 >(&*result)) {
                     cut.push_back(*pi);
                     cut_on_boundary.push_back(true); 
                 }

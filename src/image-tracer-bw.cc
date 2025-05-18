@@ -161,7 +161,7 @@ void trace_image(int width,
   map<string,double> options;
 
   options = checkoptions(options);
-  options["ltres"]=2.5; // Do 200 for testing
+  options["ltres"]=2.5; // Seems to be a good compromise
   options["qtres"]=-1; // Turn off quadratic tracing for pomelo
   // TBD - Do qthresh + linearization to see if it gives a smoother result.
 

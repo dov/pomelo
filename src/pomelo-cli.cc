@@ -19,6 +19,7 @@
 #include "textrusion.h"
 #include "giv-debug-utils.h"
 #include "utils.h"
+#include <filesystem>
 
 
 using namespace std;
@@ -153,11 +154,22 @@ void create_mesh(bool do_rtl,
 
   if (debug_dir.size())
   {
+    // Check if the directory exists
+    if (!std::filesystem::exists(debug_dir))
+    {
+      // Create the directory
+      if (std::filesystem::create_directory(debug_dir)) 
+        spdlog::info("Directory created successfully.");
+      else 
+        spdlog::error("Failed to create directory.");
+    } 
+
     string giv_filename = fmt::format("{}/mesh_giv_file.giv", debug_dir);
     spdlog::info("Saved {}", giv_filename);
     string_to_file(giv_string, giv_filename);
 
-    save_stl(meshes[0], fmt::format("{}/mesh.stl", debug_dir));
+    for (int mesh_idx=0; mesh_idx < (int)meshes.size(); mesh_idx++)
+        save_stl(meshes[0], fmt::format("{}/mesh-{}.stl", debug_dir, mesh_idx));
   }
 
   if (mesh_filename.size())
@@ -181,7 +193,7 @@ void create_mesh(bool do_rtl,
       }
       else
       {
-        for (int mesh_idx=0; mesh_idx<meshes.size(); mesh_idx++)
+        for (int mesh_idx=0; mesh_idx<(int)meshes.size(); mesh_idx++)
         {
           // The base name is the mesh_filename without the extension
           string mesh_filename_base = mesh_filename;

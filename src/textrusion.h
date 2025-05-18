@@ -154,7 +154,7 @@ class PHoleInfo {
     );
 
     Polygon_with_holes polygon_with_holes;
-    boost::shared_ptr<StraightSkeleton> skeleton;
+    std::shared_ptr<StraightSkeleton> skeleton;
     std::vector<SkeletonPolygonRegion> regions;
     std::string m_debug_dir;
 };
