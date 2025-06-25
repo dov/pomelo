@@ -17,6 +17,9 @@
 #include <gdkmm/pixbuf.h>
 #include "trackball.h"
 #include <spdlog/spdlog.h>
+#ifdef WIN32
+#include <windows.h>
+#endif
 
 using namespace std;
 using namespace glm;
@@ -41,6 +44,29 @@ static void print_mat(float *m)
         fmt::print("\n");
     }
 }
+
+#ifdef WIN32
+void
+check_gl_context_is_current ()
+{
+  static HMODULE opengl32 = nullptr;
+
+  if (!opengl32)
+    opengl32 = GetModuleHandleW (L"OPENGL32.DLL");
+
+  assert (opengl32);
+
+  using ptr_wglGetCurrentContext_t = HGLRC (WINAPI *)();
+  auto ptr_wglGetCurrentContext =
+    (ptr_wglGetCurrentContext_t) GetProcAddress (opengl32, "wglGetCurrentContext");
+
+  if (!ptr_wglGetCurrentContext ())
+  {
+    spdlog::error("Failed getting gl context! Is GL supported on this architecture?");
+    throw std::runtime_error("Failed getting gl context! Is GL supported on this architecture?");
+  }
+}
+#endif
 
 // Constructor
 MeshViewer::MeshViewer(std::shared_ptr<PomeloSettings> pomelo_settings)
@@ -76,6 +102,10 @@ MeshViewer::MeshViewer(std::shared_ptr<PomeloSettings> pomelo_settings)
     m_hw_mesh.vertices.push_back(v);
 
   spdlog::info("Done creating meshviewer");
+}
+
+sigc::signal<void, const std::string&>& MeshViewer::signal_fatal_error() {
+    return m_signal_fatal_error;
 }
 
 // setup the projection matrix based on the current setting
@@ -151,6 +181,9 @@ create_shader (int shader_type,
 {
   spdlog::info("create_shader(). type={}",
                shader_type == GL_VERTEX_SHADER ? "vertex" : "fragment");
+#ifdef WIN32
+  check_gl_context_is_current();
+#endif
   guint shader = glCreateShader (shader_type);
   spdlog::info("Ok. creating the shader");
   
@@ -205,16 +238,25 @@ void MeshViewer::init_shaders ()
   m_normal_index = 2;
   m_bary_index = 3;
 
-  guint shaders[] = {
-    create_shader(GL_VERTEX_SHADER, vertex_source),
-    create_shader(GL_FRAGMENT_SHADER, fragment_source),
-    create_shader(GL_VERTEX_SHADER, vertex_source),
-    create_shader(GL_FRAGMENT_SHADER, fragment_edge_source),
-    create_shader(GL_VERTEX_SHADER, vertex_matcap_source),
-    create_shader(GL_FRAGMENT_SHADER, fragment_matcap_source),
-    create_shader(GL_VERTEX_SHADER, vertex_matcap_source),
-    create_shader(GL_FRAGMENT_SHADER, fragment_matcap_edge_source)
-  };
+  vector<guint> shaders;
+
+  try {
+    shaders = {
+      create_shader(GL_VERTEX_SHADER, vertex_source),
+      create_shader(GL_FRAGMENT_SHADER, fragment_source),
+      create_shader(GL_VERTEX_SHADER, vertex_source),
+      create_shader(GL_FRAGMENT_SHADER, fragment_edge_source),
+      create_shader(GL_VERTEX_SHADER, vertex_matcap_source),
+      create_shader(GL_FRAGMENT_SHADER, fragment_matcap_source),
+      create_shader(GL_VERTEX_SHADER, vertex_matcap_source),
+      create_shader(GL_FRAGMENT_SHADER, fragment_matcap_edge_source)
+    };
+  }
+  catch(const std::runtime_error& exc)
+  {
+    m_signal_fatal_error.emit(exc.what());
+    return;
+  }
   m_programs.clear();
   spdlog::info("make_current");
   this->make_current();
@@ -381,7 +423,11 @@ void MeshViewer::on_realize()
   this->set_has_depth_buffer(true);
   spdlog::info("done set_has_depth_buffer");
 
-  init_shaders();
+  try {
+    init_shaders();
+  } catch (const std::runtime_error& ex) {
+    m_signal_fatal_error.emit(ex.what());
+  }
 
   // Init the buffer
   init_buffers (&m_vao);

@@ -3,6 +3,7 @@
 //
 // 2021-07-17 Sat
 
+#define BOOST_SMART_PTR_USE_STD
 #include <freetype/ftglyph.h>
 #include <freetype/ftoutln.h>
 #include <fstream>
@@ -892,7 +893,7 @@ MultiMesh TeXtrusion::skeleton_to_mesh(
                     double r = profile_radius;
                     double th;
                     if (this->profile_num_radius_steps == 0)
-                        th = M_PI/2;
+                        th = G_PI/2;
                     else
                         th = angle_span * d_idx/this->profile_num_radius_steps;
                     // TBDov: The following calculation is wrong e.g. for

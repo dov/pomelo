@@ -28,7 +28,6 @@ sources = ['pomelo-main.cc',
           ]
 
 link_args = []
-cpp_args += ['-DBOOST_ALLOW_DEPRECATED_HEADERS']
 
 if host_machine.system() == 'windows' 
   cpp_args += ['-Wa,-mbig-obj',
@@ -36,7 +35,7 @@ if host_machine.system() == 'windows'
                '-DBOOST_BIND_GLOBAL_PLACEHOLDERS',
               ]
   if get_option('optimization')=='0'
-    cpp_args += ['-g','-O1']
+    cpp_args += ['-g','-O0']
   endif
   link_args += ['-Wa,-mbig-obj']
   mod_rescomp = import('windows')
@@ -46,6 +45,7 @@ else
 endif
 
 cc = meson.get_compiler('c')
+incdir = ['giv-widget']
 m_dep = cc.find_library('m', required : false)
 pthread_dep = cc.find_library('pthread', required : false)
 glibmm_dep = dependency('glibmm-2.4')
@@ -54,10 +54,20 @@ gtkmm_dep = dependency('gtkmm-3.0')
 pangoft_dep = dependency('pangoft2')
 cairo_dep = dependency('cairo')
 epoxy_dep = dependency('epoxy')
-fmt_dep = dependency('fmt')
-glm_dep = dependency('glm')
 gmp_dep = dependency('gmp')
-goo_dep = dependency('goocanvasmm-2.0')
+goo_dep = dependency('goocanvas-2.0')
+if host_machine.system() == 'windows' 
+  goomm_dep = declare_dependency(
+    include_directories: include_directories('/usr/local/mingw64/include/goocanvasmm-2.0','/usr/local/mingw64/include/goocanvasmm-2.0' ),
+    link_args: ['-L/usr/local/mingw64/lib', '-lgoocanvasmm-2.0']
+  )
+  cgal_include = include_directories('/usr/local/CGAL/CGAL-6.0.1/include/')
+  incdir += [cgal_include,
+             '/usr/local/mingw64/include']
+else
+  goomm_dep = dependency('goocanvasmm-2.0')
+endif
+
 mpfr_dep = dependency('mpfr')
 
 subdir('giv-widget')
@@ -70,6 +80,7 @@ resources = gnome.compile_resources(
                 '..',
                 '../images',]
 )
+
 
 deps = [gtkmm_dep,
         pangoft_dep,
@@ -84,7 +95,9 @@ deps = [gtkmm_dep,
         tinygltf_dep,
         nhlohmann_json_dep,
         goo_dep,
-        spdlog_dep]
+        goomm_dep,
+        spdlog_dep,
+        ]
 
 if host_machine.system() == 'windows'
   lib_engine = shared_library('engine',
@@ -92,7 +105,8 @@ if host_machine.system() == 'windows'
                               dependencies : deps,
                               install :true,
                               cpp_args : cpp_args,
-                              link_args : link_args
+                              link_args : link_args,
+                              include_directories : incdir
                              )
 else
   lib_engine = static_library('engine',
@@ -103,13 +117,11 @@ else
                              )
 endif
 
-incdir = ['giv-widget']
-
 exe = executable(name,
                  sources,
                  resources,
                  dependencies: deps,
-                 win_subsystem : 'windows',  # true to hide console
+                 win_subsystem : 'console',  # windows or console
                  cpp_args : cpp_args,
                  link_args : link_args,
                  include_directories : incdir,
@@ -137,12 +149,14 @@ executable('pomelo-cli',
                            spdlog_dep,
                            glibmm_dep,
                            pangomm_dep],
+           include_directories : incdir,
            install : true)
 
 # An example for converting an svg path to cairo
 executable('test-svgpath-to-cairo',
            ['test-svgpath-to-cairo.cc',
            ],
+           include_directories : incdir,
            cpp_args : cpp_args,
            link_with : [lib_engine],
            dependencies : deps)
@@ -151,12 +165,14 @@ executable('test-svgpath-to-cairo',
 executable('test-svg-to-skeleton',
            ['test-svg-to-skeleton.cc'],
            cpp_args : cpp_args,
+           include_directories : incdir,
            link_with : [lib_engine],
            dependencies : deps)
 
 executable('test-pango-to-cairo',
            ['test-pango-to-cairo.cc'],
            cpp_args : cpp_args,
+           include_directories : incdir,
            link_with : [lib_engine],
            dependencies : deps)
 

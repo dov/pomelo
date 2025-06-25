@@ -140,9 +140,12 @@ int main(int argc, char *argv[])
 
     if (project_filename.size())
       pomelo.load_project(project_filename);
-        
+
     return app->run(pomelo);
   }
-  spdlog::info("Exited application");
+  logger->info("Exiting pomelo");
+  logger->flush();
+  spdlog::shutdown();
+  return 0;
 }
 

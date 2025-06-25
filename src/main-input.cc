@@ -9,7 +9,7 @@
 
 using namespace std;
 
-constexpr double DEG2RAD = M_PI/180;
+constexpr double DEG2RAD = G_PI/180;
 
 MainInput::MainInput(Gtk::Window& window)
   : Gtk::Box(Gtk::ORIENTATION_VERTICAL),

@@ -364,7 +364,7 @@ int main(int argc, char **argv)
     use_profile_data = true;
   }
 
-  double round_max_angle = M_PI/2;  // round up to 90 degrees
+  double round_max_angle = G_PI/2;  // round up to 90 degrees
 
   create_mesh(do_rtl,
               font_description,

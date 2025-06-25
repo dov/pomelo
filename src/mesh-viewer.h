@@ -46,6 +46,8 @@ class MeshViewer : public Gtk::GLArea
   void setup_projection_matrix();
   void set_show_layer(int layer_id, bool show_layer);
 
+    // Signal for fatal errors (string payload)
+    sigc::signal<void, const std::string&>& signal_fatal_error();
   private:
 
   // signals
@@ -57,6 +59,9 @@ class MeshViewer : public Gtk::GLArea
   bool on_motion_notify_event (GdkEventMotion* motion_event) override;
   bool on_scroll_event (GdkEventScroll* scroll_event) override;
   bool on_enter_notify_event (GdkEventCrossing *event) override;
+
+  private:
+  sigc::signal<void, const std::string&> m_signal_fatal_error;
 
   // Used during init
   void init_shaders();
@@ -158,6 +163,8 @@ class MeshViewer : public Gtk::GLArea
   HWMesh m_hw_mesh;
   std::shared_ptr<PomeloSettings> m_pomelo_settings;
   std::shared_ptr<MultiMesh> m_meshes = std::make_shared<MultiMesh>();
+
+  std::string m_fatal_error_message;
 };
 
 #endif /* MESH-VIEWER */

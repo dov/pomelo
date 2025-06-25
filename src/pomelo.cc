@@ -46,6 +46,19 @@ Pomelo::Pomelo(shared_ptr<PomeloSettings> pomelo_settings)
     m_skeleton_viewer->hide();
   });
 
+  m_mesh_viewer.signal_fatal_error().connect(
+    [this](const string& message) {
+        Gtk::MessageDialog dialog(*this, "Fatal Error", false, Gtk::MESSAGE_ERROR, Gtk::BUTTONS_OK, true);
+        dialog.set_secondary_text("A critical error occurred and the application cannot continue.\n\nDetails: " + message);
+        spdlog::info("Running error message dialog");
+        dialog.run();
+    
+        // 2. Close the window. Because this window was passed to app->run(),
+        //    closing it will cause app->run() to return, terminating the application.
+        spdlog::info("Closing the pomelo window");
+        this->close();
+    });
+    
   m_settings_dialog = Glib::RefPtr<SettingsDialog>(new SettingsDialog(*this,
                                                                       m_pomelo_settings));
   m_settings_dialog->signal_response().connect([this](int response_id)

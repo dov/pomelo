@@ -113,12 +113,13 @@ Section "" ; (default section)
   File ${SYSROOT}\bin\libsigc-2.0-0.dll
   File ${SYSROOT}\bin\libmpfr-6.dll
   # Libepoxy in official package is broken, so we use an older working version!
-  # File ${SYSROOT}\bin\libepoxy-0.dll
-  File \usr\local\mingw64\bin\libepoxy-0.dll
+  File ${SYSROOT}\bin\libepoxy-0.dll
+  # File \usr\local\mingw64\bin\libepoxy-0.dll
   File \usr\local\mingw64\bin\libfmt.dll
   File \usr\local\mingw64\bin\libgmp-10.dll
   File \usr\local\mingw64\bin\libgoocanvasmm-2.0-6.dll
   File ${OUTDIR}\src\${NAME}.exe
+  File ${OUTDIR}\src\${NAME}-cli.exe
   File ${OUTDIR}\src\libengine.dll
   File ${OUTDIR}\src\giv-widget\libgiv-widget.dll
   File ${OUTDIR}\src\giv-widget\gtk-image-viewer\libgtk_image_viewer.dll

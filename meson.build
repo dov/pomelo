@@ -7,12 +7,16 @@ tinygltf_proj = subproject('tinygltf')
 nlohmann_json_proj = subproject('nlohmann_json')
 spdlog_proj = subproject('spdlog')
 gob2_proj = subproject('gob2')
+fmt_proj = subproject('fmt')
+glm_proj = subproject('glm')
 
 nanosvg_dep = nanosvg_proj.get_variable('nanosvg_dep')
 tinygltf_dep = tinygltf_proj.get_variable('tinygltf_dep')
 nhlohmann_json_dep = nlohmann_json_proj.get_variable('nlohmann_json_dep')
 spdlog_dep = spdlog_proj.get_variable('spdlog_dep')
 gob2 = gob2_proj.get_variable('gob2_exe')
+fmt_dep = fmt_proj.get_variable('fmt_dep')
+glm_dep = glm_proj.get_variable('glm_dep')
 
 gnome = import('gnome')
 
@@ -38,7 +42,8 @@ cpp_args = ['-DCOMMIT_ID="'+sha1+'"',
             '-DCOMMIT_TIME="'+commit_time+'"',
             '-DVERSION="'+version+'"',
             '-DSPDLOG_FMT_EXTERNAL',
-            '-DFMT_HEADER_ONLY'
+            '-DFMT_HEADER_ONLY',
+            '-flarge-source-files'
            ]
 
 subdir('src')
